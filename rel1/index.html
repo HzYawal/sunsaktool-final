@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>SunsakTool 2.0</title>
+    <title>SunsakTool 2.5</title>
     <!-- 폰트 로드 -->
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=IBM+Plex+Sans+KR:wght@400;700&family=Gowun+Dodum&family=Gowun+Batang&family=Nanum+Myeongjo:wght@400;700;800&family=Do+Hyeon&family=Black+Han+Sans&family=Gaegu:wght@400;700&family=Hi+Melody&family=Noto+Serif+KR:wght@400;700&family=Dokdo&display=swap');
@@ -16,13 +16,7 @@
         body { font-family: 'Noto Sans KR', sans-serif; background-color: var(--st-bg-color); color: var(--st-text-color); display: flex; flex-direction: column; height: 100vh; margin: 0; overflow: hidden; -webkit-font-smoothing: antialiased; }
         
         /* 새로운 레이아웃 구조 */
-        .st-top-section { 
-            display: flex; 
-            flex-grow: 1; 
-            overflow: hidden; 
-            /* ✨ FIX: 이 한 줄이 미리보기 비율을 유지시킵니다! */
-            align-items: center; 
-        }
+        .st-top-section { display: flex; flex-grow: 1; overflow: hidden; }
         .st-bottom-section { height: 40vh; display: flex; flex-direction: column; border-top: 1px solid var(--st-border-color); }
         .st-header { display: flex; justify-content: space-between; align-items: center; padding: 0 20px; background-color: var(--st-panel-color); border-bottom: 1px solid var(--st-border-color); flex-shrink: 0; height: 50px; }
         .st-logo { font-family: 'GmarketSans', sans-serif; font-weight: bold; }
@@ -34,7 +28,8 @@
         .st-panel-content { padding: 20px; overflow-y: auto; flex-grow: 1; }
         
         /* 상단 패널 */
-        .st-preview-area { flex-basis: 45%; flex-shrink: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
+        /* ✨ FIX: 미리보기 영역이 중앙이 아닌 상단에 자연스럽게 위치하도록 수정 */
+        .st-preview-area { flex-basis: 45%; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; padding: 20px; height: 100%;}
         .st-settings-area { flex-grow: 1; border-left: 1px solid var(--st-border-color); height: 100%; display: flex; flex-direction: column;}
 
         /* 하단 패널 (스크립트 & 타임라인) */
@@ -109,10 +104,13 @@
 
     <main class="st-top-section">
         <div class="st-panel st-preview-area">
-            <div class="st-preview-panel" id="st-preview-panel"></div>
-            <div class="st-timeline-controls">
-                <button class="st-play-all-btn" id="st-btn-play-all">▶</button>
-                <input type="range" id="st-timeline-slider" value="0" step="0.1">
+             <div class="st-panel-header">미리보기</div>
+            <div style="padding: 20px; display: flex; flex-direction: column; align-items: center;">
+                <div class="st-preview-panel" id="st-preview-panel"></div>
+                <div class="st-timeline-controls">
+                    <button class="st-play-all-btn" id="st-btn-play-all">▶</button>
+                    <input type="range" id="st-timeline-slider" value="0" step="0.1">
+                </div>
             </div>
         </div>
         <div class="st-panel st-settings-area">
