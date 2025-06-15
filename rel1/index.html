@@ -93,6 +93,7 @@
     <audio id="st-bgm-player" style="display:none;" loop></audio>
     <audio id="st-sfx-player" style="display:none;"></audio>
     
+    <!-- ✨ FIX: 안정성이 확인된 v6.4.0 버전으로 라이브러리 되돌리기 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/6.4.0/wavesurfer.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/6.4.0/plugin/wavesurfer.regions.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
@@ -120,7 +121,7 @@
             { name: '독도 (거친 붓글씨)', value: "'Dokdo', cursive" },
         ];
 
-        // ✨ 최종 해결책: 전체 URL(절대 경로)을 사용하여 파일 경로를 확정합니다.
+        // ✨ FIX: 요청하신 대로, sunsaktool-final 서버의 전체 주소(절대 경로)를 사용하여 파일 경로 확정
         const BGM_LIST = [
             { name: '선택 안함', url: '' },
             { name: 'big-cafe', url: 'https://sunsaktool-final.netlify.app/big-cafe.mp3' },
@@ -228,6 +229,7 @@
         let activeRegion = null;
         let bgmEditorContext = { callback: null, currentBgm: null };
         
+        // ✨ FIX: 안정성이 확인된 v6.4.0 버전의 초기화 코드로 복원
         function initializeBgmEditor() {
             if (wavesurfer) return;
             if (typeof WaveSurfer === 'undefined') { 
@@ -236,7 +238,12 @@
             
             wavesurfer = WaveSurfer.create({
                 container: '#st-waveform-container', waveColor: '#ddd', progressColor: '#e82c43', cursorColor: '#fff', barWidth: 2, barRadius: 3,
-                plugins: [ WaveSurfer.regions.create({ dragSelection: true, color: 'rgba(232, 44, 67, 0.2)' }) ]
+                plugins: [
+                    WaveSurfer.regions.create({
+                        dragSelection: true,
+                        color: 'rgba(232, 44, 67, 0.2)'
+                    })
+                ]
             });
 
             wavesurfer.on('error', (err) => {
@@ -251,16 +258,23 @@
                 activeRegion = null;
                 const totalDuration = wavesurfer.getDuration();
                 const fixedRegionDuration = 60;
+                
+                // v6.4.0 방식의 Region 추가
+                let region = wavesurfer.addRegion({
+                    start: 0,
+                    color: 'rgba(232, 44, 67, 0.3)',
+                });
+
                 if (totalDuration > fixedRegionDuration) {
-                    wavesurfer.plugins[0].params.dragSelection = false;
-                    activeRegion = wavesurfer.addRegion({
-                        start: 0, end: fixedRegionDuration, color: 'rgba(232, 44, 67, 0.3)', resizable: false,
-                    });
-                     document.getElementById('st-bgm-time-display').textContent = `0.00s - ${fixedRegionDuration.toFixed(2)}s`;
+                    region.end = fixedRegionDuration;
+                    region.drag = false;
+                    region.resize = false;
+                    document.getElementById('st-bgm-time-display').textContent = `0.00s - ${fixedRegionDuration.toFixed(2)}s`;
                 } else {
-                    wavesurfer.plugins[0].params.dragSelection = true;
+                    region.end = totalDuration;
                     document.getElementById('st-bgm-time-display').textContent = `0.00s - ${totalDuration.toFixed(2)}s`;
                 }
+                activeRegion = region;
             });
 
             wavesurfer.on('region-update-end', (region) => {
@@ -286,12 +300,21 @@
             document.getElementById('st-modal-bgm').classList.add('visible');
             document.getElementById('st-waveform-loading').style.display = 'block';
             if (!wavesurfer) initializeBgmEditor();
-            if (wavesurfer) wavesurfer.load(url);
+            if (wavesurfer) {
+                // 이미 로드된 인스턴스가 있으면 파괴하고 새로 생성
+                if(wavesurfer.getDuration() > 0) {
+                    wavesurfer.destroy();
+                    initializeBgmEditor();
+                }
+                wavesurfer.load(url);
+            }
         }
 
         function closeBgmEditor() {
             document.getElementById('st-modal-bgm').classList.remove('visible');
-            if (wavesurfer) wavesurfer.stop();
+            if (wavesurfer) {
+                wavesurfer.stop();
+            }
         }
 
         const debounce = (callback, delay) => { let timeout; return (...args) => { clearTimeout(timeout); timeout = setTimeout(() => callback(...args), delay); }; };
