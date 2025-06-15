@@ -1,4 +1,4 @@
-// 파일 경로: /netlify/render-video.js (올바른 위치 기준)
+// 파일 경로: /netlify/render-video.js (문법 수정 최종본)
 
 const { createCanvas, registerFont } = require('canvas');
 const ffmpeg = require('fluent-ffmpeg');
@@ -9,8 +9,20 @@ const os = require('os');
 const path = require('path');
 
 exports.handler = async (event) => {
+    // CORS Preflight 요청 처리
+    if (event.httpMethod === 'OPTIONS') {
+        return {
+            statusCode: 200,
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Headers': 'Content-Type',
+                'Access-Control-Allow-Methods': 'POST, OPTIONS'
+            }
+        };
+    }
+
     if (event.httpMethod !== 'POST') {
-        return { statusCode: 405, body: 'Method Not Allowed' };
+        return { statusCode: 405, headers: {'Access-Control-Allow-Origin': '*'}, body: 'Method Not Allowed' };
     }
 
     try {
@@ -47,18 +59,20 @@ exports.handler = async (event) => {
         await new Promise((resolve, reject) => {
             ffmpeg(imagePath)
                 .loop(5)
-                .setSize(`${width}x${height}`)
-                .setFps(60)
+                // ✨ 수정: .setSize() -> .size()
+                .size(`${width}x${height}`) 
+                // ✨ 수정: .setFps() -> .fps()
+                .fps(60) 
                 .outputOptions('-pix_fmt yuv420p')
                 .save(outputPath)
                 .on('end', () => {
                     console.log('FFmpeg 처리 완료');
-                    fs.unlinkSync(imagePath); // 임시 이미지 파일 삭제
+                    fs.unlinkSync(imagePath);
                     resolve();
                 })
                 .on('error', (err) => {
                     console.error('FFmpeg 에러:', err);
-                    fs.unlinkSync(imagePath); // 에러 발생 시에도 임시 파일 삭제
+                    fs.unlinkSync(imagePath);
                     reject(err);
                 });
         });
