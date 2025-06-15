@@ -2,29 +2,83 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>SunsakTool (순삭툴)</title>
+    <title>SunsakTool 2.0</title>
     <!-- 폰트 로드 -->
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=IBM+Plex+Sans+KR:wght@400;700&family=Gowun+Dodum&family=Gowun+Batang&family=Nanum+Myeongjo:wght@400;700;800&family=Do+Hyeon&family=Black+Han+Sans&family=Gaegu:wght@400;700&family=Hi+Melody&family=Noto+Serif+KR:wght@400;700&family=Dokdo&display=swap');
-        @font-face {
-            font-family: 'Pretendard';
-            src: url('https://cdn.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Regular.woff') format('woff');
-            font-weight: 400;
-        }
-        @font-face {
-            font-family: 'Spoqa Han Sans Neo';
-            src: url('https://cdn.jsdelivr.net/gh/spoqa/spoqa-han-sans@latest/Subset/SpoqaHanSansNeo/SpoqaHanSansNeo-Regular.woff2') format('woff2');
-            font-weight: 400;
-        }
+        @font-face { font-family: 'Pretendard'; src: url('https://cdn.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Regular.woff') format('woff'); font-weight: 400; }
+        @font-face { font-family: 'Spoqa Han Sans Neo'; src: url('https://cdn.jsdelivr.net/gh/spoqa/spoqa-han-sans@latest/Subset/SpoqaHanSansNeo/SpoqaHanSansNeo-Regular.woff2') format('woff2'); font-weight: 400; }
         @font-face { font-family: 'GmarketSans'; src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansBold.woff') format('woff'); }
         
         /* CSS 스타일 */
-        :root { --st-accent-color: #e82c43; --st-bg-color: #1e1e1e; --st-panel-color: #2a2a2a; --st-border-color: #383838; --st-text-color: #e0e0e0; --st-subtext-color: #aaa; }* { box-sizing: border-box; }body { font-family: 'Noto Sans KR', sans-serif; background-color: var(--st-bg-color); color: var(--st-text-color); display: flex; height: 100vh; margin: 0; overflow: hidden; -webkit-font-smoothing: antialiased; }.st-panel { height: 100vh; display: flex; flex-direction: column; }.st-sidebar { width: 200px; background-color: var(--st-panel-color); padding: 20px; border-right: 1px solid var(--st-border-color); }.st-main-container { flex-grow: 1; display: flex; flex-direction: column; }.st-top-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background-color: var(--st-panel-color); border-bottom: 1px solid var(--st-border-color); flex-shrink: 0; height: 50px;}.st-logo { font-family: 'GmarketSans', sans-serif; font-weight: bold; }.st-main-content { display: flex; flex-grow: 1; overflow: hidden; }.st-preview-area { flex-basis: 400px; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }.st-editor-area { flex-grow: 1; border-left: 1px solid var(--st-border-color); border-right: 1px solid var(--st-border-color); overflow-y: auto; padding: 20px; }.st-settings-area { flex-basis: 280px; overflow-y: auto; padding: 20px; background-color: var(--st-panel-color); }button { background-color: var(--st-accent-color); color: #fff; font-weight: bold; cursor: pointer; border: none; border-radius: 4px; padding: 8px 12px; }.st-preview-panel { width: 100%; max-width: 380px; aspect-ratio: 9 / 16; background-color: #fff; box-shadow: 0 0 20px rgba(0,0,0,0.2); display: flex; flex-direction: column; overflow: hidden; }
+        :root { --st-accent-color: #e82c43; --st-bg-color: #1e1e1e; --st-panel-color: #2a2a2a; --st-border-color: #383838; --st-text-color: #e0e0e0; --st-subtext-color: #aaa; }
+        * { box-sizing: border-box; }
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: var(--st-bg-color); color: var(--st-text-color); display: flex; flex-direction: column; height: 100vh; margin: 0; overflow: hidden; -webkit-font-smoothing: antialiased; }
+        
+        /* 새로운 레이아웃 구조 */
+        .st-top-section { display: flex; flex-grow: 1; overflow: hidden; }
+        .st-bottom-section { height: 45vh; display: flex; flex-direction: column; border-top: 1px solid var(--st-border-color); }
+        .st-header { display: flex; justify-content: space-between; align-items: center; padding: 0 20px; background-color: var(--st-panel-color); border-bottom: 1px solid var(--st-border-color); flex-shrink: 0; height: 50px; }
+        .st-logo { font-family: 'GmarketSans', sans-serif; font-weight: bold; }
+        .st-status-indicator { font-size: 14px; color: var(--st-accent-color); font-weight: bold; }
+
+        /* 패널 공통 스타일 */
+        .st-panel { display: flex; flex-direction: column; background-color: #1e1e1e; }
+        .st-panel-header { padding: 15px 20px; border-bottom: 1px solid var(--st-border-color); font-weight: bold; font-size: 16px; background-color: #252525;}
+        .st-panel-content { padding: 20px; overflow-y: auto; flex-grow: 1; }
+        
+        /* 상단 패널 */
+        .st-preview-area { flex-basis: 45%; flex-shrink: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
+        .st-settings-area { flex-grow: 1; border-left: 1px solid var(--st-border-color); }
+
+        /* 하단 패널 (스크립트 & 타임라인) */
+        .st-editor-area { height: 100%; }
+        .st-editor-header { display: flex; justify-content: space-between; align-items: center; }
+        .st-editor-header .button-group { display: flex; gap: 8px; }
+
+        /* 미리보기 패널 */
+        .st-preview-panel { width: 100%; max-width: 380px; aspect-ratio: 9 / 16; background-color: #fff; box-shadow: 0 0 20px rgba(0,0,0,0.2); display: flex; flex-direction: column; overflow: hidden; }
         .st-preview-header { font-family: 'GmarketSans', sans-serif; color: white; font-weight: bold; flex-shrink: 0; height: 65px; display: flex; justify-content: center; align-items: center; padding: 0 15px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-        .st-preview-content { padding: 10px; color: black; flex-grow: 1; display: flex; flex-direction: column; background-color: white; overflow: hidden; }.st-project-info { font-size: 13px; color: #555; margin: 0 0 16px 0; border-bottom: 1px solid #eee; padding-bottom: 16px; }.st-project-info .title { font-size: 22px; color: black; font-weight: bold; margin-bottom: 5px; }.st-script-display { flex-grow: 1; display: flex; flex-direction: column; align-items: center; text-align: center; }#st-preview-text { width: 100%; font-size: 24px; color: #000; white-space: pre-wrap; margin-bottom: 8px; flex-shrink: 0; }#st-preview-image-container { width: 100%; display: flex; justify-content: center; align-items: flex-start; }#st-preview-image { max-width: 100%; max-height: 100%; object-fit: contain; }.st-timeline-controls { width: 100%; max-width: 380px; display: flex; align-items: center; gap: 10px; margin-top: 15px;}.st-play-all-btn { background: none; font-size: 24px; padding: 0;}#st-timeline-slider { flex-grow: 1; }.st-editor-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }.st-editor-header h3 { margin: 0; }.st-editor-header .button-group { display: flex; gap: 8px; }.st-card { background-color: var(--st-panel-color); border: 2px solid transparent; padding: 15px; margin-top: 15px; border-radius: 4px; cursor: pointer; position: relative; }.st-card.active { border-color: var(--st-accent-color); }.st-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .st-preview-content { padding: 10px; color: black; flex-grow: 1; display: flex; flex-direction: column; background-color: white; overflow: hidden; }
+        .st-project-info { font-size: 13px; color: #555; margin: 0 0 16px 0; border-bottom: 1px solid #eee; padding-bottom: 16px; }
+        .st-project-info .title { font-size: 22px; color: black; font-weight: bold; margin-bottom: 5px; }
+        .st-script-display { flex-grow: 1; display: flex; flex-direction: column; align-items: center; text-align: center; }
+        #st-preview-text { width: 100%; font-size: 24px; color: #000; white-space: pre-wrap; margin-bottom: 8px; flex-shrink: 0; }
+        #st-preview-image-container { width: 100%; display: flex; justify-content: center; align-items: flex-start; }
+        #st-preview-image { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .st-timeline-controls { width: 100%; max-width: 380px; display: flex; align-items: center; gap: 10px; margin-top: 15px;}
+        .st-play-all-btn { background: none; font-size: 24px; padding: 0;}
+        #st-timeline-slider { flex-grow: 1; }
+        
+        /* 스크립트 카드 */
+        #st-card-container { display: flex; gap: 15px; padding-bottom: 15px; overflow-x: auto; flex-grow: 1; align-items: flex-start;}
+        .st-card { background-color: var(--st-panel-color); border: 2px solid transparent; padding: 15px; border-radius: 4px; cursor: pointer; position: relative; width: 280px; flex-shrink: 0; display: flex; flex-direction: column; height: 100%; min-height: 200px;}
+        .st-card.active { border-color: var(--st-accent-color); }
+        .st-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .st-card-drag-handle { cursor: grab; }
         .st-card-drag-handle:active { cursor: grabbing; }
-        .st-card-number { font-weight: bold; font-size: 18px; }textarea { width:100%; min-height:60px; background-color: #333; border: 1px solid var(--st-border-color); color: var(--st-text-color); border-radius: 4px; padding: 8px; }.st-card-footer { margin-top: 10px; display: flex; align-items: center; gap: 10px; font-size: 13px; flex-wrap: wrap; }input[type="file"] { display: none; }.st-action-btn { background: none; border:none; color: var(--st-subtext-color); text-decoration: underline; cursor: pointer; padding: 0; font-size: 13px; }.st-play-clip-btn { font-size: 18px; background: none; padding: 0 5px; cursor: pointer; border: none; color: var(--st-text-color); }.st-play-clip-btn:disabled { color: #555; cursor: not-allowed; }.st-card-loading { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); color: white; display: flex; justify-content: center; align-items: center; z-index: 10; border-radius: 4px; font-weight: bold; }.st-accordion-header { padding: 12px 0; cursor: pointer; border-bottom: 1px solid var(--st-border-color); font-weight: bold; }.st-accordion-content { padding: 15px 0; display: none; }.st-accordion-item.active .st-accordion-content { display: block; }.st-control-group { margin-bottom: 15px; }input, select { width: 100%; padding: 8px; background-color: #1e1e1e; border: 1px solid var(--st-border-color); color: var(--st-text-color); }.st-flex-group { display: flex; gap: 10px; }
+        .st-card-number { font-weight: bold; font-size: 18px; }
+        .st-card textarea { width:100%; min-height:80px; background-color: #333; border: 1px solid var(--st-border-color); color: var(--st-text-color); border-radius: 4px; padding: 8px; flex-grow: 1; }
+        .st-card-footer { margin-top: 10px; display: flex; align-items: center; gap: 10px; font-size: 13px; flex-wrap: wrap; }
+        .st-card-thumbnail { width: 40px; height: 40px; border-radius: 4px; background-color: #333; margin-right: 10px; background-size: cover; background-position: center;}
+        input[type="file"] { display: none; }
+        .st-action-btn { background: none; border:none; color: var(--st-subtext-color); text-decoration: underline; cursor: pointer; padding: 0; font-size: 13px; }
+        .st-play-clip-btn { font-size: 18px; background: none; padding: 0 5px; cursor: pointer; border: none; color: var(--st-text-color); }
+        .st-play-clip-btn:disabled { color: #555; cursor: not-allowed; }
+        .st-card-loading { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); color: white; display: flex; justify-content: center; align-items: center; z-index: 10; border-radius: 4px; font-weight: bold; }
+
+        /* 설정 탭 메뉴 */
+        .st-tab-nav { display: flex; border-bottom: 1px solid var(--st-border-color); }
+        .st-tab-button { background: none; border: none; color: var(--st-subtext-color); padding: 10px 15px; cursor: pointer; font-size: 14px; border-bottom: 2px solid transparent; }
+        .st-tab-button.active { color: var(--st-text-color); border-bottom-color: var(--st-accent-color); font-weight: bold;}
+        .st-tab-content { display: none; }
+        .st-tab-content.active { display: block; }
+
+        .st-control-group { margin-bottom: 15px; }
+        input, select { width: 100%; padding: 8px; background-color: #1e1e1e; border: 1px solid var(--st-border-color); color: var(--st-text-color); }
+        .st-flex-group { display: flex; gap: 10px; }
+        
+        /* 모달 공통 */
         .st-modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.7); display: none; justify-content: center; align-items: center; z-index: 1000; }
         .st-modal-overlay.visible { display: flex; }
         .st-modal-dialog { background-color: var(--st-panel-color); padding: 24px; border-radius: 8px; width: 90%; max-width: 600px; border: 1px solid var(--st-border-color); }
@@ -33,41 +87,107 @@
         .st-modal-dialog textarea { height: 250px; font-size: 14px; margin-bottom: 16px; }
         .st-modal-dialog .st-modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;}
         .st-modal-dialog .st-modal-actions button.cancel { background-color: #555; }
+
+        /* BGM 에디터 모달 */
         #st-waveform-container { width: 100%; height: 128px; background-color: #1e1e1e; }
         #st-waveform-loading { text-align: center; padding: 40px; color: var(--st-subtext-color); }
         .st-waveform-controls { margin-top: 15px; display: flex; gap: 10px; align-items: center;}
     </style>
 </head>
 <body>
-    <div class="st-panel st-sidebar"> <button id="st-btn-add-project">+ 새 프로젝트</button> </div>
-    <div class="st-main-container">
-        <div class="st-top-header"> <div class="st-logo">SunsakTool</div> </div>
-        <div class="st-main-content">
-            <div class="st-panel st-preview-area">
-                <div class="st-preview-panel" id="st-preview-panel"></div>
-                <div class="st-timeline-controls"> <button class="st-play-all-btn" id="st-btn-play-all">▶</button> <input type="range" id="st-timeline-slider" value="0" step="0.1"> </div>
+    <header class="st-header">
+        <div class="st-logo">SunsakTool 2.0</div>
+        <div id="st-status-indicator" class="st-status-indicator"></div>
+        <button id="st-btn-add-project">+ 새 프로젝트</button>
+    </header>
+
+    <main class="st-top-section">
+        <div class="st-panel st-preview-area">
+            <div class="st-preview-panel" id="st-preview-panel"></div>
+            <div class="st-timeline-controls">
+                <button class="st-play-all-btn" id="st-btn-play-all">▶</button>
+                <input type="range" id="st-timeline-slider" value="0" step="0.1">
             </div>
-            <div class="st-panel st-editor-area">
-                <div class="st-editor-header">
-                    <h3>스크립트 & 타임라인</h3>
-                    <div class="button-group">
-                        <button id="st-btn-add-gpts" style="background-color: #3e3e3e;">+ GPTS 스크립트 추가</button>
-                        <button id="st-btn-add-card">+ 스크립트 추가</button>
+        </div>
+        <div class="st-panel st-settings-area">
+            <nav class="st-tab-nav">
+                <button class="st-tab-button active" data-tab="tab-content-design">디자인</button>
+                <button class="st-tab-button" data-tab="tab-content-project">프로젝트 & 오디오</button>
+            </nav>
+            <div class="st-panel-content">
+                <div id="tab-content-design" class="st-tab-content active">
+                    <!-- 디자인 관련 설정 -->
+                    <div class="st-control-group">
+                        <h4>헤더 스타일</h4>
+                        <label>헤더 텍스트</label><input type="text" id="st-setting-header-text" value="썰쑈">
+                        <div class="st-flex-group" style="margin-top:10px;">
+                            <div><label>배경 색상</label><input type="color" id="st-setting-header-bg" value="#e82c43"></div>
+                            <div><label>글자 색상</label><input type="color" id="st-setting-header-color" value="#FFFFFF"></div>
+                        </div>
+                        <div class="st-flex-group" style="margin-top:10px;">
+                             <div><label>폰트</label><select id="st-setting-header-font"></select></div>
+                             <div><label>크기</label><input type="number" id="st-setting-header-size" value="24"></div>
+                        </div>
+                    </div>
+                    <hr style="border-color: var(--st-border-color); margin: 20px 0;">
+                    <div class="st-control-group">
+                        <h4>스크립트 스타일 (선택된 카드)</h4>
+                        <label>텍스트 색상</label><input type="color" id="st-setting-script-color" value="#000000">
+                        <div class="st-flex-group" style="margin-top:10px;">
+                            <div><label>폰트</label><select id="st-setting-script-font"></select></div>
+                            <div><label>크기</label><input type="number" id="st-setting-script-size" value="24"></div>
+                        </div>
+                        <div class="st-flex-group" style="margin-top:10px;">
+                            <div><label>X</label><input type="number" id="st-setting-script-x" value="0"></div>
+                            <div><label>Y</label><input type="number" id="st-setting-script-y" value="0"></div>
+                        </div>
                     </div>
                 </div>
-                <div id="st-card-container"></div>
+                <div id="tab-content-project" class="st-tab-content">
+                    <!-- 프로젝트 정보 & 오디오 설정 -->
+                    <div class="st-control-group">
+                        <h4>프로젝트 정보</h4>
+                        <label>제목</label><input type="text" id="st-setting-project-title" value="">
+                        <label style="margin-top:10px;">작성자</label><input type="text" id="st-setting-project-author" value="">
+                        <label style="margin-top:10px;">조회수</label><input type="number" id="st-setting-project-views" value="0">
+                        <div class="st-flex-group" style="margin-top:10px;">
+                            <div><label>제목 색상</label><input type="color" id="st-setting-title-color" value="#000000"></div>
+                            <div><label>작성자/조회수 색상</label><input type="color" id="st-setting-meta-color" value="#555555"></div>
+                        </div>
+                    </div>
+                    <hr style="border-color: var(--st-border-color); margin: 20px 0;">
+                    <div class="st-control-group">
+                        <h4>배경음악 설정</h4>
+                        <label>전체 배경음악 선택</label><select id="st-setting-global-bgm"></select>
+                        <label style="margin-top:10px;">BGM 볼륨</label><input type="range" id="st-setting-global-bgm-volume" min="0" max="1" step="0.01" value="0.3">
+                    </div>
+                </div>
             </div>
-            <div class="st-panel st-settings-area" id="st-settings-panel"></div>
         </div>
-    </div>
-    <div id="st-modal-gpts" class="st-modal-overlay">
+    </main>
+
+    <footer class="st-bottom-section">
+        <div class="st-panel st-editor-area">
+            <div class="st-panel-header st-editor-header">
+                <h3>스크립트 & 타임라인</h3>
+                <div class="button-group">
+                    <button id="st-btn-add-smart-script" style="background-color: #3e3e3e;">+ 스마트 대본 붙여넣기</button>
+                    <button id="st-btn-add-card">+ 빈 카드 추가</button>
+                </div>
+            </div>
+            <div id="st-card-container" class="st-panel-content"></div>
+        </div>
+    </footer>
+
+    <!-- 모달 창들 -->
+    <div id="st-modal-smart-script" class="st-modal-overlay">
         <div class="st-modal-dialog">
-            <h2>GPTs 스크립트 추가</h2>
-            <p>GPTs에서 생성된 스크립트를 입력하세요. 빈 줄로 구분하여 여러 스크립트를 한번에 추가할 수 있습니다.</p>
-            <textarea id="st-gpts-textarea" placeholder="여기에 GPTs 스크립트를 입력하세요..."></textarea>
+            <h2>스마트 대본 붙여넣기</h2>
+            <p>대본을 여기에 붙여넣으세요. 빈 줄을 기준으로 각 문단이 별개의 스크립트 카드로 자동 생성됩니다.</p>
+            <textarea id="st-smart-script-textarea" placeholder="여기에 대본을 붙여넣으세요..."></textarea>
             <div class="st-modal-actions">
-                <button id="st-btn-gpts-cancel" class="cancel">취소</button>
-                <button id="st-btn-gpts-confirm">확인</button>
+                <button id="st-btn-smart-script-cancel" class="cancel">취소</button>
+                <button id="st-btn-smart-script-confirm">확인</button>
             </div>
         </div>
     </div>
@@ -75,9 +195,7 @@
         <div class="st-modal-dialog">
             <h2>BGM 구간 설정</h2>
             <p>오디오 파형 위에서 원하는 구간을 드래그하여 선택하세요.</p>
-            <div id="st-waveform-container">
-                <div id="st-waveform-loading">BGM 로딩 중...</div>
-            </div>
+            <div id="st-waveform-container"><div id="st-waveform-loading">BGM 로딩 중...</div></div>
             <div class="st-waveform-controls">
                 <button id="st-btn-bgm-play-pause">재생/일시정지</button>
                 <button id="st-btn-bgm-play-region">선택 구간 미리듣기</button>
@@ -93,7 +211,7 @@
     <audio id="st-bgm-player" style="display:none;" loop></audio>
     <audio id="st-sfx-player" style="display:none;"></audio>
     
-    <!-- ✨ FIX: 안정성이 확인된 v6.4.0 버전으로 라이브러리 되돌리기 -->
+    <!-- 라이브러리 로드 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/6.4.0/wavesurfer.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/6.4.0/plugin/wavesurfer.regions.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
@@ -121,7 +239,6 @@
             { name: '독도 (거친 붓글씨)', value: "'Dokdo', cursive" },
         ];
 
-        // ✨ FIX: 요청하신 대로, sunsaktool-final 서버의 전체 주소(절대 경로)를 사용하여 파일 경로 확정
         const BGM_LIST = [
             { name: '선택 안함', url: '' },
             { name: 'big-cafe', url: 'https://sunsaktool-final.netlify.app/big-cafe.mp3' },
@@ -216,22 +333,24 @@
         const ttsPlayer = document.getElementById('st-tts-player');
         const bgmPlayer = document.getElementById('st-bgm-player');
         const sfxPlayer = document.getElementById('st-sfx-player'); 
-        const settingsPanel = document.getElementById('st-settings-panel');
         const addCardBtn = document.getElementById('st-btn-add-card');
         
-        const addGptsBtn = document.getElementById('st-btn-add-gpts');
-        const gptsModal = document.getElementById('st-modal-gpts');
-        const gptsCancelBtn = document.getElementById('st-btn-gpts-cancel');
-        const gptsConfirmBtn = document.getElementById('st-btn-gpts-confirm');
-        const gptsTextarea = document.getElementById('st-gpts-textarea');
+        const addSmartScriptBtn = document.getElementById('st-btn-add-smart-script');
+        const smartScriptModal = document.getElementById('st-modal-smart-script');
+        const smartScriptCancelBtn = document.getElementById('st-btn-smart-script-cancel');
+        const smartScriptConfirmBtn = document.getElementById('st-btn-smart-script-confirm');
+        const smartScriptTextarea = document.getElementById('st-smart-script-textarea');
+
+        const statusIndicator = document.getElementById('st-status-indicator');
 
         let wavesurfer = null;
         let activeRegion = null;
         let bgmEditorContext = { callback: null, currentBgm: null };
         
-        // ✨ FIX: 안정성이 확인된 v6.4.0 버전의 초기화 코드로 복원
         function initializeBgmEditor() {
-            if (wavesurfer) return;
+            if (wavesurfer) {
+                wavesurfer.destroy();
+            }
             if (typeof WaveSurfer === 'undefined') { 
                 return alert("BGM 편집기 라이브러리 로딩에 실패했습니다. 인터넷 연결을 확인하고 페이지를 새로고침 해주세요."); 
             }
@@ -240,15 +359,16 @@
                 container: '#st-waveform-container', waveColor: '#ddd', progressColor: '#e82c43', cursorColor: '#fff', barWidth: 2, barRadius: 3,
                 plugins: [
                     WaveSurfer.regions.create({
-                        dragSelection: true,
-                        color: 'rgba(232, 44, 67, 0.2)'
+                        dragSelection: {
+                            slop: 5
+                        }
                     })
                 ]
             });
 
             wavesurfer.on('error', (err) => {
                 console.error('WaveSurfer Error:', err);
-                alert('BGM 파일을 불러오는 데 실패했습니다. 파일 URL과 서버의 CORS 설정을 확인해주세요.');
+                alert('BGM 파일을 불러오는 데 실패했습니다: ' + err);
                 closeBgmEditor();
             });
 
@@ -259,7 +379,6 @@
                 const totalDuration = wavesurfer.getDuration();
                 const fixedRegionDuration = 60;
                 
-                // v6.4.0 방식의 Region 추가
                 let region = wavesurfer.addRegion({
                     start: 0,
                     color: 'rgba(232, 44, 67, 0.3)',
@@ -272,6 +391,7 @@
                     document.getElementById('st-bgm-time-display').textContent = `0.00s - ${fixedRegionDuration.toFixed(2)}s`;
                 } else {
                     region.end = totalDuration;
+                    wavesurfer.plugins[0].params.dragSelection = true; // Enable drag selection only if duration is short
                     document.getElementById('st-bgm-time-display').textContent = `0.00s - ${totalDuration.toFixed(2)}s`;
                 }
                 activeRegion = region;
@@ -300,21 +420,12 @@
             document.getElementById('st-modal-bgm').classList.add('visible');
             document.getElementById('st-waveform-loading').style.display = 'block';
             if (!wavesurfer) initializeBgmEditor();
-            if (wavesurfer) {
-                // 이미 로드된 인스턴스가 있으면 파괴하고 새로 생성
-                if(wavesurfer.getDuration() > 0) {
-                    wavesurfer.destroy();
-                    initializeBgmEditor();
-                }
-                wavesurfer.load(url);
-            }
+            if (wavesurfer) wavesurfer.load(url);
         }
 
         function closeBgmEditor() {
             document.getElementById('st-modal-bgm').classList.remove('visible');
-            if (wavesurfer) {
-                wavesurfer.stop();
-            }
+            if (wavesurfer) wavesurfer.stop();
         }
 
         const debounce = (callback, delay) => { let timeout; return (...args) => { clearTimeout(timeout); timeout = setTimeout(() => callback(...args), delay); }; };
@@ -342,12 +453,18 @@
             throw new Error('TTS job timed out.');
         }
 
+        function updateStatus(message, isError = false) {
+            statusIndicator.textContent = message;
+            statusIndicator.style.color = isError ? 'red' : 'var(--st-accent-color)';
+        }
+
         async function fetchTTS(text, cardId) {
             text = text.trim();
             if (!text) return null;
             const cacheKey = `${text}-${TYPECAST_CONFIG.ACTOR_ID}`;
             if (ttsCache.has(cacheKey)) return ttsCache.get(cacheKey);
             showLoadingOnCard(cardId, true, '요청 중...');
+            updateStatus('음성 요청 중...');
             try {
                 const initialResponse = await fetch('https://typecast.ai/api/speak', {
                     method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TYPECAST_CONFIG.API_KEY}` },
@@ -358,44 +475,29 @@
                 const pollingUrl = initialJson.result?.speak_v2_url;
                 if (!pollingUrl) throw new Error('API 응답에 speak_v2_url이 포함되어 있지 않습니다.');
                 showLoadingOnCard(cardId, true, '음성 변환 중...');
+                updateStatus('음성 변환 중...');
                 const result = await pollAndDownload(pollingUrl);
                 ttsCache.set(cacheKey, result);
                 return result;
             } catch (error) {
-                console.error(error); alert(`음성 생성 오류: ${error.message}`); return null;
+                console.error(error); alert(`음성 생성 오류: ${error.message}`); 
+                updateStatus('음성 생성 오류', true);
+                return null;
             } finally {
                 showLoadingOnCard(cardId, false);
+                updateStatus('');
             }
         }
         
+        function populateSelect(selectId, list) {
+             const selectEl = document.getElementById(selectId);
+             selectEl.innerHTML = list.map(item => `<option value="${item.value}" style="font-family: ${item.value};">${item.name}</option>`).join('');
+        }
+
         function renderControls() {
-            const fontOptions = FONT_LIST.map(font => `<option value="${font.value}" style="font-family: ${font.value};">${font.name}</option>`).join('');
-            const bgmOptions = BGM_LIST.map(bgm => `<option value="${bgm.url}">${bgm.name}</option>`).join('');
-            settingsPanel.innerHTML = `
-                <div class="st-accordion-item active"><div class="st-accordion-header">헤더 스타일</div><div class="st-accordion-content">
-                    <div class="st-control-group"><label>헤더 텍스트</label><input type="text" id="st-setting-header-text" value="썰쑈"></div>
-                    <div class="st-flex-group">
-                        <div><label>배경 색상</label><input type="color" id="st-setting-header-bg" value="#e82c43"></div>
-                        <div><label>글자 색상</label><input type="color" id="st-setting-header-color" value="#FFFFFF"></div>
-                    </div>
-                    <div class="st-flex-group">
-                         <div><label>폰트</label><select id="st-setting-header-font">${fontOptions}</select></div>
-                         <div><label>크기</label><input type="number" id="st-setting-header-size" value="24"></div>
-                    </div>
-                </div></div>
-                <div class="st-accordion-item"><div class="st-accordion-header">스크립트 스타일</div><div class="st-accordion-content"><div class="st-control-group"><label>텍스트 색상</label><input type="color" id="st-setting-script-color" value="#000000"></div><div class="st-flex-group"><div><label>폰트</label><select id="st-setting-script-font">${fontOptions}</select></div><div><label>크기</label><input type="number" id="st-setting-script-size" value="24"></div></div><div class="st-flex-group"><div><label>X</label><input type="number" id="st-setting-script-x" value="0"></div><div><label>Y</label><input type="number" id="st-setting-script-y" value="0"></div></div></div></div>
-                <div class="st-accordion-item"><div class="st-accordion-header">프로젝트 정보</div><div class="st-accordion-content"><div class="st-control-group"><label>제목</label><input type="text" id="st-setting-project-title" value=""></div><div class="st-control-group"><label>작성자</label><input type="text" id="st-setting-project-author" value=""></div><div class="st-control-group"><label>조회수</label><input type="number" id="st-setting-project-views" value="0"></div><div class="st-flex-group"><div><label>제목 색상</label><input type="color" id="st-setting-title-color" value="#000000"></div><div><label>작성자/조회수 색상</label><input type="color" id="st-setting-meta-color" value="#555555"></div></div></div></div>
-                <div class="st-accordion-item"><div class="st-accordion-header">배경음악 설정</div><div class="st-accordion-content"><div class="st-control-group"><label>전체 배경음악 선택</label><select id="st-setting-global-bgm">${bgmOptions}</select></div><div class="st-control-group"><label>BGM 볼륨</label><input type="range" id="st-setting-global-bgm-volume" min="0" max="1" step="0.01" value="${globalBGM.volume}"></div></div></div>`;
-
-            document.querySelectorAll('#st-settings-panel input, #st-settings-panel select').forEach(el => {
-                if (el.id.includes('script')) {
-                    el.addEventListener('input', applyScriptStylesToSelectedCard);
-                } else {
-                    el.addEventListener('input', updatePreviewDisplay);
-                }
-            });
-
-            document.querySelectorAll('.st-accordion-header').forEach(h => h.addEventListener('click', () => h.parentElement.classList.toggle('active')));
+            populateSelect('st-setting-header-font', FONT_LIST);
+            populateSelect('st-setting-script-font', FONT_LIST);
+            document.getElementById('st-setting-global-bgm').innerHTML = BGM_LIST.map(bgm => `<option value="${bgm.url}">${bgm.name}</option>`).join('');
         }
 
         function addScriptCard(text = '') {
@@ -408,6 +510,7 @@
             
             const sfxOptions = SFX_LIST.map(sfx => `<option value="${sfx.url || ''}">${sfx.name}</option>`).join('');
             cardEl.innerHTML = `<div class="st-card-header st-card-drag-handle"><span class="st-card-number"></span><button class="st-btn-delete-card">🗑️</button></div>
+                              <div class="st-card-thumbnail"></div>
                               <textarea placeholder="스크립트를 입력하세요...">${text}</textarea>
                               <div class="st-card-footer">
                                 <button class="st-play-clip-btn" title="미리듣기" disabled>▶️</button>
@@ -424,9 +527,8 @@
                     const reader = new FileReader();
                     reader.onload = (event) => {
                         cardData.imageUrl = event.target.result;
-                        if (selectedCardId === cardId) {
-                            updatePreviewDisplay();
-                        }
+                        cardEl.querySelector('.st-card-thumbnail').style.backgroundImage = `url(${cardData.imageUrl})`;
+                        if (selectedCardId === cardId) updatePreviewDisplay();
                     };
                     reader.readAsDataURL(e.target.files[0]);
                 }
@@ -441,12 +543,11 @@
                 }
             });
 
-            cardEl.querySelector('.st-sfx-select').addEventListener('change', (e) => {
-                cardData.sfxUrl = e.target.value || null;
-            });
+            cardEl.querySelector('.st-sfx-select').addEventListener('change', (e) => { cardData.sfxUrl = e.target.value || null; });
 
             const debouncedFetchAndUpdate = debounce(async (newText, id) => {
                 const cardToUpdate = scriptCards.find(c => c.id === id);
+                if (!cardToUpdate) return;
                 const ttsData = await fetchTTS(newText, id);
                 if (ttsData && cardToUpdate) {
                     cardToUpdate.duration = ttsData.duration;
@@ -465,7 +566,7 @@
             cardEl.querySelector('.st-btn-delete-card').addEventListener('click', (e) => { e.stopPropagation(); deleteCard(cardId); });
             cardEl.addEventListener('click', () => selectCard(cardId));
             if (text) debouncedFetchAndUpdate(text, cardId);
-            if (!selectedCardId) selectCard(cardId);
+            if (scriptCards.length === 1) selectCard(cardId);
             updateCardNumbers();
         }
         
@@ -487,7 +588,7 @@
             updateCardNumbers();
         }
 
-        function updateCardNumbers() { document.querySelectorAll('.st-card').forEach((card, index) => { card.querySelector('.st-card-number').textContent = index + 1; }); }
+        function updateCardNumbers() { cardContainer.querySelectorAll('.st-card').forEach((card, index) => { card.querySelector('.st-card-number').textContent = index + 1; }); }
         function updateTotalDuration() { const total = scriptCards.reduce((sum, card) => sum + (card.duration || 0.5), 0); timelineSlider.max = total; }
         function showLoadingOnCard(cardId, show, message = '음성 생성 중...') {
             const cardEl = document.querySelector(`.st-card[data-id="${cardId}"]`);
@@ -643,31 +744,22 @@
             ttsPlayer.onended = () => playCardByIndex(index + 1);
         }
         
-        function setupGptsModal() {
-            addGptsBtn.addEventListener('click', () => {
-                gptsModal.classList.add('visible');
-            });
+        function setupSmartScriptModal() {
+            addSmartScriptBtn.addEventListener('click', () => smartScriptModal.classList.add('visible'));
 
             function closeModal() {
-                gptsModal.classList.remove('visible');
-                gptsTextarea.value = '';
+                smartScriptModal.classList.remove('visible');
+                smartScriptTextarea.value = '';
             }
 
-            gptsCancelBtn.addEventListener('click', closeModal);
-            gptsModal.addEventListener('click', (e) => {
-                if (e.target === gptsModal) {
-                    closeModal();
-                }
-            });
-
-            gptsConfirmBtn.addEventListener('click', () => {
-                const text = gptsTextarea.value.trim();
+            smartScriptCancelBtn.addEventListener('click', closeModal);
+            smartScriptModal.addEventListener('click', (e) => { if (e.target === smartScriptModal) closeModal(); });
+            smartScriptConfirmBtn.addEventListener('click', () => {
+                const text = smartScriptTextarea.value.trim();
                 if (!text) return;
 
                 const lines = text.split(/\n\s*\n/).filter(line => line.trim() !== '');
-                lines.forEach(line => {
-                    addScriptCard(line.trim());
-                });
+                lines.forEach(line => addScriptCard(line.trim()));
 
                 closeModal();
                 
@@ -678,23 +770,56 @@
             });
         }
 
+        function setupTabMenu() {
+            const tabButtons = document.querySelectorAll('.st-tab-button');
+            const tabContents = document.querySelectorAll('.st-tab-content');
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+
+                    tabContents.forEach(content => {
+                        if (content.id === button.dataset.tab) {
+                            content.classList.add('active');
+                        } else {
+                            content.classList.remove('active');
+                        }
+                    });
+                });
+            });
+        }
+
         function initialize() {
+            // 프리뷰 패널 초기화
             document.getElementById('st-preview-panel').innerHTML = `
                 <div class="st-preview-header"></div><div class="st-preview-content"><div class="st-project-info"><div class="title"></div><span></span></div>
                 <div class="st-script-display"><div id="st-preview-text"></div><div id="st-preview-image-container"><img id="st-preview-image"></div></div></div>`;
+            
+            // 컨트롤 패널 렌더링 및 이벤트 바인딩
             renderControls();
-            updatePreviewDisplay(); 
+            document.querySelectorAll('#tab-content-design input, #tab-content-design select, #tab-content-project input, #tab-content-project select').forEach(el => {
+                el.addEventListener('input', (e) => {
+                    if (el.id.includes('script')) {
+                        applyScriptStylesToSelectedCard();
+                    } else {
+                        updatePreviewDisplay();
+                    }
+                });
+            });
+
+            // 나머지 초기화
+            setupTabMenu();
             addCardBtn.addEventListener('click', () => addScriptCard(''));
             playAllBtn.addEventListener('click', togglePlay);
-            
-            setupGptsModal();
+            setupSmartScriptModal();
 
             document.getElementById('st-setting-global-bgm').addEventListener('change', (e) => {
                 const url = e.target.value;
                 if (url) { openBgmEditor(url, globalBGM, ({ startTime, endTime }) => { globalBGM = { ...globalBGM, url, startTime, endTime }; if (isPlaying) playBGM(); });
                 } else { globalBGM.url = null; if (isPlaying) bgmPlayer.pause(); }
             });
-            document.getElementById('st-setting-global-bgm-volume').addEventListener('input', (e) => { globalBGM.volume = parseFloat(e.target.value); bgmPlayer.volume = globalBGM.volume; });
+            document.getElementById('st-setting-global-bgm-volume').addEventListener('input', (e) => { globalBGM.volume = parseFloat(e.target.value); if(bgmPlayer) bgmPlayer.volume = globalBGM.volume; });
 
             new Sortable(cardContainer, {
                 animation: 150,
@@ -707,7 +832,8 @@
                 }
             });
 
-            addScriptCard('SunsakTool에 오신 것을 환영합니다!');
+            addScriptCard('SunsakTool 2.0에 오신 것을 환영합니다!');
+            updatePreviewDisplay();
         }
         
         initialize();
