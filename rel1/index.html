@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>SunsakTool 2.5</title>
+    <title>SunsakTool 3.0</title>
     <!-- 폰트 로드 -->
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=IBM+Plex+Sans+KR:wght@400;700&family=Gowun+Dodum&family=Gowun+Batang&family=Nanum+Myeongjo:wght@400;700;800&family=Do+Hyeon&family=Black+Han+Sans&family=Gaegu:wght@400;700&family=Hi+Melody&family=Noto+Serif+KR:wght@400;700&family=Dokdo&display=swap');
@@ -13,32 +13,25 @@
         /* CSS 스타일 */
         :root { --st-accent-color: #e82c43; --st-bg-color: #1e1e1e; --st-panel-color: #2a2a2a; --st-border-color: #383838; --st-text-color: #e0e0e0; --st-subtext-color: #aaa; }
         * { box-sizing: border-box; }
-        body { font-family: 'Noto Sans KR', sans-serif; background-color: var(--st-bg-color); color: var(--st-text-color); display: flex; flex-direction: column; height: 100vh; margin: 0; overflow: hidden; -webkit-font-smoothing: antialiased; }
+        html, body { height: 100%; margin: 0; overflow: hidden; }
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: var(--st-bg-color); color: var(--st-text-color); -webkit-font-smoothing: antialiased; }
+
+        /* ✨ FIX: 최종 3단 레이아웃 구조 */
+        .st-main-container { display: flex; height: 100vh; }
+        .st-preview-area { flex: 0 0 400px; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; background-color: var(--st-panel-color); }
+        .st-editor-area { flex-grow: 1; display: flex; flex-direction: column; border-left: 1px solid var(--st-border-color); border-right: 1px solid var(--st-border-color); }
+        .st-settings-area { flex: 0 0 280px; overflow-y: auto; background-color: var(--st-panel-color); }
         
-        /* 새로운 레이아웃 구조 */
-        .st-top-section { display: flex; flex-grow: 1; overflow: hidden; }
-        .st-bottom-section { height: 40vh; display: flex; flex-direction: column; border-top: 1px solid var(--st-border-color); }
-        .st-header { display: flex; justify-content: space-between; align-items: center; padding: 0 20px; background-color: var(--st-panel-color); border-bottom: 1px solid var(--st-border-color); flex-shrink: 0; height: 50px; }
+        .st-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background-color: #1a1a1a; border-bottom: 1px solid var(--st-border-color); flex-shrink: 0; height: 50px; width: 100%; }
         .st-logo { font-family: 'GmarketSans', sans-serif; font-weight: bold; }
-        .st-status-indicator { font-size: 14px; color: var(--st-accent-color); font-weight: bold; }
-
-        /* 패널 공통 스타일 */
-        .st-panel { display: flex; flex-direction: column; background-color: #1e1e1e; }
-        .st-panel-header { padding: 15px 20px; border-bottom: 1px solid var(--st-border-color); font-weight: bold; font-size: 16px; background-color: #252525;}
-        .st-panel-content { padding: 20px; overflow-y: auto; flex-grow: 1; }
         
-        /* 상단 패널 */
-        /* ✨ FIX: 미리보기 영역이 중앙이 아닌 상단에 자연스럽게 위치하도록 수정 */
-        .st-preview-area { flex-basis: 45%; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; padding: 20px; height: 100%;}
-        .st-settings-area { flex-grow: 1; border-left: 1px solid var(--st-border-color); height: 100%; display: flex; flex-direction: column;}
-
-        /* 하단 패널 (스크립트 & 타임라인) */
-        .st-editor-area { height: 100%; }
-        .st-editor-header { display: flex; justify-content: space-between; align-items: center; }
+        .st-panel-content { padding: 20px; overflow-y: auto; flex-grow: 1; }
+        .st-editor-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .st-editor-header h3 { margin: 0; }
         .st-editor-header .button-group { display: flex; gap: 8px; }
 
         /* 미리보기 패널 */
-        .st-preview-panel { width: 100%; max-width: 380px; aspect-ratio: 9 / 16; background-color: #fff; box-shadow: 0 0 20px rgba(0,0,0,0.2); display: flex; flex-direction: column; overflow: hidden; }
+        .st-preview-panel { width: 100%; max-width: 360px; aspect-ratio: 9 / 16; background-color: #fff; box-shadow: 0 0 20px rgba(0,0,0,0.2); display: flex; flex-direction: column; overflow: hidden; }
         .st-preview-header { font-family: 'GmarketSans', sans-serif; color: white; font-weight: bold; flex-shrink: 0; height: 65px; display: flex; justify-content: center; align-items: center; padding: 0 15px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
         .st-preview-content { padding: 10px; color: black; flex-grow: 1; display: flex; flex-direction: column; background-color: white; overflow: hidden; }
         .st-project-info { font-size: 13px; color: #555; margin: 0 0 16px 0; border-bottom: 1px solid #eee; padding-bottom: 16px; }
@@ -47,34 +40,31 @@
         #st-preview-text { width: 100%; font-size: 24px; color: #000; white-space: pre-wrap; margin-bottom: 8px; flex-shrink: 0; }
         #st-preview-image-container { width: 100%; display: flex; justify-content: center; align-items: flex-start; }
         #st-preview-image { max-width: 100%; max-height: 100%; object-fit: contain; }
-        .st-timeline-controls { width: 100%; max-width: 380px; display: flex; align-items: center; gap: 10px; margin-top: 15px;}
+        .st-timeline-controls { width: 100%; max-width: 360px; display: flex; align-items: center; gap: 10px; margin-top: 15px;}
         .st-play-all-btn { background: none; font-size: 24px; padding: 0;}
         #st-timeline-slider { flex-grow: 1; }
         
         /* 스크립트 카드 */
-        #st-card-container { display: flex; gap: 15px; padding-bottom: 15px; overflow-x: auto; flex-grow: 1; align-items: flex-start;}
-        .st-card { background-color: var(--st-panel-color); border: 2px solid transparent; padding: 15px; border-radius: 4px; cursor: pointer; position: relative; width: 280px; flex-shrink: 0; display: flex; flex-direction: column; height: 100%; min-height: 200px;}
+        #st-card-container { display: block; }
+        .st-card { background-color: var(--st-panel-color); border: 2px solid transparent; padding: 15px; margin-top: 15px; border-radius: 4px; cursor: pointer; position: relative; }
         .st-card.active { border-color: var(--st-accent-color); }
         .st-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .st-card-drag-handle { cursor: grab; }
         .st-card-drag-handle:active { cursor: grabbing; }
         .st-card-number { font-weight: bold; font-size: 18px; }
-        .st-card textarea { width:100%; min-height:80px; background-color: #333; border: 1px solid var(--st-border-color); color: var(--st-text-color); border-radius: 4px; padding: 8px; flex-grow: 1; }
+        textarea { width:100%; min-height:60px; background-color: #333; border: 1px solid var(--st-border-color); color: var(--st-text-color); border-radius: 4px; padding: 8px; }
         .st-card-footer { margin-top: 10px; display: flex; align-items: center; gap: 10px; font-size: 13px; flex-wrap: wrap; }
-        .st-card-thumbnail { width: 40px; height: 40px; border-radius: 4px; background-color: #333; margin-right: 10px; background-size: cover; background-position: center;}
         input[type="file"] { display: none; }
         .st-action-btn { background: none; border:none; color: var(--st-subtext-color); text-decoration: underline; cursor: pointer; padding: 0; font-size: 13px; }
         .st-play-clip-btn { font-size: 18px; background: none; padding: 0 5px; cursor: pointer; border: none; color: var(--st-text-color); }
         .st-play-clip-btn:disabled { color: #555; cursor: not-allowed; }
         .st-card-loading { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); color: white; display: flex; justify-content: center; align-items: center; z-index: 10; border-radius: 4px; font-weight: bold; }
 
-        /* 설정 탭 메뉴 */
-        .st-tab-nav { display: flex; border-bottom: 1px solid var(--st-border-color); }
-        .st-tab-button { background: none; border: none; color: var(--st-subtext-color); padding: 10px 15px; cursor: pointer; font-size: 14px; border-bottom: 2px solid transparent; }
-        .st-tab-button.active { color: var(--st-text-color); border-bottom-color: var(--st-accent-color); font-weight: bold;}
-        .st-tab-content { display: none; }
-        .st-tab-content.active { display: block; }
-
+        /* ✨ FIX: 아코디언 메뉴 스타일 */
+        .st-accordion-header { padding: 15px 20px; cursor: pointer; border-bottom: 1px solid var(--st-border-color); font-weight: bold; user-select: none; }
+        .st-accordion-header:hover { background-color: #333; }
+        .st-accordion-content { padding: 15px; display: none; border-bottom: 1px solid var(--st-border-color); }
+        .st-accordion-item.active .st-accordion-content { display: block; }
         .st-control-group { margin-bottom: 15px; }
         input, select { width: 100%; padding: 8px; background-color: #1e1e1e; border: 1px solid var(--st-border-color); color: var(--st-text-color); }
         .st-flex-group { display: flex; gap: 10px; }
@@ -96,92 +86,87 @@
     </style>
 </head>
 <body>
-    <header class="st-header">
-        <div class="st-logo">SunsakTool 2.0</div>
-        <div id="st-status-indicator" class="st-status-indicator"></div>
-        <button id="st-btn-add-project">+ 새 프로젝트</button>
-    </header>
-
-    <main class="st-top-section">
-        <div class="st-panel st-preview-area">
-             <div class="st-panel-header">미리보기</div>
-            <div style="padding: 20px; display: flex; flex-direction: column; align-items: center;">
-                <div class="st-preview-panel" id="st-preview-panel"></div>
-                <div class="st-timeline-controls">
-                    <button class="st-play-all-btn" id="st-btn-play-all">▶</button>
-                    <input type="range" id="st-timeline-slider" value="0" step="0.1">
-                </div>
+    <div class="st-main-container">
+        <div class="st-preview-area">
+            <div class="st-preview-panel" id="st-preview-panel"></div>
+            <div class="st-timeline-controls">
+                <button class="st-play-all-btn" id="st-btn-play-all">▶</button>
+                <input type="range" id="st-timeline-slider" value="0" step="0.1">
             </div>
         </div>
-        <div class="st-panel st-settings-area">
-            <nav class="st-tab-nav">
-                <button class="st-tab-button active" data-tab="tab-content-design">디자인</button>
-                <button class="st-tab-button" data-tab="tab-content-project">프로젝트 & 오디오</button>
-            </nav>
-            <div class="st-panel-content">
-                <div id="tab-content-design" class="st-tab-content active">
-                    <!-- 디자인 관련 설정 -->
-                    <div class="st-control-group">
-                        <h4>헤더 스타일</h4>
-                        <label>헤더 텍스트</label><input type="text" id="st-setting-header-text" value="썰쑈">
-                        <div class="st-flex-group" style="margin-top:10px;">
-                            <div><label>배경 색상</label><input type="color" id="st-setting-header-bg" value="#e82c43"></div>
-                            <div><label>글자 색상</label><input type="color" id="st-setting-header-color" value="#FFFFFF"></div>
-                        </div>
-                        <div class="st-flex-group" style="margin-top:10px;">
-                             <div><label>폰트</label><select id="st-setting-header-font"></select></div>
-                             <div><label>크기</label><input type="number" id="st-setting-header-size" value="24"></div>
-                        </div>
-                    </div>
-                    <hr style="border-color: var(--st-border-color); margin: 20px 0;">
-                    <div class="st-control-group">
-                        <h4>스크립트 스타일 (선택된 카드)</h4>
-                        <label>텍스트 색상</label><input type="color" id="st-setting-script-color" value="#000000">
-                        <div class="st-flex-group" style="margin-top:10px;">
-                            <div><label>폰트</label><select id="st-setting-script-font"></select></div>
-                            <div><label>크기</label><input type="number" id="st-setting-script-size" value="24"></div>
-                        </div>
-                        <div class="st-flex-group" style="margin-top:10px;">
-                            <div><label>X</label><input type="number" id="st-setting-script-x" value="0"></div>
-                            <div><label>Y</label><input type="number" id="st-setting-script-y" value="0"></div>
-                        </div>
-                    </div>
-                </div>
-                <div id="tab-content-project" class="st-tab-content">
-                    <!-- 프로젝트 정보 & 오디오 설정 -->
-                    <div class="st-control-group">
-                        <h4>프로젝트 정보</h4>
-                        <label>제목</label><input type="text" id="st-setting-project-title" value="">
-                        <label style="margin-top:10px;">작성자</label><input type="text" id="st-setting-project-author" value="">
-                        <label style="margin-top:10px;">조회수</label><input type="number" id="st-setting-project-views" value="0">
-                        <div class="st-flex-group" style="margin-top:10px;">
-                            <div><label>제목 색상</label><input type="color" id="st-setting-title-color" value="#000000"></div>
-                            <div><label>작성자/조회수 색상</label><input type="color" id="st-setting-meta-color" value="#555555"></div>
-                        </div>
-                    </div>
-                    <hr style="border-color: var(--st-border-color); margin: 20px 0;">
-                    <div class="st-control-group">
-                        <h4>배경음악 설정</h4>
-                        <label>전체 배경음악 선택</label><select id="st-setting-global-bgm"></select>
-                        <label style="margin-top:10px;">BGM 볼륨</label><input type="range" id="st-setting-global-bgm-volume" min="0" max="1" step="0.01" value="0.3">
-                    </div>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <footer class="st-bottom-section">
-        <div class="st-panel st-editor-area">
-            <div class="st-panel-header st-editor-header">
-                <h3>스크립트 & 타임라인</h3>
+        <div class="st-editor-area">
+            <header class="st-header">
+                <div class="st-logo">SunsakTool 3.0</div>
                 <div class="button-group">
                     <button id="st-btn-add-smart-script" style="background-color: #3e3e3e;">+ 스마트 대본 붙여넣기</button>
                     <button id="st-btn-add-card">+ 빈 카드 추가</button>
                 </div>
+            </header>
+            <div class="st-panel-content">
+                 <div id="st-card-container"></div>
             </div>
-            <div id="st-card-container" class="st-panel-content"></div>
         </div>
-    </footer>
+        <div class="st-settings-area">
+            <!-- ✨ FIX: 아코디언 메뉴 구조 -->
+            <div id="st-settings-accordion">
+                <div class="st-accordion-item active">
+                    <div class="st-accordion-header">헤더 스타일</div>
+                    <div class="st-accordion-content">
+                        <div class="st-control-group">
+                            <label>헤더 텍스트</label><input type="text" id="st-setting-header-text" value="썰쑈">
+                            <div class="st-flex-group" style="margin-top:10px;">
+                                <div><label>배경 색상</label><input type="color" id="st-setting-header-bg" value="#e82c43"></div>
+                                <div><label>글자 색상</label><input type="color" id="st-setting-header-color" value="#FFFFFF"></div>
+                            </div>
+                            <div class="st-flex-group" style="margin-top:10px;">
+                                <div><label>폰트</label><select id="st-setting-header-font"></select></div>
+                                <div><label>크기</label><input type="number" id="st-setting-header-size" value="24"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                 <div class="st-accordion-item">
+                    <div class="st-accordion-header">스크립트 스타일 (선택된 카드)</div>
+                    <div class="st-accordion-content">
+                        <div class="st-control-group">
+                            <label>텍스트 색상</label><input type="color" id="st-setting-script-color" value="#000000">
+                            <div class="st-flex-group" style="margin-top:10px;">
+                                <div><label>폰트</label><select id="st-setting-script-font"></select></div>
+                                <div><label>크기</label><input type="number" id="st-setting-script-size" value="24"></div>
+                            </div>
+                            <div class="st-flex-group" style="margin-top:10px;">
+                                <div><label>X</label><input type="number" id="st-setting-script-x" value="0"></div>
+                                <div><label>Y</label><input type="number" id="st-setting-script-y" value="0"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="st-accordion-item">
+                    <div class="st-accordion-header">프로젝트 정보</div>
+                    <div class="st-accordion-content">
+                         <div class="st-control-group">
+                            <label>제목</label><input type="text" id="st-setting-project-title" value="">
+                            <label style="margin-top:10px;">작성자</label><input type="text" id="st-setting-project-author" value="">
+                            <label style="margin-top:10px;">조회수</label><input type="number" id="st-setting-project-views" value="0">
+                            <div class="st-flex-group" style="margin-top:10px;">
+                                <div><label>제목 색상</label><input type="color" id="st-setting-title-color" value="#000000"></div>
+                                <div><label>작성자/조회수 색상</label><input type="color" id="st-setting-meta-color" value="#555555"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="st-accordion-item">
+                    <div class="st-accordion-header">배경음악 설정</div>
+                    <div class="st-accordion-content">
+                         <div class="st-control-group">
+                            <label>전체 배경음악 선택</label><select id="st-setting-global-bgm"></select>
+                            <label style="margin-top:10px;">BGM 볼륨</label><input type="range" id="st-setting-global-bgm-volume" min="0" max="1" step="0.01" value="0.3">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- 모달 창들 -->
     <div id="st-modal-smart-script" class="st-modal-overlay">
@@ -345,8 +330,6 @@
         const smartScriptConfirmBtn = document.getElementById('st-btn-smart-script-confirm');
         const smartScriptTextarea = document.getElementById('st-smart-script-textarea');
 
-        const statusIndicator = document.getElementById('st-status-indicator');
-
         let wavesurfer = null;
         let activeRegion = null;
         let bgmEditorContext = { callback: null, currentBgm: null };
@@ -461,19 +444,13 @@
             }
             throw new Error('TTS job timed out.');
         }
-
-        function updateStatus(message, isError = false) {
-            statusIndicator.textContent = message;
-            statusIndicator.style.color = isError ? 'red' : 'var(--st-accent-color)';
-        }
-
+        
         async function fetchTTS(text, cardId) {
             text = text.trim();
             if (!text) return null;
             const cacheKey = `${text}-${TYPECAST_CONFIG.ACTOR_ID}`;
             if (ttsCache.has(cacheKey)) return ttsCache.get(cacheKey);
             showLoadingOnCard(cardId, true, '요청 중...');
-            updateStatus('음성 요청 중...');
             try {
                 const initialResponse = await fetch('https://typecast.ai/api/speak', {
                     method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TYPECAST_CONFIG.API_KEY}` },
@@ -484,17 +461,14 @@
                 const pollingUrl = initialJson.result?.speak_v2_url;
                 if (!pollingUrl) throw new Error('API 응답에 speak_v2_url이 포함되어 있지 않습니다.');
                 showLoadingOnCard(cardId, true, '음성 변환 중...');
-                updateStatus('음성 변환 중...');
                 const result = await pollAndDownload(pollingUrl);
                 ttsCache.set(cacheKey, result);
                 return result;
             } catch (error) {
                 console.error(error); alert(`음성 생성 오류: ${error.message}`); 
-                updateStatus('음성 생성 오류', true);
                 return null;
             } finally {
                 showLoadingOnCard(cardId, false);
-                updateStatus('');
             }
         }
         
@@ -519,7 +493,6 @@
             
             const sfxOptions = SFX_LIST.map(sfx => `<option value="${sfx.url || ''}">${sfx.name}</option>`).join('');
             cardEl.innerHTML = `<div class="st-card-header st-card-drag-handle"><span class="st-card-number"></span><button class="st-btn-delete-card">🗑️</button></div>
-                              <div class="st-card-thumbnail"></div>
                               <textarea placeholder="스크립트를 입력하세요...">${text}</textarea>
                               <div class="st-card-footer">
                                 <button class="st-play-clip-btn" title="미리듣기" disabled>▶️</button>
@@ -536,7 +509,6 @@
                     const reader = new FileReader();
                     reader.onload = (event) => {
                         cardData.imageUrl = event.target.result;
-                        cardEl.querySelector('.st-card-thumbnail').style.backgroundImage = `url(${cardData.imageUrl})`;
                         if (selectedCardId === cardId) updatePreviewDisplay();
                     };
                     reader.readAsDataURL(e.target.files[0]);
@@ -779,22 +751,15 @@
             });
         }
 
-        function setupTabMenu() {
-            const tabButtons = document.querySelectorAll('.st-tab-button');
-            const tabContents = document.querySelectorAll('.st-tab-content');
-
-            tabButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    tabButtons.forEach(btn => btn.classList.remove('active'));
-                    button.classList.add('active');
-
-                    tabContents.forEach(content => {
-                        if (content.id === button.dataset.tab) {
-                            content.classList.add('active');
-                        } else {
-                            content.classList.remove('active');
-                        }
-                    });
+        function setupAccordionMenu() {
+            const accordionHeaders = document.querySelectorAll('.st-accordion-header');
+            accordionHeaders.forEach(header => {
+                header.addEventListener('click', () => {
+                    const activeItem = document.querySelector('.st-accordion-item.active');
+                    if (activeItem && activeItem !== header.parentElement) {
+                        activeItem.classList.remove('active');
+                    }
+                    header.parentElement.classList.toggle('active');
                 });
             });
         }
@@ -807,7 +772,7 @@
             
             // 컨트롤 패널 렌더링 및 이벤트 바인딩
             renderControls();
-            document.querySelectorAll('#tab-content-design input, #tab-content-design select, #tab-content-project input, #tab-content-project select').forEach(el => {
+            document.querySelectorAll('.st-accordion-content input, .st-accordion-content select').forEach(el => {
                 el.addEventListener('input', (e) => {
                     if (el.id.includes('script')) {
                         applyScriptStylesToSelectedCard();
@@ -818,7 +783,7 @@
             });
 
             // 나머지 초기화
-            setupTabMenu();
+            setupAccordionMenu();
             addCardBtn.addEventListener('click', () => addScriptCard(''));
             playAllBtn.addEventListener('click', togglePlay);
             setupSmartScriptModal();
