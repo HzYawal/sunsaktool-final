@@ -33,8 +33,7 @@
     <div class="st-main-container">
         <div class="st-top-header">
             <div class="st-logo">SunsakTool</div>
-            <!-- ✨ 영상 출력 버튼 추가 -->
-            <button id="st-btn-export-video" style="background-color: #007bff;">🎬 영상 출력 (1080p)</button>
+            <button id="st-btn-export-video" style="background-color: #007bff;">🎬 영상 출력</button>
         </div>
         <div class="st-main-content">
             <div class="st-panel st-preview-area">
@@ -93,8 +92,6 @@
 
     <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // 🚨 API 키 관련 설정이 모두 제거되었습니다.
-        
         const FONT_LIST = [ { name: '프리텐다드 (본문용 추천)', value: 'Pretendard' }, { name: 'Noto Sans KR (기본 고딕)', value: "'Noto Sans KR', sans-serif" }, { name: 'G마켓 산스 (개성있는 제목)', value: 'GmarketSans' }, { name: 'IBM Plex Sans KR (모던한 고딕)', value: "'IBM Plex Sans KR', sans-serif" }, { name: 'Do Hyeon (레트로 제목)', value: "'Do Hyeon', sans-serif" }, { name: '나눔명조 (감성적인 본문)', value: "'Nanum Myeongjo', serif" }, { name: '고운 바탕 (부드러운 명조)', value: "'Gowun Batang', serif" }, { name: 'Black Han Sans (강력한 제목)', value: "'Black Han Sans', sans-serif" }, { name: '개구 (귀여운 손글씨)', value: "'Gaegu', cursive" }, { name: 'Hi Melody (아기자기 손글씨)', value: "'Hi Melody', cursive" }, { name: 'Noto Serif KR (정갈한 명조)', value: "'Noto Serif KR', serif" }, { name: '스포카 한 산스 네오 (깔끔한 본문)', value: "'Spoqa Han Sans Neo', sans-serif" }, { name: '독도 (거친 붓글씨)', value: "'Dokdo', cursive" }, ];
         const BGM_LIST = [ { name: '선택 안함', url: '' }, { name: 'big-cafe', url: 'https://sunsaktool-final.netlify.app/big-cafe.mp3' }, { name: 'blue-jacket', url: 'https://sunsaktool-final.netlify.app/blue-jacket.mp3' }, { name: 'cute-puppy', url: 'https://sunsaktool-final.netlify.app/cute-puppy.mp3' }, { name: 'laughter-in-the-breeze', url: 'https://sunsaktool-final.netlify.app/laughter-in-the-breeze-_happy_.mp3' }, { name: 'murder-in-my-mind', url: 'https://sunsaktool-final.netlify.app/murder-in-my-mind.mp3' }, { name: 'smiley-composure', url: 'https://sunsaktool-final.netlify.app/smiley-composure.mp3' }, { name: 'spider', url: 'https://sunsaktool-final.netlify.app/spider.mp3' }, { name: 'white-color', url: 'https://sunsaktool-final.netlify.app/white-color.mp3' } ];
         const SFX_LIST = [ { name: '효과음 없음', url: '' }, { name: '뾱 (물방울)', url: `https://sunsaktool-final.netlify.app/sfx/062_${encodeURIComponent('뾱 (물방울)')}.mp3` }, { name: '찰칵 (카메라)', url: `https://sunsaktool-final.netlify.app/sfx/078_${encodeURIComponent('찰칵 (카메라)')}.mp3` }, { name: '기어 1', url: 'https://sunsaktool-final.netlify.app/sfx/gears 1.wav' }, { name: '게임클리어 (고음)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('게임클리어 (고음)')}.mp3` }, { name: '긍정적 마법 사용', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('긍정적 마법 사용')}.mp3` }, { name: '깨달음(뾰봉)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('깨달음을 얻었을 때(뾰봉)')}.mp3` }, { name: '놀람 반전', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('놀람 반전')}.mp3` }, { name: '다음 장면전환(뾰로롱)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('다음 장면전환(뾰로롱)')}.mp3` }, { name: '넘어가는 맑은 소리(띠링~)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('다음으로 넘어가는 맑은 소리(띠링~)')}.mp3` }, { name: '동전먹는소리 2연속(중음)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('동전먹는소리 2연속(중음)')}.mp3` }, { name: '딩동댕동 (전자음)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('딩동댕동 (전자음)')}.mp3` }, { name: '문자 전송음(또로롱)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('문자 전송음(또로롱)')}.mp3` }, { name: '복싱 타이머(땡땡땡)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('복싱 훈련 타이머가 울리는 소리 (땡땡땡)')}.mp3` }, { name: '비디오 빨리감기 예능음', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('비디오 테이프 빨리감기 예능음')}.mp3` }, { name: '뾰로롱', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('뾰로롱')}.mp3` }, { name: '휙 날카롭게 지나가는', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('휙 날카롭게 지나가는')}.mp3` }, { name: '시한폭탄 초시계 (timer)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('시한폭탄 초시계 (timer)')}.mp3` }, { name: '알람 시간 종료 -2 (차분_ beep)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('알람 시간 종료 -2 (차분_ beep)')}.mp3` }, { name: '엘리베이터 도착음2 (띵동)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('엘리베이터 도착음2 (띵동)')}.mp3` }, { name: '욕 가리는 삐처리', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('욕 가리는 삐처리')}.mp3` }, { name: '작은 카메라 찰칵 소리', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('작은 카메라 찰칵 소리')}.mp3` }, { name: '저녁숲 (개구리, 곤충)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('저녁숲 (개구리와 곤충울음소리)')}.mp3` }, { name: '플래래 걸어가는 소리(뽀복)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('플래래 걸어가는 소리(뽀복)')}.mp3` }, { name: '천사의 강림', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('천사의 강림')}.mp3` }, { name: '개서 (철컥쿵)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('개서 (철컥쿵)')}.mp3` }, { name: '컴퓨터 키보드 타자', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('컴퓨터 키보드 타자')}.mp3` }, { name: '타이머 (째깍째깍)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('타이머 재는 시계음(째깍째깍)')}.mp3` }, { name: '황당할 때 (띠요옹)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('황당할 때 효과음 (띠요옹)')}.mp3` }, { name: 'Riser 1', url: 'https://sunsaktool-final.netlify.app/sfx/riser 1.wav' }, { name: 'Whoosh 1', url: 'https://sunsaktool-final.netlify.app/sfx/whoosh1.mp3' }, { name: 'Whoosh 2', url: 'https://sunsaktool-final.netlify.app/sfx/whoosh2.mp3' }, { name: 'Whoosh 3', url: 'https://sunsaktool-final.netlify.app/sfx/whoosh3.wav' }, { name: 'Whoosh 4', url: 'https://sunsaktool-final.netlify.app/sfx/whoosh4.mp3' }, { name: '또로롱', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('또로롱')}.wav` }, { name: '또아앙', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('또아앙')}.wav` }, { name: '띠로록', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('띠로록')}.mp3` }, { name: '띠롱(슈퍼마리오)', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('띠롱_슈퍼마리오')}.mp3` }, { name: '띠리링', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('띠리링')}.wav` }, { name: '띠링 1', url: 'https://sunsaktool-final.netlify.app/sfx/띠링1.wav' }, { name: '띠링 1초', url: 'https://sunsaktool-final.netlify.app/sfx/띠링1초.mp3' }, { name: '띠링 2', url: 'https://sunsaktool-final.netlify.app/sfx/띠링2.mp3' }, { name: '띠링 2초', url: 'https://sunsaktool-final.netlify.app/sfx/띠링2초.mp3' }, { name: '띠링 3', url: 'https://sunsaktool-final.netlify.app/sfx/띠링3.mp3' }, { name: '띠링 4', url: 'https://sunsaktool-final.netlify.app/sfx/띠링4.wav' }, { name: '띵', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('띵')}.mp3` }, { name: '마우스클릭(딸깍)', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('마우스클릭_딸깍')}.mp3` }, { name: '뾰옥 1', url: 'https://sunsaktool-final.netlify.app/sfx/뾰옥1.wav' }, { name: '뾰옥 2', url: 'https://sunsaktool-final.netlify.app/sfx/뾰옥2.mp3' }, { name: '뾰옥 3', url: 'https://sunsaktool-final.netlify.app/sfx/뾰옥3.wav' }, { name: '뽁 1초', url: 'https://sunsaktool-final.netlify.app/sfx/뽁1초.mp3' }, { name: '삐리삐빅', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('삐리삐빅')}.mp3` }, { name: '삑', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('삑')}.mp3` }, { name: '셔터', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('셔터')}.wav` }, { name: '슉 1초', url: 'https://sunsaktool-final.netlify.app/sfx/슉1초.mp3' }, { name: '스윽', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('스윽')}.mp3` }, { name: '예!', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('예!')}.mp3` }, { name: '와우', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('와우')}.wav` }, { name: '찰칵(소리)', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('찰칵')}.wav` }, { name: '캐서', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('캐서')}.mp3` }, { name: '키보드타이핑', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('키보드타이핑')}.mp3` }, { name: '툽', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('툽')}.mp3` }, { name: '폭발 1', url: 'https://sunsaktool-final.netlify.app/sfx/폭발1.mp3' }, { name: '폭발 2', url: 'https://sunsaktool-final.netlify.app/sfx/폭발2.mp3' }, { name: '폭발(큰)', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('폭발_큰')}.mp3` }, { name: '후욱', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('후욱')}.mp3` } ];
@@ -144,7 +141,6 @@
         const debounce = (callback, delay) => { let timeout; return (...args) => { clearTimeout(timeout); timeout = setTimeout(() => callback(...args), delay); }; };
         const getAudioDuration = (url) => new Promise(resolve => { const audio = new Audio(); audio.onloadedmetadata = () => resolve(audio.duration); audio.src = url; });
 
-        // ✨ --- TTS 함수 변경됨 --- ✨
         async function fetchTTS(text, cardId) {
             text = text.trim();
             if (!text) return null;
@@ -152,6 +148,7 @@
             if (ttsCache.has(cacheKey)) return ttsCache.get(cacheKey);
             showLoadingOnCard(cardId, true, '서버에 요청 중...');
             try {
+                // ✨ 수정: 당신의 실제 함수 경로에 맞게 '/netlify/functions/' -> '/.netlify/functions/' 로 변경
                 const response = await fetch('/.netlify/functions/create-tts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: text }) });
                 if (!response.ok) { const errorResult = await response.json(); throw new Error(`[${response.status}] ${errorResult.error || '서버 요청 실패'}`); }
                 const result = await response.json();
@@ -236,7 +233,7 @@
             });
         }
 
-        // ✨ --- 영상 출력 버튼 로직 추가 --- ✨
+        // ✨ 이 함수가 완전한 버전입니다 ✨
         function setupExportButton() {
             const exportBtn = document.getElementById('st-btn-export-video');
             if (!exportBtn) return;
@@ -246,28 +243,90 @@
                 exportBtn.disabled = true; exportBtn.textContent = '렌더링 요청 중...';
                 try {
                     const projectData = {
-                        resolution: { width: 1080, height: 1920 }, fps: 60,
-                        styles: { header: { text: document.getElementById('st-setting-header-text')?.value, backgroundColor: document.getElementById('st-setting-header-bg')?.value, color: document.getElementById('st-setting-header-color')?.value, fontFamily: document.getElementById('st-setting-header-font')?.value, fontSize: parseInt(document.getElementById('st-setting-header-size')?.value) }, projectInfo: { title: document.getElementById('st-setting-project-title')?.value, author: document.getElementById('st-setting-project-author')?.value, views: document.getElementById('st-setting-project-views')?.value, titleColor: document.getElementById('st-setting-title-color')?.value, metaColor: document.getElementById('st-setting-meta-color')?.value } },
-                        bgm: { url: globalBGM.url, volume: globalBGM.volume, startTime: globalBGM.startTime, endTime: globalBGM.endTime },
-                        scenes: scriptCards.map(card => ({ text: card.text, duration: card.duration, audioUrl: card.audioUrl, imageUrl: card.imageUrl, sfxUrl: card.sfxUrl, style: { color: card.style.color || '#000000', fontFamily: card.style.fontFamily || "'Noto Sans KR', sans-serif", fontSize: parseInt((card.style.fontSize || '24px').replace('px', '')), transform: card.style.transform || 'translate(0px, 0px)' } }))
+                        resolution: { width: 1080, height: 1920 },
+                        fps: 60,
+                        styles: {
+                            header: {
+                                text: document.getElementById('st-setting-header-text')?.value,
+                                backgroundColor: document.getElementById('st-setting-header-bg')?.value,
+                                color: document.getElementById('st-setting-header-color')?.value,
+                                fontFamily: document.getElementById('st-setting-header-font')?.value,
+                                fontSize: parseInt(document.getElementById('st-setting-header-size')?.value)
+                            },
+                            projectInfo: {
+                                title: document.getElementById('st-setting-project-title')?.value,
+                                author: document.getElementById('st-setting-project-author')?.value,
+                                views: document.getElementById('st-setting-project-views')?.value,
+                                titleColor: document.getElementById('st-setting-title-color')?.value,
+                                metaColor: document.getElementById('st-setting-meta-color')?.value
+                            }
+                        },
+                        bgm: {
+                            url: globalBGM.url,
+                            volume: globalBGM.volume,
+                            startTime: globalBGM.startTime,
+                            endTime: globalBGM.endTime
+                        },
+                        scenes: scriptCards.map(card => ({
+                            text: card.text,
+                            duration: card.duration,
+                            audioUrl: card.audioUrl,
+                            imageUrl: card.imageUrl,
+                            sfxUrl: card.sfxUrl,
+                            style: {
+                                color: card.style.color || '#000000',
+                                fontFamily: card.style.fontFamily || "'Noto Sans KR', sans-serif",
+                                fontSize: parseInt((card.style.fontSize || '24px').replace('px', '')),
+                                transform: card.style.transform || 'translate(0px, 0px)'
+                            }
+                        }))
                     };
-                    const response = await fetch('/.netlify/functions/render-video', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(projectData) });
-                    if (!response.ok) { const errorResult = await response.json(); throw new Error(errorResult.error || '서버에서 렌더링 요청에 실패했습니다.'); }
+                    // ✨ 수정: 당신의 실제 함수 경로에 맞게 '/netlify/functions/' -> '/.netlify/functions/' 로 변경
+                    const response = await fetch('/.netlify/functions/render-video', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(projectData)
+                    });
+                    if (!response.ok) {
+                        const errorResult = await response.json();
+                        throw new Error(errorResult.error || '서버에서 렌더링 요청에 실패했습니다.');
+                    }
                     const result = await response.json();
-                    alert(`영상 렌더링 요청에 성공했습니다! (작업 ID: ${result.jobId})\n\n(주의: 실제 렌더링 기능은 서버에 구현이 필요합니다.)`);
-                } catch (error) { console.error('영상 출력 요청 오류:', error); alert(`오류가 발생했습니다: ${error.message}`); } 
-                finally { exportBtn.disabled = false; exportBtn.textContent = '🎬 영상 출력 (1080p)'; }
+                    alert(`영상 렌더링 성공! 아래 주소에서 확인하세요:\n${result.videoUrl}`);
+                } catch (error) {
+                    console.error('영상 출력 요청 오류:', error);
+                    alert(`오류가 발생했습니다: ${error.message}`);
+                } finally {
+                    exportBtn.disabled = false;
+                    exportBtn.textContent = '🎬 영상 출력';
+                }
             });
         }
         
         function initialize() {
             document.getElementById('st-preview-panel').innerHTML = ` <div class="st-preview-header"></div><div class="st-preview-content"><div class="st-project-info"><div class="title"></div><span></span></div> <div class="st-script-display"><div id="st-preview-text"></div><div id="st-preview-image-container"><img id="st-preview-image"></div></div></div>`;
-            renderControls(); updatePreviewDisplay(); addCardBtn.addEventListener('click', () => addScriptCard('')); playAllBtn.addEventListener('click', togglePlay);
+            renderControls();
+            updatePreviewDisplay(); 
+            addCardBtn.addEventListener('click', () => addScriptCard(''));
+            playAllBtn.addEventListener('click', togglePlay);
+            
             setupGptsModal();
-            setupExportButton(); // ✨ 영상 출력 버튼 초기화
+            setupExportButton(); // 영상 출력 버튼 초기화
+
             document.getElementById('st-setting-global-bgm').addEventListener('change', (e) => { const url = e.target.value; if (url) { openBgmEditor(url, globalBGM, ({ startTime, endTime }) => { globalBGM = { ...globalBGM, url, startTime, endTime }; if (isPlaying) playBGM(); }); } else { globalBGM.url = null; if (isPlaying) bgmPlayer.pause(); } });
             document.getElementById('st-setting-global-bgm-volume').addEventListener('input', (e) => { globalBGM.volume = parseFloat(e.target.value); bgmPlayer.volume = globalBGM.volume; });
-            new Sortable(cardContainer, { animation: 150, handle: '.st-card-drag-handle', onEnd: function(evt) { const { oldIndex, newIndex } = evt; const [movedItem] = scriptCards.splice(oldIndex, 1); scriptCards.splice(newIndex, 0, movedItem); updateCardNumbers(); } });
+
+            new Sortable(cardContainer, {
+                animation: 150,
+                handle: '.st-card-drag-handle',
+                onEnd: function(evt) {
+                    const { oldIndex, newIndex } = evt;
+                    const [movedItem] = scriptCards.splice(oldIndex, 1);
+                    scriptCards.splice(newIndex, 0, movedItem);
+                    updateCardNumbers();
+                }
+            });
+
             addScriptCard('SunsakTool에 오신 것을 환영합니다!');
         }
         
