@@ -1,16 +1,1 @@
-# Netlify의 모든 설정을 이 파일 하나로 제어합니다. (최종 수정본)
 
-[build]
-  # Publish directory: 웹사이트로 보여줄 파일들이 있는 폴더입니다.
-  # 저장소의 루트(가장 바깥)에서부터의 경로입니다.
-  publish = "rel1"
-
-  # Functions directory: 서버 기능 파일들이 있는 폴더입니다.
-  # 저장소의 루트(가장 바깥)에서부터의 경로입니다.
-  functions = "rel1/netlify/functions"
-
-# 이 redirect 규칙은 SPA(Single Page Application)에 필수적입니다.
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
