@@ -1,21 +1,16 @@
-# Netlify의 모든 설정을 이 파일 하나로 제어합니다.
+# Netlify의 모든 설정을 이 파일 하나로 제어합니다. (최종 수정본)
 
 [build]
-  # Base directory: 모든 빌드 명령어는 이 폴더 안에서 실행됩니다.
-  # Netlify에게 "모든 작업은 rel1 폴더 안에서 시작해!" 라고 알려줍니다.
-  base = "rel1"
-
-  # Publish directory: 빌드가 끝난 후, 웹사이트로 보여줄 폴더입니다.
-  # base("rel1") 안에서부터의 경로이므로, 여기서는 "." (현재 폴더)가 됩니다.
-  publish = "."
+  # Publish directory: 웹사이트로 보여줄 파일들이 있는 폴더입니다.
+  # 저장소의 루트(가장 바깥)에서부터의 경로입니다.
+  publish = "rel1"
 
   # Functions directory: 서버 기능 파일들이 있는 폴더입니다.
-  # base("rel1") 안에서부터의 경로입니다.
-  functions = "netlify/functions"
+  # 저장소의 루트(가장 바깥)에서부터의 경로입니다.
+  functions = "rel1/netlify/functions"
 
-# 이 redirect 규칙은 그대로 둡니다.
+# 이 redirect 규칙은 SPA(Single Page Application)에 필수적입니다.
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
-```    > **참고:** 이 설정은 "먼저 `rel1` 폴더로 들어간 다음, 그 안에서 `netlify/functions` 폴더를 찾아라" 라고 Netlify에게 아주 명확하게 지시하는 방법입니다. 이전의 모든 애매함이 사라집니다.
