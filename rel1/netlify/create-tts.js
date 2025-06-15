@@ -9,6 +9,22 @@ const ACTOR_ID = process.env.TYPECAST_ACTOR_ID;
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 exports.handler = async (event) => {
+    
+    // ✨✨✨ CORS 문제를 해결하기 위한 코드 블록 (Preflight 요청 처리) ✨✨✨
+    if (event.httpMethod === 'OPTIONS') {
+        return {
+            statusCode: 200, // 204 No Content도 가능
+            headers: {
+                'Access-Control-Allow-Origin': '*', // 실제 서비스에서는 특정 도메인으로 제한
+                'Access-Control-Allow-Headers': 'Content-Type',
+                'Access-Control-Allow-Methods': 'POST, OPTIONS'
+            },
+            body: JSON.stringify({})
+        };
+    }
+    // ✨✨✨ 여기까지가 추가된 부분입니다 ✨✨✨
+
+    // POST 요청이 아닌 경우 거부
     if (event.httpMethod !== 'POST') {
         return { statusCode: 405, body: 'Method Not Allowed' };
     }
@@ -19,7 +35,6 @@ exports.handler = async (event) => {
             return { statusCode: 400, body: JSON.stringify({ error: 'Text is required' }) };
         }
 
-        // --- Step 1: 음성 합성 요청 ---
         const initialResponse = await fetch('https://typecast.ai/api/speak', {
             method: 'POST',
             headers: {
@@ -30,7 +45,7 @@ exports.handler = async (event) => {
                 text: text,
                 actor_id: ACTOR_ID,
                 lang: "auto",
-                tempo: 1.5,                 // ✅ 요청하신 대로 1.5 속도를 유지합니다.
+                tempo: 1.5,
                 volume: 100,
                 pitch: 0,
                 xapi_hd: true,
@@ -52,7 +67,6 @@ exports.handler = async (event) => {
             throw new Error('speak_v2_url not found in the initial response.');
         }
 
-        // --- Step 2: 'done' 상태가 될 때까지 Polling ---
         let audioDownloadUrl = null;
         for (let i = 0; i < 20; i++) {
             await sleep(1000);
@@ -60,6 +74,7 @@ exports.handler = async (event) => {
             if (!pollResponse.ok) throw new Error(`[${pollResponse.status}] Polling failed`);
             const pollResult = await pollResponse.json();
             const { status, audio_download_url } = pollResult.result;
+
             if (status === 'done') {
                 audioDownloadUrl = audio_download_url;
                 break;
@@ -70,14 +85,23 @@ exports.handler = async (event) => {
 
         if (!audioDownloadUrl) throw new Error('TTS job timed out after 20 seconds.');
 
-        // --- Step 3: 성공 시, 최종 오디오 URL을 프론트엔드로 전달 ---
+        // 성공 시, 최종 오디오 URL을 프론트엔드로 전달 (CORS 헤더 추가)
         return {
             statusCode: 200,
+            headers: {
+                'Access-Control-Allow-Origin': '*' // 실제 응답에도 CORS 헤더 추가
+            },
             body: JSON.stringify({ audioUrl: audioDownloadUrl }),
         };
 
     } catch (error) {
         console.error('Backend TTS Error:', error);
-        return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
+        return {
+            statusCode: 500,
+            headers: {
+                'Access-Control-Allow-Origin': '*' // 에러 응답에도 CORS 헤더 추가
+            },
+            body: JSON.stringify({ error: error.message }),
+        };
     }
 };
