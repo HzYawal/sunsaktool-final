@@ -33,7 +33,7 @@
     <div class="st-main-container">
         <div class="st-top-header">
             <div class="st-logo">SunsakTool</div>
-            <button id="st-btn-export-video" style="background-color: #007bff;">🎬 영상 출력</button>
+            <button id="st-btn-export-video" style="background-color: #007bff;">🎬 영상 다운로드</button>
         </div>
         <div class="st-main-content">
             <div class="st-panel st-preview-area">
@@ -148,7 +148,6 @@
             if (ttsCache.has(cacheKey)) return ttsCache.get(cacheKey);
             showLoadingOnCard(cardId, true, '서버에 요청 중...');
             try {
-                // ✨ 수정: 당신의 실제 함수 경로에 맞게 '/netlify/functions/' -> '/.netlify/functions/' 로 변경
                 const response = await fetch('/.netlify/functions/create-tts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: text }) });
                 if (!response.ok) { const errorResult = await response.json(); throw new Error(`[${response.status}] ${errorResult.error || '서버 요청 실패'}`); }
                 const result = await response.json();
@@ -233,40 +232,18 @@
             });
         }
 
-        // ✨ 이 함수가 완전한 버전입니다 ✨
+        // ✨ 자동 다운로드 기능이 적용된 최종 버전입니다 ✨
         function setupExportButton() {
             const exportBtn = document.getElementById('st-btn-export-video');
             if (!exportBtn) return;
             exportBtn.addEventListener('click', async () => {
                 if (scriptCards.some(c => !c.ttsReady && c.text.trim())) return alert('아직 음성 생성이 완료되지 않은 스크립트가 있습니다. 모두 생성된 후 시도해주세요.');
                 if (scriptCards.length === 0) return alert('출력할 스크립트가 없습니다.');
-                exportBtn.disabled = true; exportBtn.textContent = '렌더링 요청 중...';
+                exportBtn.disabled = true; exportBtn.textContent = '렌더링 중...';
                 try {
                     const projectData = {
                         resolution: { width: 1080, height: 1920 },
                         fps: 60,
-                        styles: {
-                            header: {
-                                text: document.getElementById('st-setting-header-text')?.value,
-                                backgroundColor: document.getElementById('st-setting-header-bg')?.value,
-                                color: document.getElementById('st-setting-header-color')?.value,
-                                fontFamily: document.getElementById('st-setting-header-font')?.value,
-                                fontSize: parseInt(document.getElementById('st-setting-header-size')?.value)
-                            },
-                            projectInfo: {
-                                title: document.getElementById('st-setting-project-title')?.value,
-                                author: document.getElementById('st-setting-project-author')?.value,
-                                views: document.getElementById('st-setting-project-views')?.value,
-                                titleColor: document.getElementById('st-setting-title-color')?.value,
-                                metaColor: document.getElementById('st-setting-meta-color')?.value
-                            }
-                        },
-                        bgm: {
-                            url: globalBGM.url,
-                            volume: globalBGM.volume,
-                            startTime: globalBGM.startTime,
-                            endTime: globalBGM.endTime
-                        },
                         scenes: scriptCards.map(card => ({
                             text: card.text,
                             duration: card.duration,
@@ -281,7 +258,6 @@
                             }
                         }))
                     };
-                    // ✨ 수정: 당신의 실제 함수 경로에 맞게 '/netlify/functions/' -> '/.netlify/functions/' 로 변경
                     const response = await fetch('/.netlify/functions/render-video', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -292,13 +268,21 @@
                         throw new Error(errorResult.error || '서버에서 렌더링 요청에 실패했습니다.');
                     }
                     const result = await response.json();
-                    alert(`영상 렌더링 성공! 아래 주소에서 확인하세요:\n${result.videoUrl}`);
+
+                    // 자동 다운로드 로직
+                    const link = document.createElement('a');
+                    link.href = result.videoUrl;
+                    link.setAttribute('download', 'sunsak-video.mp4');
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+
                 } catch (error) {
                     console.error('영상 출력 요청 오류:', error);
                     alert(`오류가 발생했습니다: ${error.message}`);
                 } finally {
                     exportBtn.disabled = false;
-                    exportBtn.textContent = '🎬 영상 출력';
+                    exportBtn.textContent = '🎬 영상 다운로드';
                 }
             });
         }
@@ -311,7 +295,7 @@
             playAllBtn.addEventListener('click', togglePlay);
             
             setupGptsModal();
-            setupExportButton(); // 영상 출력 버튼 초기화
+            setupExportButton();
 
             document.getElementById('st-setting-global-bgm').addEventListener('change', (e) => { const url = e.target.value; if (url) { openBgmEditor(url, globalBGM, ({ startTime, endTime }) => { globalBGM = { ...globalBGM, url, startTime, endTime }; if (isPlaying) playBGM(); }); } else { globalBGM.url = null; if (isPlaying) bgmPlayer.pause(); } });
             document.getElementById('st-setting-global-bgm-volume').addEventListener('input', (e) => { globalBGM.volume = parseFloat(e.target.value); bgmPlayer.volume = globalBGM.volume; });
