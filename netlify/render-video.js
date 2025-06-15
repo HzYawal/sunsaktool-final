@@ -1,4 +1,4 @@
-// 파일 경로: /netlify/render-video.js (Base64 암호화 최종 버전)
+// 파일 경로: /netlify/render-video.js (SDK 공식 사용법 최종 버전)
 
 const cloudinary = require('cloudinary').v2;
 
@@ -10,7 +10,6 @@ cloudinary.config({
 });
 
 exports.handler = async (event) => {
-    // CORS 및 기본 요청 방식 확인
     if (event.httpMethod === 'OPTIONS') {
         return {
             statusCode: 200,
@@ -24,7 +23,7 @@ exports.handler = async (event) => {
         const firstScene = projectData.scenes[0];
         if (!firstScene) throw new Error("출력할 씬이 없습니다.");
 
-        // TTS 음성 업로드
+        // 1. TTS 오디오를 Cloudinary에 업로드하고, 그 파일의 고유 ID를 가져옵니다.
         const audioUploadResult = await cloudinary.uploader.upload(firstScene.audioUrl, {
             resource_type: "video",
             public_id: `sunsaktool_audio_${Date.now()}`
@@ -32,29 +31,36 @@ exports.handler = async (event) => {
         const audioPublicId = audioUploadResult.public_id;
         
         console.log('오디오 업로드 성공:', audioPublicId);
-
-        // ✨ 1. 텍스트를 Base64로 암호화하고, URL에 사용 가능하도록 안전하게 만듭니다.
-        const base64Text = Buffer.from(firstScene.text).toString('base64');
-        const urlSafeBase64Text = base64Text.replace(/\+/g, '-').replace(/\//g, '_');
-
-        const videoPublicId = 'white_canvas'; 
+        
+        // 2. ✨✨✨ 가장 중요한 부분 ✨✨✨
+        // 이제 복잡한 URL 문자열 대신, 깔끔한 객체(Object) 형태로 작업 지시서를 만듭니다.
+        // Cloudinary 라이브러리가 이 객체를 보고 모든 한글과 특수문자를 알아서 안전하게 처리합니다.
         const transformations = [
+            // 첫 번째 지시: 1080x1920 크기의 흰색 배경을 만듭니다.
             {
-                // ✨ 2. Base64로 암호화된 텍스트를 전달하는, 가장 안전한 방식을 사용합니다.
-                // Cloudinary 문법: "text" 뒤에 "(encoded)"라는 의미의 "b"를 붙이고, 텍스트를 전달합니다.
-                overlay: `text:Noto_Sans_KR_70_bold:$(text_b:${urlSafeBase64Text})`,
+                width: 1080,
+                height: 1920,
+                background: "white",
+                crop: "pad"
+            },
+            // 두 번째 지시: 그 배경 위에 텍스트를 입힙니다.
+            {
+                overlay: {
+                    font_family: "Noto Sans KR",
+                    font_size: 70,
+                    font_weight: "bold",
+                    text: firstScene.text // 순수한 텍스트를 그대로 전달합니다.
+                },
                 color: "black",
                 gravity: "center"
-            },
-            {
-                overlay: `audio:${audioPublicId}`
-            },
-            {
-                duration: "5.0"
             }
         ];
         
-        const finalVideoUrl = cloudinary.url(videoPublicId, {
+        // 3. ✨✨✨ 두 번째로 중요한 부분 ✨✨✨
+        // 이제 'white_canvas' 같은 가짜 파일이 아니라,
+        // 방금 올린 '오디오 파일'을 기준으로 영상을 만듭니다.
+        // 오디오 길이에 맞춰 영상 길이가 자동으로 조절됩니다.
+        const finalVideoUrl = cloudinary.url(audioPublicId, {
             resource_type: 'video',
             transformation: transformations,
             sign_url: true 
