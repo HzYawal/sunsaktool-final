@@ -16,8 +16,14 @@
         body { font-family: 'Noto Sans KR', sans-serif; background-color: var(--st-bg-color); color: var(--st-text-color); display: flex; flex-direction: column; height: 100vh; margin: 0; overflow: hidden; -webkit-font-smoothing: antialiased; }
         
         /* 새로운 레이아웃 구조 */
-        .st-top-section { display: flex; flex-grow: 1; overflow: hidden; }
-        .st-bottom-section { height: 45vh; display: flex; flex-direction: column; border-top: 1px solid var(--st-border-color); }
+        .st-top-section { 
+            display: flex; 
+            flex-grow: 1; 
+            overflow: hidden; 
+            /* ✨ FIX: 이 한 줄이 미리보기 비율을 유지시킵니다! */
+            align-items: center; 
+        }
+        .st-bottom-section { height: 40vh; display: flex; flex-direction: column; border-top: 1px solid var(--st-border-color); }
         .st-header { display: flex; justify-content: space-between; align-items: center; padding: 0 20px; background-color: var(--st-panel-color); border-bottom: 1px solid var(--st-border-color); flex-shrink: 0; height: 50px; }
         .st-logo { font-family: 'GmarketSans', sans-serif; font-weight: bold; }
         .st-status-indicator { font-size: 14px; color: var(--st-accent-color); font-weight: bold; }
@@ -29,7 +35,7 @@
         
         /* 상단 패널 */
         .st-preview-area { flex-basis: 45%; flex-shrink: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
-        .st-settings-area { flex-grow: 1; border-left: 1px solid var(--st-border-color); }
+        .st-settings-area { flex-grow: 1; border-left: 1px solid var(--st-border-color); height: 100%; display: flex; flex-direction: column;}
 
         /* 하단 패널 (스크립트 & 타임라인) */
         .st-editor-area { height: 100%; }
@@ -375,7 +381,6 @@
             wavesurfer.on('ready', () => {
                 document.getElementById('st-waveform-loading').style.display = 'none';
                 wavesurfer.clearRegions();
-                activeRegion = null;
                 const totalDuration = wavesurfer.getDuration();
                 const fixedRegionDuration = 60;
                 
@@ -391,7 +396,7 @@
                     document.getElementById('st-bgm-time-display').textContent = `0.00s - ${fixedRegionDuration.toFixed(2)}s`;
                 } else {
                     region.end = totalDuration;
-                    wavesurfer.plugins[0].params.dragSelection = true; // Enable drag selection only if duration is short
+                    wavesurfer.plugins[0].params.dragSelection = true;
                     document.getElementById('st-bgm-time-display').textContent = `0.00s - ${totalDuration.toFixed(2)}s`;
                 }
                 activeRegion = region;
@@ -420,12 +425,18 @@
             document.getElementById('st-modal-bgm').classList.add('visible');
             document.getElementById('st-waveform-loading').style.display = 'block';
             if (!wavesurfer) initializeBgmEditor();
-            if (wavesurfer) wavesurfer.load(url);
+            else if(wavesurfer.getDuration() > 0) {
+                wavesurfer.destroy();
+                initializeBgmEditor();
+            }
+            wavesurfer.load(url);
         }
 
         function closeBgmEditor() {
             document.getElementById('st-modal-bgm').classList.remove('visible');
-            if (wavesurfer) wavesurfer.stop();
+            if (wavesurfer) {
+                wavesurfer.stop();
+            }
         }
 
         const debounce = (callback, delay) => { let timeout; return (...args) => { clearTimeout(timeout); timeout = setTimeout(() => callback(...args), delay); }; };
