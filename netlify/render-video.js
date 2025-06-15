@@ -1,4 +1,4 @@
-// 파일 경로: /netlify/render-video.js (Base64 인코딩 최종 버전)
+// 파일 경로: /netlify/render-video.js (가장 단순하고 안정적인 최종 버전)
 
 const cloudinary = require('cloudinary').v2;
 
@@ -31,22 +31,14 @@ exports.handler = async (event) => {
         
         console.log('오디오 업로드 성공:', audioPublicId);
 
-        // ✨ 1. 텍스트를 Base64로 인코딩하고, URL에 사용 가능하도록 안전하게 만듭니다.
-        const base64Text = Buffer.from(firstScene.text, 'utf-8').toString('base64');
-        const urlSafeBase64Text = base64Text.replace(/\+/g, '-').replace(/\//g, '_');
+        // ✨ 1. URL에서 문제를 일으킬 수 있는 특수문자를 안전한 문자로 직접 교체합니다.
+        const safeText = firstScene.text.replace(/,/g, '%2C').replace(/\//g, '%2F');
 
         const videoPublicId = 'white_canvas'; 
         const transformations = [
             {
-                // ✨ 2. Base64로 인코딩된 텍스트를 전달합니다.
-                // 폰트 이름의 공백은 언더스코어(_)로 변경해야 합니다.
-                overlay: {
-                    font_family: "Noto_Sans_KR",
-                    font_size: 70,
-                    font_weight: "bold",
-                    text: `!${urlSafeBase64Text}!` // !..._! 는 Base64를 의미하는 Cloudinary 문법
-                },
-                encoding: "base64", // 인코딩 타입을 명시
+                // ✨ 2. 가장 기본적인 텍스트 오버레이 방식을 사용합니다.
+                overlay: `text:Noto_Sans_KR_70_bold:${safeText}`,
                 color: "black",
                 gravity: "center"
             },
