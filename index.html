@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>SunsakTool (순삭툴)</title>
+    <!-- 모든 CSS 스타일은 이전과 동일 -->
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=IBM+Plex+Sans+KR:wght@400;700&family=Gowun+Dodum&family=Gowun+Batang&family=Nanum+Myeongjo:wght@400;700;800&family=Do+Hyeon&family=Black+Han+Sans&family=Gaegu:wght@400;700&family=Hi+Melody&family=Noto+Serif+KR:wght@400;700&family=Dokdo&display=swap');
         @font-face { font-family: 'Pretendard'; src: url('https://cdn.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Regular.woff') format('woff'); font-weight: 400; }
@@ -92,6 +93,7 @@
 
     <script>
     document.addEventListener('DOMContentLoaded', () => {
+        // 모든 변수와 리스트는 이전과 동일
         const FONT_LIST = [ { name: '프리텐다드 (본문용 추천)', value: 'Pretendard' }, { name: 'Noto Sans KR (기본 고딕)', value: "'Noto Sans KR', sans-serif" }, { name: 'G마켓 산스 (개성있는 제목)', value: 'GmarketSans' }, { name: 'IBM Plex Sans KR (모던한 고딕)', value: "'IBM Plex Sans KR', sans-serif" }, { name: 'Do Hyeon (레트로 제목)', value: "'Do Hyeon', sans-serif" }, { name: '나눔명조 (감성적인 본문)', value: "'Nanum Myeongjo', serif" }, { name: '고운 바탕 (부드러운 명조)', value: "'Gowun Batang', serif" }, { name: 'Black Han Sans (강력한 제목)', value: "'Black Han Sans', sans-serif" }, { name: '개구 (귀여운 손글씨)', value: "'Gaegu', cursive" }, { name: 'Hi Melody (아기자기 손글씨)', value: "'Hi Melody', cursive" }, { name: 'Noto Serif KR (정갈한 명조)', value: "'Noto Serif KR', serif" }, { name: '스포카 한 산스 네오 (깔끔한 본문)', value: "'Spoqa Han Sans Neo', sans-serif" }, { name: '독도 (거친 붓글씨)', value: "'Dokdo', cursive" }, ];
         const BGM_LIST = [ { name: '선택 안함', url: '' }, { name: 'big-cafe', url: 'https://sunsaktool-final.netlify.app/big-cafe.mp3' }, { name: 'blue-jacket', url: 'https://sunsaktool-final.netlify.app/blue-jacket.mp3' }, { name: 'cute-puppy', url: 'https://sunsaktool-final.netlify.app/cute-puppy.mp3' }, { name: 'laughter-in-the-breeze', url: 'https://sunsaktool-final.netlify.app/laughter-in-the-breeze-_happy_.mp3' }, { name: 'murder-in-my-mind', url: 'https://sunsaktool-final.netlify.app/murder-in-my-mind.mp3' }, { name: 'smiley-composure', url: 'https://sunsaktool-final.netlify.app/smiley-composure.mp3' }, { name: 'spider', url: 'https://sunsaktool-final.netlify.app/spider.mp3' }, { name: 'white-color', url: 'https://sunsaktool-final.netlify.app/white-color.mp3' } ];
         const SFX_LIST = [ { name: '효과음 없음', url: '' }, { name: '뾱 (물방울)', url: `https://sunsaktool-final.netlify.app/sfx/062_${encodeURIComponent('뾱 (물방울)')}.mp3` }, { name: '찰칵 (카메라)', url: `https://sunsaktool-final.netlify.app/sfx/078_${encodeURIComponent('찰칵 (카메라)')}.mp3` }, { name: '기어 1', url: 'https://sunsaktool-final.netlify.app/sfx/gears 1.wav' }, { name: '게임클리어 (고음)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('게임클리어 (고음)')}.mp3` }, { name: '긍정적 마법 사용', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('긍정적 마법 사용')}.mp3` }, { name: '깨달음(뾰봉)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('깨달음을 얻었을 때(뾰봉)')}.mp3` }, { name: '놀람 반전', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('놀람 반전')}.mp3` }, { name: '다음 장면전환(뾰로롱)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('다음 장면전환(뾰로롱)')}.mp3` }, { name: '넘어가는 맑은 소리(띠링~)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('다음으로 넘어가는 맑은 소리(띠링~)')}.mp3` }, { name: '동전먹는소리 2연속(중음)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('동전먹는소리 2연속(중음)')}.mp3` }, { name: '딩동댕동 (전자음)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('딩동댕동 (전자음)')}.mp3` }, { name: '문자 전송음(또로롱)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('문자 전송음(또로롱)')}.mp3` }, { name: '복싱 타이머(땡땡땡)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('복싱 훈련 타이머가 울리는 소리 (땡땡땡)')}.mp3` }, { name: '비디오 빨리감기 예능음', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('비디오 테이프 빨리감기 예능음')}.mp3` }, { name: '뾰로롱', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('뾰로롱')}.mp3` }, { name: '휙 날카롭게 지나가는', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('휙 날카롭게 지나가는')}.mp3` }, { name: '시한폭탄 초시계 (timer)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('시한폭탄 초시계 (timer)')}.mp3` }, { name: '알람 시간 종료 -2 (차분_ beep)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('알람 시간 종료 -2 (차분_ beep)')}.mp3` }, { name: '엘리베이터 도착음2 (띵동)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('엘리베이터 도착음2 (띵동)')}.mp3` }, { name: '욕 가리는 삐처리', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('욕 가리는 삐처리')}.mp3` }, { name: '작은 카메라 찰칵 소리', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('작은 카메라 찰칵 소리')}.mp3` }, { name: '저녁숲 (개구리, 곤충)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('저녁숲 (개구리와 곤충울음소리)')}.mp3` }, { name: '플래래 걸어가는 소리(뽀복)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('플래래 걸어가는 소리(뽀복)')}.mp3` }, { name: '천사의 강림', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('천사의 강림')}.mp3` }, { name: '개서 (철컥쿵)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('개서 (철컥쿵)')}.mp3` }, { name: '컴퓨터 키보드 타자', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('컴퓨터 키보드 타자')}.mp3` }, { name: '타이머 (째깍째깍)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('타이머 재는 시계음(째깍째깍)')}.mp3` }, { name: '황당할 때 (띠요옹)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('황당할 때 효과음 (띠요옹)')}.mp3` }, { name: 'Riser 1', url: 'https://sunsaktool-final.netlify.app/sfx/riser 1.wav' }, { name: 'Whoosh 1', url: 'https://sunsaktool-final.netlify.app/sfx/whoosh1.mp3' }, { name: 'Whoosh 2', url: 'https://sunsaktool-final.netlify.app/sfx/whoosh2.mp3' }, { name: 'Whoosh 3', url: 'https://sunsaktool-final.netlify.app/sfx/whoosh3.wav' }, { name: 'Whoosh 4', url: 'https://sunsaktool-final.netlify.app/sfx/whoosh4.mp3' }, { name: '또로롱', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('또로롱')}.wav` }, { name: '또아앙', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('또아앙')}.wav` }, { name: '띠로록', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('띠로록')}.mp3` }, { name: '띠롱(슈퍼마리오)', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('띠롱_슈퍼마리오')}.mp3` }, { name: '띠리링', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('띠리링')}.wav` }, { name: '띠링 1', url: 'https://sunsaktool-final.netlify.app/sfx/띠링1.wav' }, { name: '띠링 1초', url: 'https://sunsaktool-final.netlify.app/sfx/띠링1초.mp3' }, { name: '띠링 2', url: 'https://sunsaktool-final.netlify.app/sfx/띠링2.mp3' }, { name: '띠링 2초', url: 'https://sunsaktool-final.netlify.app/sfx/띠링2초.mp3' }, { name: '띠링 3', url: 'https://sunsaktool-final.netlify.app/sfx/띠링3.mp3' }, { name: '띠링 4', url: 'https://sunsaktool-final.netlify.app/sfx/띠링4.wav' }, { name: '띵', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('띵')}.mp3` }, { name: '마우스클릭(딸깍)', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('마우스클릭_딸깍')}.mp3` }, { name: '뾰옥 1', url: 'https://sunsaktool-final.netlify.app/sfx/뾰옥1.wav' }, { name: '뾰옥 2', url: 'https://sunsaktool-final.netlify.app/sfx/뾰옥2.mp3' }, { name: '뾰옥 3', url: 'https://sunsaktool-final.netlify.app/sfx/뾰옥3.wav' }, { name: '뽁 1초', url: 'https://sunsaktool-final.netlify.app/sfx/뽁1초.mp3' }, { name: '삐리삐빅', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('삐리삐빅')}.mp3` }, { name: '삑', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('삑')}.mp3` }, { name: '셔터', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('셔터')}.wav` }, { name: '슉 1초', url: 'https://sunsaktool-final.netlify.app/sfx/슉1초.mp3' }, { name: '스윽', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('스윽')}.mp3` }, { name: '예!', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('예!')}.mp3` }, { name: '와우', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('와우')}.wav` }, { name: '찰칵(소리)', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('찰칵')}.wav` }, { name: '캐서', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('캐서')}.mp3` }, { name: '키보드타이핑', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('키보드타이핑')}.mp3` }, { name: '툽', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('툽')}.mp3` }, { name: '폭발 1', url: 'https://sunsaktool-final.netlify.app/sfx/폭발1.mp3' }, { name: '폭발 2', url: 'https://sunsaktool-final.netlify.app/sfx/폭발2.mp3' }, { name: '폭발(큰)', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('폭발_큰')}.mp3` }, { name: '후욱', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('후욱')}.mp3` } ];
@@ -134,7 +136,7 @@
                 plugins: [
                     WaveSurfer.regions.create({
                         dragSelection: {
-                            slop: 5
+                            slop: 5 // 드래그 시작을 위한 최소 픽셀
                         }
                     })
                 ]
@@ -151,14 +153,15 @@
                 wavesurfer.clearRegions();
                 
                 const totalDuration = wavesurfer.getDuration();
-                const regionDuration = Math.min(60, totalDuration); // 최대 60초
+                const regionDuration = Math.min(60, totalDuration);
 
+                // ✨ 영역의 길이가 60초로 고정되고, 드래그 이동이 가능하도록 수정
                 let region = wavesurfer.addRegion({
                     start: 0,
                     end: regionDuration,
                     color: 'rgba(232, 44, 67, 0.3)',
-                    drag: true,      // ✨ 드래그 이동 가능
-                    resize: false,   // ✨ 크기 조절 불가
+                    drag: true,      // 드래그 이동 가능
+                    resize: false,   // 크기 조절 불가
                 });
                 
                 activeRegion = region;
@@ -166,11 +169,12 @@
             });
 
             wavesurfer.on('region-updated', (region) => {
+                activeRegion = region;
                  document.getElementById('st-bgm-time-display').textContent = `${region.start.toFixed(2)}s - ${region.end.toFixed(2)}s`;
             });
-
+            
             wavesurfer.on('region-clicked', (region, e) => {
-                e.stopPropagation(); // so we don't play the file from the start
+                e.stopPropagation();
                 activeRegion = region;
                 region.play();
             });
