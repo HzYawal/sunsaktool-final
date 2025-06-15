@@ -1,14 +1,11 @@
-// 파일 경로: /netlify/render-video.js (문법 수정 최종본)
+// 파일 경로: /netlify/render-video.js (Canvas 단독 테스트용 최종본)
 
-const { createCanvas, registerFont } = require('canvas');
-const ffmpeg = require('fluent-ffmpeg');
-const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
-ffmpeg.setFfmpegPath(ffmpegPath);
+const { createCanvas } = require('canvas');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-exports.handler = async (event) => {
+exports.handler = async (event, context) => {
     // CORS Preflight 요청 처리
     if (event.httpMethod === 'OPTIONS') {
         return {
@@ -20,7 +17,7 @@ exports.handler = async (event) => {
             }
         };
     }
-
+    
     if (event.httpMethod !== 'POST') {
         return { statusCode: 405, headers: {'Access-Control-Allow-Origin': '*'}, body: 'Method Not Allowed' };
     }
@@ -28,9 +25,7 @@ exports.handler = async (event) => {
     try {
         const projectData = JSON.parse(event.body);
         const firstScene = projectData.scenes[0];
-        if (!firstScene) {
-            throw new Error("출력할 씬(카드)이 없습니다.");
-        }
+        if (!firstScene) throw new Error("출력할 씬이 없습니다.");
 
         const width = 1080;
         const height = 1920;
@@ -46,48 +41,24 @@ exports.handler = async (event) => {
         context.textBaseline = 'middle';
         context.fillText(firstScene.text, width / 2, height / 2);
         
-        const tempImageDir = os.tmpdir();
-        const imagePath = path.join(tempImageDir, `frame-${Date.now()}.png`);
+        // Netlify 서버의 유일한 쓰기 가능 공간인 /tmp에 저장
+        const tempDir = os.tmpdir();
+        const imagePath = path.join(tempDir, `frame-${Date.now()}.png`);
         const buffer = canvas.toBuffer('image/png');
         fs.writeFileSync(imagePath, buffer);
 
-        console.log('이미지 프레임 생성 완료:', imagePath);
-
-        const tempVideoDir = os.tmpdir();
-        const outputPath = path.join(tempVideoDir, `output-${Date.now()}.mp4`);
-
-        await new Promise((resolve, reject) => {
-            ffmpeg(imagePath)
-                .loop(5)
-                // ✨ 수정: .setSize() -> .size()
-                .size(`${width}x${height}`) 
-                // ✨ 수정: .setFps() -> .fps()
-                .fps(60) 
-                .outputOptions('-pix_fmt yuv420p')
-                .save(outputPath)
-                .on('end', () => {
-                    console.log('FFmpeg 처리 완료');
-                    fs.unlinkSync(imagePath);
-                    resolve();
-                })
-                .on('error', (err) => {
-                    console.error('FFmpeg 에러:', err);
-                    fs.unlinkSync(imagePath);
-                    reject(err);
-                });
-        });
-
+        // FFmpeg 없이, 이미지 생성 성공 여부만 반환
         return {
             statusCode: 200,
             headers: { 'Access-Control-Allow-Origin': '*' },
             body: JSON.stringify({ 
-                message: "영상 렌더링 작업 요청 성공! (1단계 테스트)",
-                note: "실제 영상 파일 생성은 서버 로그를 확인하세요."
+                message: "Canvas 이미지 생성 및 저장 성공!",
+                imagePath: imagePath 
             }),
         };
 
     } catch (error) {
-        console.error('영상 렌더링 핸들러 오류:', error);
+        console.error('Canvas 테스트 핸들러 오류:', error);
         return {
             statusCode: 500,
             headers: { 'Access-Control-Allow-Origin': '*' },
