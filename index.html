@@ -29,10 +29,11 @@
 </head>
 <body>
     <div class="st-panel st-sidebar"> <button id="st-btn-add-project">+ 새 프로젝트</button> </div>
-    <div class="main-container">
+    <!-- ✨ 수정: st-main-container 클래스 복구 -->
+    <div class="st-main-container">
         <div class="st-top-header">
             <div class="st-logo">SunsakTool</div>
-            <button id="st-btn-export-video" style="background-color: #007bff;">🎬 영상 다운로드</button>
+            <button id="st-btn-export-video" style="background-color: #007bff;">🎬 영상 링크 열기</button>
         </div>
         <div class="st-main-content">
             <div class="st-panel st-preview-area">
@@ -121,7 +122,7 @@
         let activeRegion = null;
         let bgmEditorContext = { callback: null, currentBgm: null };
         
-        // ✨ BGM 미리보기 60초 제한 기능이 복구된 최종 버전입니다.
+        // ✨ BGM 미리보기 기능이 완벽히 복구된 최종 버전입니다.
         function initializeBgmEditor() {
             if (wavesurfer) return;
             if (typeof WaveSurfer === 'undefined') { 
@@ -132,8 +133,9 @@
                 container: '#st-waveform-container', waveColor: '#ddd', progressColor: '#e82c43', cursorColor: '#fff', barWidth: 2, barRadius: 3,
                 plugins: [
                     WaveSurfer.regions.create({
-                        dragSelection: true,
-                        color: 'rgba(232, 44, 67, 0.2)'
+                        dragSelection: {
+                            slop: 5
+                        }
                     })
                 ]
             });
@@ -147,39 +149,37 @@
             wavesurfer.on('ready', () => {
                 document.getElementById('st-waveform-loading').style.display = 'none';
                 wavesurfer.clearRegions();
-                activeRegion = null;
-                const totalDuration = wavesurfer.getDuration();
-                const fixedRegionDuration = 60;
                 
+                const totalDuration = wavesurfer.getDuration();
+                const regionDuration = Math.min(60, totalDuration); // 최대 60초
+
                 let region = wavesurfer.addRegion({
                     start: 0,
+                    end: regionDuration,
                     color: 'rgba(232, 44, 67, 0.3)',
+                    drag: true,      // ✨ 드래그 이동 가능
+                    resize: false,   // ✨ 크기 조절 불가
                 });
-
-                if (totalDuration > fixedRegionDuration) {
-                    region.end = fixedRegionDuration;
-                    region.drag = false;
-                    region.resize = false;
-                    document.getElementById('st-bgm-time-display').textContent = `0.00s - ${fixedRegionDuration.toFixed(2)}s`;
-                } else {
-                    region.end = totalDuration;
-                    document.getElementById('st-bgm-time-display').textContent = `0.00s - ${totalDuration.toFixed(2)}s`;
-                }
-                activeRegion = region;
-            });
-
-            wavesurfer.on('region-update-end', (region) => {
+                
                 activeRegion = region;
                 document.getElementById('st-bgm-time-display').textContent = `${region.start.toFixed(2)}s - ${region.end.toFixed(2)}s`;
+            });
+
+            wavesurfer.on('region-updated', (region) => {
+                 document.getElementById('st-bgm-time-display').textContent = `${region.start.toFixed(2)}s - ${region.end.toFixed(2)}s`;
+            });
+
+            wavesurfer.on('region-clicked', (region, e) => {
+                e.stopPropagation(); // so we don't play the file from the start
+                activeRegion = region;
+                region.play();
             });
 
             document.getElementById('st-btn-bgm-play-pause').addEventListener('click', () => wavesurfer.playPause());
             document.getElementById('st-btn-bgm-play-region').addEventListener('click', () => { if (activeRegion) activeRegion.play(); });
             document.getElementById('st-btn-bgm-confirm').addEventListener('click', () => {
-                if (bgmEditorContext.callback) {
-                    const startTime = activeRegion ? activeRegion.start : 0;
-                    const endTime = activeRegion ? activeRegion.end : wavesurfer.getDuration();
-                    bgmEditorContext.callback({ startTime, endTime });
+                if (bgmEditorContext.callback && activeRegion) {
+                    bgmEditorContext.callback({ startTime: activeRegion.start, endTime: activeRegion.end });
                 }
                 closeBgmEditor();
             });
@@ -192,7 +192,7 @@
             document.getElementById('st-waveform-loading').style.display = 'block';
             if (!wavesurfer) initializeBgmEditor();
             if (wavesurfer) {
-                if(wavesurfer.getDuration() > 0) {
+                if(wavesurfer.isReady) {
                     wavesurfer.destroy();
                     initializeBgmEditor();
                 }
@@ -545,7 +545,7 @@
             });
         }
         
-        // ✨ 자동 다운로드 기능이 적용된 최종 버전입니다 ✨
+        // ✨ 새 탭에서 열기 기능이 적용된 최종 버전입니다 ✨
         function setupExportButton() {
             const exportBtn = document.getElementById('st-btn-export-video');
             if (!exportBtn) return;
@@ -583,20 +583,15 @@
                     }
                     const result = await response.json();
 
-                    // 자동 다운로드 로직
-                    const link = document.createElement('a');
-                    link.href = result.videoUrl;
-                    link.setAttribute('download', 'sunsak-video.mp4');
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
+                    alert('영상 링크가 새 탭에 열립니다. 확인해주세요!');
+                    window.open(result.videoUrl, '_blank');
 
                 } catch (error) {
                     console.error('영상 출력 요청 오류:', error);
                     alert(`오류가 발생했습니다: ${error.message}`);
                 } finally {
                     exportBtn.disabled = false;
-                    exportBtn.textContent = '🎬 영상 다운로드';
+                    exportBtn.textContent = '🎬 영상 링크 열기';
                 }
             });
         }
