@@ -1,4 +1,4 @@
-// 파일 경로: /netlify/render-video.js (가장 단순하고 안정적인 최종 버전)
+// 파일 경로: /netlify/render-video.js (Base64 암호화 최종 버전)
 
 const cloudinary = require('cloudinary').v2;
 
@@ -10,6 +10,7 @@ cloudinary.config({
 });
 
 exports.handler = async (event) => {
+    // CORS 및 기본 요청 방식 확인
     if (event.httpMethod === 'OPTIONS') {
         return {
             statusCode: 200,
@@ -23,6 +24,7 @@ exports.handler = async (event) => {
         const firstScene = projectData.scenes[0];
         if (!firstScene) throw new Error("출력할 씬이 없습니다.");
 
+        // TTS 음성 업로드
         const audioUploadResult = await cloudinary.uploader.upload(firstScene.audioUrl, {
             resource_type: "video",
             public_id: `sunsaktool_audio_${Date.now()}`
@@ -31,14 +33,16 @@ exports.handler = async (event) => {
         
         console.log('오디오 업로드 성공:', audioPublicId);
 
-        // ✨ 1. URL에서 문제를 일으킬 수 있는 특수문자를 안전한 문자로 직접 교체합니다.
-        const safeText = firstScene.text.replace(/,/g, '%2C').replace(/\//g, '%2F');
+        // ✨ 1. 텍스트를 Base64로 암호화하고, URL에 사용 가능하도록 안전하게 만듭니다.
+        const base64Text = Buffer.from(firstScene.text).toString('base64');
+        const urlSafeBase64Text = base64Text.replace(/\+/g, '-').replace(/\//g, '_');
 
         const videoPublicId = 'white_canvas'; 
         const transformations = [
             {
-                // ✨ 2. 가장 기본적인 텍스트 오버레이 방식을 사용합니다.
-                overlay: `text:Noto_Sans_KR_70_bold:${safeText}`,
+                // ✨ 2. Base64로 암호화된 텍스트를 전달하는, 가장 안전한 방식을 사용합니다.
+                // Cloudinary 문법: "text" 뒤에 "(encoded)"라는 의미의 "b"를 붙이고, 텍스트를 전달합니다.
+                overlay: `text:Noto_Sans_KR_70_bold:$(text_b:${urlSafeBase64Text})`,
                 color: "black",
                 gravity: "center"
             },
