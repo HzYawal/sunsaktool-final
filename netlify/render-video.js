@@ -1,41 +1,83 @@
-// 파일 경로: /netlify/functions/render-video.js
+// 파일 경로: /netlify/render-video.js (올바른 위치 기준)
 
-exports.handler = async (event, context) => {
+const { createCanvas, registerFont } = require('canvas');
+const ffmpeg = require('fluent-ffmpeg');
+const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
+ffmpeg.setFfmpegPath(ffmpegPath);
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+
+exports.handler = async (event) => {
     if (event.httpMethod !== 'POST') {
         return { statusCode: 405, body: 'Method Not Allowed' };
     }
 
     try {
         const projectData = JSON.parse(event.body);
-        const jobId = `job_${Date.now()}`;
+        const firstScene = projectData.scenes[0];
+        if (!firstScene) {
+            throw new Error("출력할 씬(카드)이 없습니다.");
+        }
 
-        console.log(`[${jobId}] Video render job started.`);
-        console.log('Project Data:', projectData);
+        const width = 1080;
+        const height = 1920;
+        const canvas = createCanvas(width, height);
+        const context = canvas.getContext('2d');
+        
+        context.fillStyle = '#fff';
+        context.fillRect(0, 0, width, height);
 
-        // --- 여기서부터 FFmpeg을 이용한 실제 렌더링 로직이 시작됩니다 ---
-        // 이 부분은 매우 복잡하며, 실제 구현 시 별도의 모듈로 분리하는 것이 좋습니다.
-        // 1. projectData에서 필요한 모든 리소스(이미지, TTS, SFX, BGM)를 서버의 임시 폴더에 다운로드합니다.
-        // 2. 각 scene(카드)을 기반으로 canvas를 이용해 프레임별 이미지를 생성합니다. (텍스트, 이미지 합성)
-        // 3. 생성된 이미지 프레임과 TTS/SFX 오디오를 FFmpeg으로 합쳐 개별 씬 비디오 클립(.mp4)을 만듭니다.
-        // 4. 모든 씬 비디오 클립들을 FFmpeg으로 순서대로 이어 붙입니다.
-        // 5. 최종적으로 합쳐진 비디오에 BGM 오디오를 믹싱합니다.
-        // 6. 완성된 최종 MP4 파일을 S3 같은 클라우드 스토리지에 업로드하고, 다운로드 URL을 생성합니다.
-        // 7. 데이터베이스에 작업 상태를 '완료'로 업데이트하고 다운로드 URL을 저장합니다.
+        context.fillStyle = '#000';
+        context.font = 'bold 72px sans-serif';
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
+        context.fillText(firstScene.text, width / 2, height / 2);
+        
+        const tempImageDir = os.tmpdir();
+        const imagePath = path.join(tempImageDir, `frame-${Date.now()}.png`);
+        const buffer = canvas.toBuffer('image/png');
+        fs.writeFileSync(imagePath, buffer);
 
-        // 위 과정은 수 분이 걸릴 수 있으므로, 여기서는 일단 '작업이 성공적으로 접수되었다'는 응답만 즉시 보냅니다.
+        console.log('이미지 프레임 생성 완료:', imagePath);
+
+        const tempVideoDir = os.tmpdir();
+        const outputPath = path.join(tempVideoDir, `output-${Date.now()}.mp4`);
+
+        await new Promise((resolve, reject) => {
+            ffmpeg(imagePath)
+                .loop(5)
+                .setSize(`${width}x${height}`)
+                .setFps(60)
+                .outputOptions('-pix_fmt yuv420p')
+                .save(outputPath)
+                .on('end', () => {
+                    console.log('FFmpeg 처리 완료');
+                    fs.unlinkSync(imagePath); // 임시 이미지 파일 삭제
+                    resolve();
+                })
+                .on('error', (err) => {
+                    console.error('FFmpeg 에러:', err);
+                    fs.unlinkSync(imagePath); // 에러 발생 시에도 임시 파일 삭제
+                    reject(err);
+                });
+        });
+
         return {
             statusCode: 200,
-            body: JSON.stringify({
-                message: 'Render job has been successfully started!',
-                jobId: jobId
+            headers: { 'Access-Control-Allow-Origin': '*' },
+            body: JSON.stringify({ 
+                message: "영상 렌더링 작업 요청 성공! (1단계 테스트)",
+                note: "실제 영상 파일 생성은 서버 로그를 확인하세요."
             }),
         };
 
     } catch (error) {
-        console.error('Render Error:', error);
+        console.error('영상 렌더링 핸들러 오류:', error);
         return {
             statusCode: 500,
-            body: JSON.stringify({ error: 'Failed to start render job.' }),
+            headers: { 'Access-Control-Allow-Origin': '*' },
+            body: JSON.stringify({ error: error.message }),
         };
     }
 };
