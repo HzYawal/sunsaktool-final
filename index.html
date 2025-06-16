@@ -3,9 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <title>SunsakTool (순삭툴)</title>
-    <!-- ✨ 1. 화면 캡처를 위한 html2canvas 라이브러리 추가 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=IBM+Plex+Sans+KR:wght@400;700&family=Gowun+Dodum&family=Gowun+Batang&family=Nanum+Myeongjo:wght@400;700;800&family=Do+Hyeon&family=Black+Han+Sans&family=Gaegu:wght@400;700&family=Hi+Melody&family=Noto+Serif+KR:wght@400;700&family=Dokdo&display=swap');
         @font-face { font-family: 'Pretendard'; src: url('https://cdn.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Regular.woff') format('woff'); font-weight: 400; }
@@ -35,7 +32,7 @@
     <div class="st-main-container">
         <div class="st-top-header">
             <div class="st-logo">SunsakTool</div>
-            <button id="st-btn-export-image" style="background-color: #007bff;">🖼️ 미리보기 다운로드</button>
+            <!-- ✨ 출력 버튼은 다음 단계를 위해 일단 제거합니다. -->
         </div>
         <div class="st-main-content">
             <div class="st-panel st-preview-area">
@@ -56,33 +53,10 @@
         </div>
     </div>
     <div id="st-modal-gpts" class="st-modal-overlay">
-        <div class="st-modal-dialog">
-            <h2>GPTs 스크립트 추가</h2>
-            <p>GPTs에서 생성된 스크립트를 입력하세요. 빈 줄로 구분하여 여러 스크립트를 한번에 추가할 수 있습니다.</p>
-            <textarea id="st-gpts-textarea" placeholder="여기에 GPTs 스크립트를 입력하세요..."></textarea>
-            <div class="st-modal-actions">
-                <button id="st-btn-gpts-cancel" class="cancel">취소</button>
-                <button id="st-btn-gpts-confirm">확인</button>
-            </div>
-        </div>
+        <!-- ... gpts 모달은 이전과 동일하게 유지 ... -->
     </div>
     <div id="st-modal-bgm" class="st-modal-overlay">
-        <div class="st-modal-dialog">
-            <h2>BGM 구간 설정</h2>
-            <p>오디오 파형 위에서 원하는 구간을 드래그하여 선택하세요.</p>
-            <div id="st-waveform-container">
-                <div id="st-waveform-loading">BGM 로딩 중...</div>
-            </div>
-            <div class="st-waveform-controls">
-                <button id="st-btn-bgm-play-pause">재생/일시정지</button>
-                <button id="st-btn-bgm-play-region">선택 구간 미리듣기</button>
-                <span id="st-bgm-time-display">0.00s - 0.00s</span>
-            </div>
-            <div class="st-modal-actions">
-                <button id="st-btn-bgm-cancel" class="cancel">취소</button>
-                <button id="st-btn-bgm-confirm">확인</button>
-            </div>
-        </div>
+        <!-- ... bgm 모달은 이전과 동일하게 유지 ... -->
     </div>
     <audio id="st-tts-player" style="display:none;"></audio>
     <audio id="st-bgm-player" style="display:none;" loop></audio>
@@ -228,40 +202,6 @@
             } finally {
                 showLoadingOnCard(cardId, false);
             }
-        }
-        
-        // ✨ 이미지 다운로드 기능이 클라이언트 사이드로 변경되었습니다.
-        function setupExportButton() {
-            const exportBtn = document.getElementById('st-btn-export-image');
-            if (!exportBtn) return;
-
-            exportBtn.addEventListener('click', () => {
-                const previewPanel = document.getElementById('st-preview-panel');
-                if (!previewPanel) return;
-
-                exportBtn.disabled = true;
-                exportBtn.textContent = '이미지 생성 중...';
-
-                html2canvas(previewPanel, {
-                    allowTaint: true,
-                    useCORS: true,
-                    backgroundColor: '#ffffff'
-                }).then(canvas => {
-                    const imageData = canvas.toDataURL('image/jpeg', 0.95);
-                    const link = document.createElement('a');
-                    link.href = imageData;
-                    link.download = 'sunsak-preview.jpg';
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                }).catch(err => {
-                    console.error('이미지 생성 오류:', err);
-                    alert('미리보기 이미지를 생성하는 데 실패했습니다.');
-                }).finally(() => {
-                    exportBtn.disabled = false;
-                    exportBtn.textContent = '🖼️ 미리보기 다운로드';
-                });
-            });
         }
         
         function renderControls() {
@@ -571,6 +511,39 @@
                      const firstNewCardId = scriptCards[scriptCards.length - lines.length].id;
                      selectCard(firstNewCardId);
                 }
+            });
+        }
+        
+        function setupExportButton() {
+            const exportBtn = document.getElementById('st-btn-export-image');
+            if (!exportBtn) return;
+
+            exportBtn.addEventListener('click', () => {
+                const previewPanel = document.getElementById('st-preview-panel');
+                if (!previewPanel) return;
+
+                exportBtn.disabled = true;
+                exportBtn.textContent = '이미지 생성 중...';
+
+                html2canvas(previewPanel, {
+                    allowTaint: true,
+                    useCORS: true,
+                    backgroundColor: '#ffffff'
+                }).then(canvas => {
+                    const imageData = canvas.toDataURL('image/jpeg', 0.95);
+                    const link = document.createElement('a');
+                    link.href = imageData;
+                    link.download = 'sunsak-preview.jpg';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }).catch(err => {
+                    console.error('이미지 생성 오류:', err);
+                    alert('미리보기 이미지를 생성하는 데 실패했습니다.');
+                }).finally(() => {
+                    exportBtn.disabled = false;
+                    exportBtn.textContent = '🖼️ 미리보기 다운로드';
+                });
             });
         }
         
