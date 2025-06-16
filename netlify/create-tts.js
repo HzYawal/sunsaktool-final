@@ -43,6 +43,8 @@ exports.handler = async (event) => {
         });
 
         if (!initialResponse.ok) {
+            const errorText = await initialResponse.text();
+            console.error("Typecast API Error:", errorText);
             throw new Error(`Typecast API 초기 요청 실패 (상태: ${initialResponse.status})`);
         }
         
