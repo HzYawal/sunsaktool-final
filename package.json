@@ -9,7 +9,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "cloudinary": "^2.2.0",
     "node-fetch": "^2.7.0"
   }
 }
