@@ -1,8 +1,11 @@
 {
-  "name": "sunsaktool-final",
+  "name": "sunsaktool-backend",
   "version": "1.0.0",
-  "description": "SunsakTool serverless functions",
+  "description": "Serverless functions for SunsakTool",
+  "main": "index.js",
+  "author": "",
+  "license": "ISC",
   "dependencies": {
     "node-fetch": "^2.7.0"
   }
-} 
+}
