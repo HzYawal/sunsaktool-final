@@ -2,7 +2,14 @@
   "name": "sunsaktool-final",
   "version": "1.0.0",
   "description": "SunsakTool serverless functions",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
   "dependencies": {
+    "cloudinary": "^2.2.0",
     "node-fetch": "^2.7.0"
   }
 }
