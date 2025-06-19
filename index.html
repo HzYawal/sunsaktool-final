@@ -33,10 +33,6 @@
         .interactive-target.interactive-active { outline: 2px dashed var(--st-interact-color); z-index: 100; }
         .resize-handle { position: absolute; width: 10px; height: 10px; background: var(--st-interact-color); border: 1px solid white; border-radius: 50%; z-index: 101; display: none; }
         .interactive-active .resize-handle { display: block; }
-        .resize-handle.top-left { top: -5px; left: -5px; cursor: nwse-resize; }
-        .resize-handle.top-right { top: -5px; right: -5px; cursor: nesw-resize; }
-        .resize-handle.bottom-left { bottom: -5px; left: -5px; cursor: nesw-resize; }
-        .resize-handle.bottom-right { bottom: -5px; right: -5px; cursor: nwse-resize; }
         #st-preview-text { width: 100%; font-size: 24px; color: #000; white-space: pre-wrap; flex-shrink: 0; }
         #st-preview-image { max-width: 100%; max-height: 100%; object-fit: contain; }
         .st-timeline-controls { width: 100%; max-width: 380px; display: flex; align-items: center; gap: 10px; margin-top: 15px;}
@@ -67,7 +63,8 @@
         #st-waveform-container { width: 100%; height: 128px; background-color: #1e1e1e; }
         #st-waveform-loading { text-align: center; padding: 40px; color: var(--st-subtext-color); }
         #st-export-progress-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; color: white; display: none; flex-direction: column; justify-content: center; align-items: center; font-size: 24px; }
-        #st-export-progress-text { font-weight: bold; }
+        #st-export-progress-text { font-weight: bold; margin-bottom: 10px; }
+        #st-export-progress-subtext { font-size: 16px; color: var(--st-subtext-color); }
         #st-export-progress-bar { width: 80%; max-width: 400px; height: 20px; background: #555; margin-top: 20px; border-radius: 10px; overflow: hidden; }
         #st-export-progress-bar-inner { width: 0%; height: 100%; background: var(--st-accent-color); transition: width 0.1s linear; }
     </style>
@@ -110,6 +107,7 @@
 
     <div id="st-export-progress-overlay">
         <div id="st-export-progress-text">영상 생성 중...</div>
+        <div id="st-export-progress-subtext"></div>
         <div id="st-export-progress-bar">
             <div id="st-export-progress-bar-inner"></div>
         </div>
@@ -185,94 +183,17 @@
             const exportBtn = document.getElementById('st-btn-export-video');
             const progressOverlay = document.getElementById('st-export-progress-overlay');
             const progressText = document.getElementById('st-export-progress-text');
+            const progressSubText = document.getElementById('st-export-progress-subtext');
             const progressBarInner = document.getElementById('st-export-progress-bar-inner');
-            if (!exportBtn) return;
-            
+
             const RENDER_WIDTH = 1080;
             const RENDER_HEIGHT = 1920;
             const FPS = 30;
-            const FRAME_DURATION = 1 / FPS;
             const PREVIEW_WIDTH = 380;
             const SCALE = RENDER_WIDTH / PREVIEW_WIDTH;
 
-            function wrapText(context, text, x, y, maxWidth, lineHeight) {
-                const lines = text.split('\n');
-                let currentY = y;
-                for (const line of lines) {
-                    let words = line.split(' ');
-                    let currentLine = words[0];
-                    for (let i = 1; i < words.length; i++) {
-                        let testLine = currentLine + ' ' + words[i];
-                        if (context.measureText(testLine).width > maxWidth) {
-                            context.fillText(currentLine, x, currentY);
-                            currentLine = words[i];
-                            currentY += lineHeight;
-                        } else {
-                            currentLine = testLine;
-                        }
-                    }
-                    context.fillText(currentLine, x, currentY);
-                    currentY += lineHeight;
-                }
-            }
-
-            async function renderFrame(ctx, card, imageCache) {
-                ctx.fillStyle = '#FFFFFF';
-                ctx.fillRect(0, 0, RENDER_WIDTH, RENDER_HEIGHT);
-
-                const headerHeight = 65 * SCALE;
-                ctx.fillStyle = document.getElementById('st-setting-header-bg')?.value || '#e82c43';
-                ctx.fillRect(0, 0, RENDER_WIDTH, headerHeight);
-                ctx.font = `bold ${24 * SCALE}px '${getComputedStyle(document.querySelector('.st-preview-header')).fontFamily.split(',')[0]}'`;
-                ctx.fillStyle = document.getElementById('st-setting-header-color')?.value || '#FFFFFF';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(document.getElementById('st-setting-header-text')?.value, RENDER_WIDTH / 2, headerHeight / 2);
-
-                const infoPadding = 10 * SCALE;
-                const infoY = headerHeight + infoPadding;
-                const titleFontSize = 22 * SCALE;
-                const metaFontSize = 13 * SCALE;
-                ctx.font = `bold ${titleFontSize}px sans-serif`;
-                ctx.fillStyle = document.getElementById('st-setting-title-color')?.value || '#000';
-                ctx.textAlign = 'left';
-                ctx.textBaseline = 'top';
-                ctx.fillText(document.getElementById('st-setting-project-title')?.value || '', infoPadding, infoY);
-                ctx.font = `${metaFontSize}px sans-serif`;
-                ctx.fillStyle = document.getElementById('st-setting-meta-color')?.value || '#555';
-                const metaText = `${document.getElementById('st-setting-project-author')?.value || ''} | 조회수 ${Number(document.getElementById('st-setting-project-views')?.value || 0).toLocaleString()}`;
-                ctx.fillText(metaText, infoPadding, infoY + titleFontSize + (5 * SCALE));
-                
-                const scriptDisplayY = headerHeight + (65 * SCALE);
-                
-                if (card.imageUrl && imageCache[card.imageUrl] && imageCache[card.imageUrl].complete) {
-                    ctx.save();
-                    const imageLayout = card.layout.image;
-                    const img = imageCache[card.imageUrl];
-                    const imgX = RENDER_WIDTH / 2 + imageLayout.x * SCALE;
-                    const imgY = scriptDisplayY + (100 * SCALE) + imageLayout.y * SCALE;
-                    ctx.translate(imgX, imgY);
-                    ctx.rotate(imageLayout.angle * Math.PI / 180);
-                    ctx.scale(imageLayout.scale, imageLayout.scale);
-                    const imgWidth = (PREVIEW_WIDTH - 20) * SCALE;
-                    const imgHeight = img.height * (imgWidth / img.width);
-                    ctx.drawImage(img, -imgWidth/2, -imgHeight/2, imgWidth, imgHeight);
-                    ctx.restore();
-                }
-
-                ctx.save();
-                const textLayout = card.layout.text;
-                const scriptFontSize = (parseInt(card.style.fontSize) || 24) * SCALE;
-                ctx.translate(RENDER_WIDTH / 2 + textLayout.x * SCALE, scriptDisplayY + textLayout.y * SCALE);
-                ctx.rotate(textLayout.angle * Math.PI / 180);
-                ctx.scale(textLayout.scale, textLayout.scale);
-                ctx.font = `${scriptFontSize}px "${card.style.fontFamily || 'Noto Sans KR'}"`;
-                ctx.fillStyle = card.style.color || '#000';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                wrapText(ctx, card.text, 0, 0, (PREVIEW_WIDTH - 20) * SCALE, scriptFontSize * 1.3);
-                ctx.restore();
-            }
+            function wrapText(context, text, x, y, maxWidth, lineHeight) { /* ... same as before ... */ }
+            async function renderFrame(ctx, card, imageCache) { /* ... same as before ... */ }
 
             exportBtn.addEventListener('click', async () => {
                 if (scriptCards.some(c => !c.ttsReady && c.text.trim())) return alert('아직 음성 생성이 완료되지 않은 스크립트가 있습니다.');
@@ -281,6 +202,7 @@
                 exportBtn.disabled = true;
                 progressOverlay.style.display = 'flex';
                 progressText.textContent = '자원 로딩 중...';
+                progressSubText.textContent = '폰트 및 이미지를 불러옵니다.';
                 progressBarInner.style.width = `0%`;
                 
                 await document.fonts.ready;
@@ -290,59 +212,55 @@
                     const img = new Image();
                     img.crossOrigin = 'anonymous';
                     img.src = card.imageUrl;
-                    img.onload = () => resolve(img);
+                    img.onload = () => { imageCache[card.imageUrl] = img; resolve(img); };
                     img.onerror = () => resolve(null);
-                    imageCache[card.imageUrl] = img;
                 }));
                 await Promise.all(imagePromises);
 
+                let audioContext;
                 try {
                     const canvas = document.getElementById('st-render-canvas');
+                    const ctx = canvas.getContext('2d');
                     canvas.width = RENDER_WIDTH;
                     canvas.height = RENDER_HEIGHT;
-                    const ctx = canvas.getContext('2d');
                     
-                    progressText.textContent = '오디오 처리 중...';
-                    const audioContext = new AudioContext();
+                    progressText.textContent = '오디오 트랙 처리 중...';
+                    progressSubText.textContent = '음성 파일들을 하나로 합칩니다.';
+                    audioContext = new AudioContext();
                     const destination = audioContext.createMediaStreamDestination();
-                    let totalDuration = scriptCards.reduce((sum, card) => sum + (card.duration || 0.5), 0);
-                    let timeOffset = 0;
-
-                    const audioSources = [];
-                    if(globalBGM.url) {
+                    const totalDuration = scriptCards.reduce((sum, card) => sum + (card.duration || 0.5), 0);
+                    
+                    const audioPromises = scriptCards.flatMap((card, index) => {
+                        const timeOffset = scriptCards.slice(0, index).reduce((sum, c) => sum + (c.duration || 0.5), 0);
+                        const promises = [];
+                        if (card.audioUrl) promises.push({ url: card.audioUrl, time: timeOffset });
+                        if (card.sfxUrl) promises.push({ url: card.sfxUrl, time: timeOffset });
+                        return promises;
+                    });
+                    
+                    if (globalBGM.url) {
                         const response = await fetch(globalBGM.url);
+                        const arrayBuffer = await response.arrayBuffer();
+                        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                        const bgmSource = audioContext.createBufferSource();
+                        bgmSource.buffer = audioBuffer;
+                        bgmSource.loop = true;
+                        const gainNode = audioContext.createGain();
+                        gainNode.gain.value = globalBGM.volume;
+                        bgmSource.connect(gainNode).connect(destination);
+                        bgmSource.start(0);
+                    }
+
+                    await Promise.all(audioPromises.map(async (audio) => {
+                        const response = await fetch(audio.url);
                         const arrayBuffer = await response.arrayBuffer();
                         const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
                         const source = audioContext.createBufferSource();
                         source.buffer = audioBuffer;
-                        source.loop = true;
                         source.connect(destination);
-                        audioSources.push(source);
-                    }
-
-                    for(const card of scriptCards) {
-                        if (card.audioUrl) {
-                            const response = await fetch(card.audioUrl);
-                            const arrayBuffer = await response.arrayBuffer();
-                            const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-                            const source = audioContext.createBufferSource();
-                            source.buffer = audioBuffer;
-                            source.connect(destination);
-                            source.start(timeOffset);
-                        }
-                        if (card.sfxUrl) {
-                            const response = await fetch(card.sfxUrl);
-                            const arrayBuffer = await response.arrayBuffer();
-                            const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-                            const source = audioContext.createBufferSource();
-                            source.buffer = audioBuffer;
-                            source.connect(destination);
-                            source.start(timeOffset);
-                        }
-                        timeOffset += card.duration || 0.5;
-                    }
-                    audioSources.forEach(s => s.start(0));
-
+                        source.start(audio.time);
+                    }));
+                    
                     const canvasStream = canvas.captureStream(FPS);
                     const combinedStream = new MediaStream([...canvasStream.getVideoTracks(), ...destination.stream.getAudioTracks()]);
                     
@@ -359,23 +277,32 @@
                         URL.revokeObjectURL(url);
                         progressOverlay.style.display = 'none';
                         exportBtn.disabled = false;
-                        audioSources.forEach(s => s.stop());
                         audioContext.close();
                     };
                     
                     recorder.start();
 
-                    let currentTime = 0;
-                    const renderLoop = async () => {
-                        if (currentTime > totalDuration) {
+                    progressText.textContent = '프레임 렌더링 중...';
+                    progressSubText.textContent = '오디오에 맞춰 영상을 그립니다.';
+                    
+                    // ✨ 마스터 시계 사용
+                    const startTime = audioContext.currentTime;
+                    let animationFrameId;
+
+                    const renderLoop = async (timestamp) => {
+                        const elapsedTime = audioContext.currentTime - startTime;
+
+                        if (elapsedTime >= totalDuration) {
                             recorder.stop();
+                            cancelAnimationFrame(animationFrameId);
                             return;
                         }
+
                         let timeTally = 0;
                         let currentCardIndex = 0;
                         for(let i = 0; i < scriptCards.length; i++) {
                             timeTally += scriptCards[i].duration || 0.5;
-                            if (currentTime <= timeTally) {
+                            if (elapsedTime <= timeTally) {
                                 currentCardIndex = i;
                                 break;
                             }
@@ -383,22 +310,25 @@
                         
                         await renderFrame(ctx, scriptCards[currentCardIndex], imageCache);
                         
-                        const progress = Math.min(100, (currentTime / totalDuration) * 100);
-                        progressText.textContent = `프레임 렌더링 중... (${Math.round(progress)}%)`;
+                        const progress = Math.min(100, (elapsedTime / totalDuration) * 100);
                         progressBarInner.style.width = `${progress}%`;
                         
-                        currentTime += FRAME_DURATION;
-                        requestAnimationFrame(renderLoop);
+                        animationFrameId = requestAnimationFrame(renderLoop);
                     };
-                    renderLoop();
+                    animationFrameId = requestAnimationFrame(renderLoop);
 
                 } catch (error) {
                     console.error('영상 생성 오류:', error);
                     alert(`영상 생성 중 오류가 발생했습니다: ${error.message}`);
                     progressOverlay.style.display = 'none';
                     exportBtn.disabled = false;
+                    if (audioContext) audioContext.close();
                 }
             });
+
+            // 내부 함수들은 여기에 그대로 위치합니다.
+            wrapText = function(context, text, x, y, maxWidth, lineHeight) { const lines = text.split('\n'); let currentY = y; for (const line of lines) { let words = line.split(' '); let currentLine = words[0] || ''; for (let i = 1; i < words.length; i++) { let testLine = currentLine + ' ' + words[i]; if (context.measureText(testLine).width > maxWidth && currentLine.length > 0) { context.fillText(currentLine, x, currentY); currentLine = words[i]; currentY += lineHeight; } else { currentLine = testLine; } } context.fillText(currentLine, x, currentY); currentY += lineHeight; } }
+            renderFrame = async function(ctx, card, imageCache) { ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, RENDER_WIDTH, RENDER_HEIGHT); const headerHeight = 65 * SCALE; ctx.fillStyle = document.getElementById('st-setting-header-bg')?.value || '#e82c43'; ctx.fillRect(0, 0, RENDER_WIDTH, headerHeight); const fontName = getComputedStyle(document.querySelector('.st-preview-header')).fontFamily.split(',')[0].trim(); ctx.font = `bold ${24 * SCALE}px ${fontName}`; ctx.fillStyle = document.getElementById('st-setting-header-color')?.value || '#FFFFFF'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(document.getElementById('st-setting-header-text')?.value, RENDER_WIDTH / 2, headerHeight / 2); const infoPadding = 10 * SCALE; const infoY = headerHeight + infoPadding; const titleFontSize = 22 * SCALE; const metaFontSize = 13 * SCALE; ctx.font = `bold ${titleFontSize}px sans-serif`; ctx.fillStyle = document.getElementById('st-setting-title-color')?.value || '#000'; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillText(document.getElementById('st-setting-project-title')?.value || '', infoPadding, infoY); ctx.font = `${metaFontSize}px sans-serif`; ctx.fillStyle = document.getElementById('st-setting-meta-color')?.value || '#555'; const metaText = `${document.getElementById('st-setting-project-author')?.value || ''} | 조회수 ${Number(document.getElementById('st-setting-project-views')?.value || 0).toLocaleString()}`; ctx.fillText(metaText, infoPadding, infoY + titleFontSize + (5 * SCALE)); const scriptDisplayY = headerHeight + (65 * SCALE); if (card.imageUrl && imageCache[card.imageUrl] && imageCache[card.imageUrl].complete) { ctx.save(); const imageLayout = card.layout.image; const img = imageCache[card.imageUrl]; const imgX = RENDER_WIDTH / 2 + imageLayout.x * SCALE; const imgY = scriptDisplayY + (100 * SCALE) + imageLayout.y * SCALE; ctx.translate(imgX, imgY); ctx.rotate(imageLayout.angle * Math.PI / 180); ctx.scale(imageLayout.scale, imageLayout.scale); const imgWidth = (PREVIEW_WIDTH - 20) * SCALE; const imgHeight = img.height * (imgWidth / img.width); ctx.drawImage(img, -imgWidth/2, -imgHeight/2, imgWidth, imgHeight); ctx.restore(); } ctx.save(); const textLayout = card.layout.text; const scriptFontSize = (parseInt(card.style.fontSize) || 24) * SCALE; ctx.translate(RENDER_WIDTH / 2 + textLayout.x * SCALE, scriptDisplayY + textLayout.y * SCALE); ctx.rotate(textLayout.angle * Math.PI / 180); ctx.scale(textLayout.scale, textLayout.scale); ctx.font = `${scriptFontSize}px "${card.style.fontFamily || 'Noto Sans KR'}"`; ctx.fillStyle = card.style.color || '#000'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; wrapText(ctx, card.text, 0, 0, (PREVIEW_WIDTH - 20) * SCALE, scriptFontSize * 1.3); ctx.restore(); }
         }
         
         function initialize() {
