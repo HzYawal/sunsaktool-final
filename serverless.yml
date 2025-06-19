@@ -1,19 +1,41 @@
-# "org" ensures this Service is used with the correct Serverless Framework Access Key.
-org: thesunsak
-# 파일 이름: serverless.yml
+# 파일 이름: serverless.yml (수정된 최종 버전)
 
-# 1. 서비스 이름 정의
 service: sunsaktool-renderer
+frameworkVersion: '^4'
 
-# 2. 사용할 Serverless Framework 버전 지정
-
-# 3. 클라우드 제공사(Provider) 및 환경 설정
 provider:
   name: aws
   runtime: nodejs18.x
-  region: ap-northeast-2 # AWS 서울 리전
+  region: ap-northeast-2
+  
+  # API Gateway에 대한 기본 설정을 추가합니다.
+  httpApi:
+    cors: true # CORS 문제를 자동으로 해결해줍니다.
 
-# 4. 우리가 배포할 함수(기능) 목록
+  iam:
+    role:
+      statements:
+        - Effect: "Allow"
+          Action:
+            - "s3:*"
+          Resource: "*"
+
 functions:
   renderVideo:
     handler: rendering-server/handler.main
+    timeout: 900
+    memorySize: 2048
+    
+    # ✨ events 부분을 더 명확한 구조로 수정합니다. ✨
+    events:
+      - httpApi:
+          method: post
+          path: /render-video
+
+# plugins와 custom 섹션은 그대로 둡니다.
+plugins:
+  - serverless-ffmpeg-plugin
+
+custom:
+  ffmpeg:
+    version: '6.0'
