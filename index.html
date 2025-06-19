@@ -9,27 +9,26 @@
         @font-face { font-family: 'Spoqa Han Sans Neo'; src: url('https://cdn.jsdelivr.net/gh/spoqa/spoqa-han-sans@latest/Subset/SpoqaHanSansNeo/SpoqaHanSansNeo-Regular.woff2') format('woff2'); font-weight: 400; }
         @font-face { font-family: 'GmarketSans'; src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansBold.woff') format('woff'); }
         :root { --st-accent-color: #e82c43; --st-bg-color: #1e1e1e; --st-panel-color: #2a2a2a; --st-border-color: #383838; --st-text-color: #e0e0e0; --st-subtext-color: #aaa; }* { box-sizing: border-box; }body { font-family: 'Noto Sans KR', sans-serif; background-color: var(--st-bg-color); color: var(--st-text-color); display: flex; height: 100vh; margin: 0; overflow: hidden; -webkit-font-smoothing: antialiased; }.st-panel { height: 100vh; display: flex; flex-direction: column; }
-        
         .st-sidebar { width: 280px; background-color: var(--st-panel-color); padding: 20px; border-right: 1px solid var(--st-border-color); overflow-y: auto; }
         .st-main-container { flex-grow: 1; display: flex; flex-direction: column; }
         .st-top-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background-color: var(--st-panel-color); border-bottom: 1px solid var(--st-border-color); flex-shrink: 0; height: 50px;}.st-logo { font-family: 'GmarketSans', sans-serif; font-weight: bold; }.st-main-content { display: flex; flex-grow: 1; overflow: hidden; }
         .st-preview-area { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; position: relative;}
         .st-editor-area { flex-basis: 50%; border-left: 1px solid var(--st-border-color); overflow-y: auto; padding: 20px; }
-
         button { background-color: var(--st-accent-color); color: #fff; font-weight: bold; cursor: pointer; border: none; border-radius: 4px; padding: 8px 12px; transition: background-color 0.2s; }
         button:hover { filter: brightness(1.1); }
         button.cancel { background-color: #555; }
         button.cancel:hover { background-color: #666; }
-
         .st-preview-panel { width: 100%; max-width: 380px; aspect-ratio: 9 / 16; background-color: #fff; box-shadow: 0 0 20px rgba(0,0,0,0.2); display: flex; flex-direction: column; overflow: hidden; }
         .st-preview-header { font-family: 'GmarketSans', sans-serif; color: white; font-weight: bold; flex-shrink: 0; height: 65px; display: flex; justify-content: center; align-items: center; padding: 0 15px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
         .st-preview-content { padding: 10px; color: black; flex-grow: 1; display: flex; flex-direction: column; background-color: white; overflow: hidden; position: relative; }.st-project-info { font-size: 13px; color: #555; margin: 0 0 16px 0; border-bottom: 1px solid #eee; padding-bottom: 16px; }.st-project-info .title { font-size: 22px; color: black; font-weight: bold; margin-bottom: 5px; }
         .st-script-display { position: relative; flex-grow: 1; }
         .interactive-target { position: absolute; border: 2px solid transparent; cursor: move; touch-action: none; transition: border-color 0.2s; }
         .interactive-target.interactive-active { border-color: var(--st-accent-color); z-index: 100; }
-        #st-preview-text { width: 100%; height: 100%; font-size: 24px; color: #000; white-space: pre-wrap; padding: 5px; display: flex; justify-content: center; align-items: center; text-align: center; }
+        #st-preview-text-container { display:flex; align-items:center; justify-content:center; }
+        #st-preview-text { width: 100%; height: 100%; font-size: 24px; color: #000; white-space: pre-wrap; padding: 5px; text-align: center; }
+        #st-preview-image-container { display:flex; align-items:center; justify-content:center; }
         #st-preview-image { width: 100%; height: 100%; object-fit: contain; }
-        .resize-handle { position: absolute; width: 12px; height: 12px; background: #fff; border: 2px solid var(--st-accent-color); border-radius: 50%; z-index: 101; display: none;}
+        .resize-handle { position: absolute; width: 12px; height: 12px; background: #fff; border: 2px solid var(--st-accent-color); border-radius: 50%; z-index: 101; display: none; }
         .interactive-active .resize-handle { display: block; }
         .resize-handle.top-left { top: -7px; left: -7px; cursor: nwse-resize; }
         .resize-handle.top-right { top: -7px; right: -7px; cursor: nesw-resize; }
@@ -128,7 +127,10 @@
             const cardData = {
                 id: cardId, text, duration: 0.5, imageUrl: null,
                 style: {}, audioUrl: null, ttsReady: false, sfxUrl: null,
-                layout: { text: { x: 0, y: 0, width: "100%", height: "auto", scale: 1, angle: 0 }, image: { x: 0, y: 0, width: "100%", height: "auto", scale: 1, angle: 0 } }
+                layout: {
+                    text:  { x: 0, y: 0, scale: 1, angle: 0, width: "100%", height: "auto" },
+                    image: { x: 0, y: 0, scale: 1, angle: 0, width: "100%", height: "auto" }
+                }
             };
             scriptCards.push(cardData);
             const cardEl = document.createElement('div');
@@ -195,22 +197,31 @@
             const textContent = card ? card.text : '스크립트를 추가하거나 선택하세요.';
             const imageContent = (card && card.imageUrl) ? `<img id="st-preview-image" src="${card.imageUrl}">` : `<img id="st-preview-image" style="display:none;">`;
             
-            previewPanel.innerHTML = `${headerHTML}<div class="st-preview-content">${projectInfoHTML}<div class="st-script-display"><div id="st-preview-text-container" class="interactive-target"><div id="st-preview-text">${textContent}</div></div><div id="st-preview-image-container" class="interactive-target">${imageContent}</div></div></div>`;
+            // 미리보기 패널의 내용을 동적으로 생성합니다.
+            const scriptDisplayContent = `<div id="st-preview-text-container" class="interactive-target"><div id="st-preview-text">${textContent}</div></div><div id="st-preview-image-container" class="interactive-target">${imageContent}</div>`;
+            previewPanel.innerHTML = `${headerHTML}<div class="st-preview-content">${projectInfoHTML}<div class="st-script-display">${scriptDisplayContent}</div></div>`;
             
             if (card) {
                 const textContainer = document.getElementById('st-preview-text-container');
                 const imageContainer = document.getElementById('st-preview-image-container');
                 const previewText = document.getElementById('st-preview-text');
+
+                // 스타일 및 레이아웃 적용
                 Object.assign(previewText.style, card.style);
-                const applyTransform = (el, layout) => {
+                
+                const applyLayout = (el, layout) => {
                     if (el) {
-                        el.style.width = layout.width;
-                        el.style.height = layout.height;
-                        el.style.transform = `translate(${layout.x}px, ${layout.y}px) scale(${layout.scale}) rotate(${layout.angle}deg)`;
+                        const style = el.style;
+                        style.position = 'absolute'; // 레이아웃 조작을 위해 absolute로 설정
+                        style.left = layout.x ? `${layout.x}px` : '0';
+                        style.top = layout.y ? `${layout.y}px` : (el.id.includes('text') ? '120px' : '240px'); // 기본 위치
+                        style.width = layout.width;
+                        style.height = layout.height;
+                        style.transform = `rotate(${layout.angle}deg)`;
                     }
                 };
-                applyTransform(textContainer, card.layout.text);
-                applyTransform(imageContainer, card.layout.image);
+                applyLayout(textContainer, card.layout.text);
+                applyLayout(imageContainer, card.layout.image);
             }
             if (activeInteractiveElement) {
                 const newActiveElement = document.getElementById(activeInteractiveElement.id);
@@ -240,13 +251,17 @@
             document.addEventListener('keyup', e => { if (e.key === 'Shift') { document.body.classList.remove('is-rotating'); isRotatingWithShift = false; }});
             
             document.querySelector('.st-preview-area').addEventListener('click', (e) => {
-                if (!e.target.closest('.interactive-target')) {
+                const previewContent = e.target.closest('.st-preview-content');
+                if (previewContent && !e.target.closest('.interactive-target')) {
                     setActiveInteractiveElement(null);
                 }
             });
 
             interact('.interactive-target')
-                .on('tap', function(event) { setActiveInteractiveElement(event.currentTarget); event.stopPropagation(); })
+                .on('tap', function(event) {
+                    setActiveInteractiveElement(event.currentTarget);
+                    event.stopPropagation();
+                })
                 .draggable({
                     listeners: {
                         move(event) {
@@ -258,7 +273,7 @@
                                 const centerX = rect.left + rect.width / 2;
                                 const centerY = rect.top + rect.height / 2;
                                 const angle = Math.atan2(event.clientY - centerY, event.clientX - centerX);
-                                layout.angle = (angle * 180 / Math.PI) + 90;
+                                layout.angle = (angle * 180 / Math.PI) + 90; // 보정
                             } else {
                                 layout.x += event.dx;
                                 layout.y += event.dy;
@@ -295,9 +310,12 @@
             addCardBtn.addEventListener('click', () => addScriptCard(''));
             playAllBtn.addEventListener('click', togglePlay);
             setupGptsModal();
-            newProjectBtn.addEventListener('click', startNewProject);
-            document.getElementById('st-setting-global-bgm').addEventListener('change', (e) => { const url = e.target.value; if (url) { openBgmEditor(url, globalBGM, ({ startTime, endTime }) => { globalBGM = { ...globalBGM, url, startTime, endTime }; if (isPlaying) playBGM(); }); } else { globalBGM.url = null; if (isPlaying) bgmPlayer.pause(); } });
-            document.getElementById('st-setting-global-bgm-volume').addEventListener('input', (e) => { globalBGM.volume = parseFloat(e.target.value); bgmPlayer.volume = globalBGM.volume; });
+            const newProjectBtn = document.getElementById('st-btn-add-project');
+            if(newProjectBtn) newProjectBtn.addEventListener('click', startNewProject);
+            const globalBgmSelect = document.getElementById('st-setting-global-bgm');
+            if(globalBgmSelect) globalBgmSelect.addEventListener('change', (e) => { const url = e.target.value; if (url) { openBgmEditor(url, globalBGM, ({ startTime, endTime }) => { globalBGM = { ...globalBGM, url, startTime, endTime }; if (isPlaying) playBGM(); }); } else { globalBGM.url = null; if (isPlaying) bgmPlayer.pause(); } });
+            const globalBgmVolume = document.getElementById('st-setting-global-bgm-volume');
+            if(globalBgmVolume) globalBgmVolume.addEventListener('input', (e) => { globalBGM.volume = parseFloat(e.target.value); bgmPlayer.volume = globalBGM.volume; });
             new Sortable(cardContainer, { animation: 150, handle: '.st-card-drag-handle', onEnd: function(evt) { const { oldIndex, newIndex } = evt; const [movedItem] = scriptCards.splice(oldIndex, 1); scriptCards.splice(newIndex, 0, movedItem); updateCardNumbers(); } });
             initializeInteract();
             addScriptCard('SunsakTool에 오신 것을 환영합니다!');
