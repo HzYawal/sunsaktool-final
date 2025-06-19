@@ -179,7 +179,7 @@
         function setupExportButton() {
             const exportBtn = document.getElementById('st-btn-export-video');
             if (!exportBtn) return;
-            const RENDER_SERVER_URL = 'https://7rsba7hpje.execute-api.ap-northeast-2.amazonaws.com/dev/render-video';
+            const RENDER_SERVER_URL = 'https://fwbhhvq8gk.execute-api.ap-northeast-2.amazonaws.com/render-video';
             exportBtn.addEventListener('click', async () => {
                 if (scriptCards.some(c => !c.ttsReady && c.text.trim())) return alert('아직 음성 생성이 완료되지 않은 스크립트가 있습니다. 모두 생성된 후 시도해주세요.');
                 if (scriptCards.length === 0) return alert('출력할 스크립트가 없습니다.');
