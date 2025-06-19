@@ -1,4 +1,4 @@
-# 파일 이름: serverless.yml (CORS 해결 최종 버전)
+# 파일 이름: serverless.yml (플러그인을 버리고 Layer를 사용하는 최종 버전)
 
 service: sunsaktool-renderer
 frameworkVersion: '^4'
@@ -7,17 +7,17 @@ provider:
   name: aws
   runtime: nodejs18.x
   region: ap-northeast-2
-  
-  # ✨ CORS 문제를 해결하기 위한 설정 추가 ✨
-  httpApi:
-    cors: true # 이 한 줄이 마법입니다!
 
 functions:
   renderVideo:
     handler: rendering-server/handler.main
     timeout: 900
     memorySize: 2048
+    # ✨ 여기에 FFmpeg Layer를 직접 장착합니다. ✨
+    layers:
+      - arn:aws:lambda:ap-northeast-2:145266761615:layer:ffmpeg-6-20230522:1
     events:
       - httpApi:
           path: /render-video
           method: post
+          cors: true
