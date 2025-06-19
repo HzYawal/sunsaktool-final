@@ -21,7 +21,7 @@
         .st-preview-area { flex-basis: 400px; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
         .st-editor-area { flex-grow: 1; border-left: 1px solid var(--st-border-color); overflow-y: auto; padding: 20px; }
         button { background-color: var(--st-accent-color); color: #fff; font-weight: bold; cursor: pointer; border: none; border-radius: 4px; padding: 8px 12px; }
-        .st-preview-panel { width: 100%; max-width: 380px; aspect-ratio: 9 / 16; background-color: #fff; box-shadow: 0 0 20px rgba(0,0,0,0.2); display: flex; flex-direction: column; overflow: hidden; position: relative; }
+        .st-preview-panel { width: 100%; max-width: 380px; aspect-ratio: 9 / 16; background-color: #fff; box-shadow: 0 0 20px rgba(0,0,0,0.2); display: flex; flex-direction: column; overflow: hidden; position: relative; transform-origin: top left; /* ✨ 스케일링 기준점 설정 */ }
         .st-preview-header { font-family: 'GmarketSans', sans-serif; color: white; font-weight: bold; flex-shrink: 0; height: 65px; display: flex; justify-content: center; align-items: center; padding: 0 15px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
         .st-preview-content { padding: 10px; color: black; flex-grow: 1; display: flex; flex-direction: column; background-color: white; overflow: hidden; position: relative; }
         .st-project-info { font-size: 13px; color: #555; margin: 0 0 16px 0; border-bottom: 1px solid #eee; padding-bottom: 16px; }
@@ -67,7 +67,7 @@
         #st-waveform-loading { text-align: center; padding: 40px; color: var(--st-subtext-color); }
         #st-recording-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; display: none; justify-content: center; align-items: center; z-index: 9998; }
         #st-recording-overlay.active { display: flex; }
-        body.recording-mode > *:not(#st-recording-overlay) { display: none; }
+        body.recording-mode > *:not(#st-recording-overlay):not(script) { display: none; }
     </style>
 </head>
 <body>
@@ -170,10 +170,67 @@
         function playCardByIndex(index) { if (index >= scriptCards.length || !isPlaying) { stopPlayback(); return; } playbackCurrentIndex = index; const card = scriptCards[index]; selectCard(card.id, true); if (card.sfxUrl) { sfxPlayer.src = card.sfxUrl; sfxPlayer.play(); } setTimeout(() => { if (isPlaying && playbackCurrentIndex === index) { ttsPlayer.src = card.audioUrl; ttsPlayer.play(); } }, 30); ttsPlayer.onended = () => playCardByIndex(index + 1); }
         function setupGptsModal() { addGptsBtn.addEventListener('click', () => { gptsModal.classList.add('visible'); }); function closeModal() { gptsModal.classList.remove('visible'); gptsTextarea.value = ''; } gptsCancelBtn.addEventListener('click', closeModal); gptsModal.addEventListener('click', (e) => { if (e.target === gptsModal) { closeModal(); } }); gptsConfirmBtn.addEventListener('click', () => { const text = gptsTextarea.value.trim(); if (!text) return; const lines = text.split(/\n\s*\n/).filter(line => line.trim() !== ''); lines.forEach(line => { addScriptCard(line.trim()); }); closeModal(); if(lines.length > 0 && scriptCards.length > 0) { const firstNewCardId = scriptCards[scriptCards.length - lines.length].id; selectCard(firstNewCardId); } }); }
         
-        async function setupExportButton() { const exportBtn = document.getElementById('st-btn-export-video'); if (!exportBtn) return; const recordingOverlay = document.getElementById('st-recording-overlay'); const previewPlaceholder = document.getElementById('st-preview-placeholder'); exportBtn.addEventListener('click', async () => { if (scriptCards.length === 0) return alert('출력할 스크립트가 없습니다.'); if (isPlaying) stopPlayback(); deactivateAllInteractive(); exportBtn.disabled = true; exportBtn.textContent = '녹화 준비 중...'; document.body.classList.add('recording-mode'); recordingOverlay.classList.add('active'); recordingOverlay.appendChild(previewPanel); previewPanel.style.width = '1080px'; previewPanel.style.height = '1920px'; previewPanel.style.maxWidth = 'none'; previewPanel.style.maxHeight = 'none'; const scale = Math.min(window.innerWidth / 1080, window.innerHeight / 1920, 1); previewPanel.style.transform = `scale(${scale})`; let stream; let recorder; const cleanup = () => { document.body.classList.remove('recording-mode'); recordingOverlay.classList.remove('active'); previewPlaceholder.appendChild(previewPanel); previewPanel.style.width = ''; previewPanel.style.height = ''; previewPanel.style.maxWidth = ''; previewPanel.style.maxHeight = ''; previewPanel.style.transform = ''; exportBtn.disabled = false; exportBtn.textContent = '🎬 1080p 영상 출력'; if (stream) stream.getTracks().forEach(track => track.stop()); }; try { stream = await navigator.mediaDevices.getDisplayMedia({ video: { mediaSource: 'browser' }, audio: true, preferCurrentTab: true }); recorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9,opus' }); const chunks = []; recorder.ondataavailable = e => chunks.push(e.data); recorder.onstop = () => { const blob = new Blob(chunks, { type: 'video/webm' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'sunsak-video-1080p.webm'; a.click(); URL.revokeObjectURL(url); cleanup(); }; setTimeout(() => { recorder.start(); playAllForRecording().then(() => { setTimeout(() => recorder.stop(), 500); }); }, 500); } catch (err) { console.error("녹화 오류:", err); alert("영상 출력 중 오류가 발생했거나 사용자가 취소했습니다."); cleanup(); } }); }
+        async function setupExportButton() {
+            const exportBtn = document.getElementById('st-btn-export-video');
+            if (!exportBtn) return;
+            const recordingOverlay = document.getElementById('st-recording-overlay');
+            const previewPlaceholder = document.getElementById('st-preview-placeholder');
+
+            exportBtn.addEventListener('click', async () => {
+                if (scriptCards.length === 0) return alert('출력할 스크립트가 없습니다.');
+                if (isPlaying) stopPlayback();
+                deactivateAllInteractive();
+                exportBtn.disabled = true; exportBtn.textContent = '녹화 준비 중...';
+                
+                // ✨ 1. 현재 패널의 너비를 기준으로 스케일 계산
+                const originalWidth = previewPanel.offsetWidth;
+                const scaleFactor = 1080 / originalWidth;
+
+                // 2. 녹화 환경 준비
+                document.body.classList.add('recording-mode');
+                recordingOverlay.classList.add('active');
+                
+                // ✨ 3. 패널을 오버레이로 이동하고, 크기 대신 transform: scale 적용
+                recordingOverlay.appendChild(previewPanel);
+                previewPanel.style.transform = `scale(${scaleFactor})`;
+
+                let stream;
+                const cleanup = () => {
+                    document.body.classList.remove('recording-mode');
+                    recordingOverlay.classList.remove('active');
+                    previewPlaceholder.appendChild(previewPanel);
+                    previewPanel.style.transform = ''; // ✨ 스케일 원상 복구
+                    exportBtn.disabled = false; exportBtn.textContent = '🎬 1080p 영상 출력';
+                    if (stream) stream.getTracks().forEach(track => track.stop());
+                };
+
+                try {
+                    stream = await navigator.mediaDevices.getDisplayMedia({ video: { mediaSource: 'browser' }, audio: true, preferCurrentTab: true });
+                    const recorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9,opus' });
+                    const chunks = [];
+                    recorder.ondataavailable = e => chunks.push(e.data);
+                    recorder.onstop = () => {
+                        const blob = new Blob(chunks, { type: 'video/webm' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url; a.download = 'sunsak-video-1080p.webm';
+                        a.click(); URL.revokeObjectURL(url);
+                        cleanup();
+                    };
+                    setTimeout(() => {
+                        recorder.start();
+                        playAllForRecording().then(() => { setTimeout(() => recorder.stop(), 500); });
+                    }, 500);
+                } catch (err) {
+                    console.error("녹화 오류:", err);
+                    alert("영상 출력 중 오류가 발생했거나 사용자가 취소했습니다.");
+                    cleanup();
+                }
+            });
+        }
         async function playAllForRecording() { return new Promise(async resolve => { let currentIndex = 0; const playNextCard = async () => { if (currentIndex >= scriptCards.length) { if(globalBGM.url) bgmPlayer.pause(); resolve(); return; } const card = scriptCards[currentIndex]; selectCard(card.id, true); await new Promise(r => setTimeout(r, 50)); let audioPromises = []; if (card.audioUrl) { const tts = new Audio(card.audioUrl); tts.play(); audioPromises.push(new Promise(res => tts.onended = res)); } if (card.sfxUrl) { const sfx = new Audio(card.sfxUrl); sfx.play(); } if (audioPromises.length === 0) { setTimeout(() => { currentIndex++; playNextCard(); }, (card.duration || 0.5) * 1000); } else { await Promise.all(audioPromises); currentIndex++; playNextCard(); } }; if(globalBGM.url) { bgmPlayer.src = globalBGM.url; bgmPlayer.volume = globalBGM.volume; bgmPlayer.currentTime = globalBGM.startTime || 0; bgmPlayer.play(); } playNextCard(); }); }
         function deactivateAllInteractive() { document.querySelectorAll('.interactive-target.interactive-active').forEach(el => { el.classList.remove('interactive-active'); el.querySelectorAll('.resize-handle').forEach(h => h.remove()); }); activeInteractiveElement = null; }
-        function initializeInteract() { const previewContent = document.querySelector('.st-preview-content'); previewContent?.addEventListener('click', (e) => { if (e.target === previewContent || e.target.classList.contains('st-script-display')) { deactivateAllInteractive(); } }); interact('.interactive-target').on('tap', (event) => { const target = event.currentTarget; if (activeInteractiveElement === target) return; deactivateAllInteractive(); activeInteractiveElement = target; target.classList.add('interactive-active'); ['top-left', 'top-right', 'bottom-left', 'bottom-right'].forEach(pos => { const handle = document.createElement('div'); handle.className = `resize-handle ${pos}`; target.appendChild(handle); }); event.preventDefault(); }).draggable({ listeners: { move(event) { const card = scriptCards.find(c => c.id === selectedCardId); if (!card) return; const layoutKey = event.target.dataset.layoutKey; const layout = card.layout[layoutKey]; if (event.shiftKey) { const center = { x: event.target.offsetLeft + event.target.offsetWidth / 2, y: event.target.offsetTop + event.target.offsetHeight / 2 }; const angle = Math.atan2(event.clientY - (previewContent?.getBoundingClientRect().top || 0) - center.y, event.clientX - (previewContent?.getBoundingClientRect().left || 0) - center.x); layout.angle = angle * (180 / Math.PI); } else { layout.x += event.dx; layout.y += event.dy; } applyTransform(event.target, layout); } } }).resizable({ edges: { top: false, left: false, bottom: false, right: false }, listeners: { move(event) { const card = scriptCards.find(c => c.id === selectedCardId); if (!card) return; const layoutKey = event.target.dataset.layoutKey; const layout = card.layout[layoutKey]; layout.scale *= (event.rect.width / event.target.getBoundingClientRect().width); layout.x += event.deltaRect.left; layout.y += event.deltaRect.top; applyTransform(event.target, layout); } }, modifiers: [ interact.modifiers.aspectRatio({ ratio: 'preserve', modifiers: [interact.modifiers.snapSize({ targets: [interact.snappers.grid({ x: 1, y: 1 })] })], }), ], handle: '.resize-handle' }); }
+        function initializeInteract() { let previewContent = null; const getPreviewContent = () => { if (!previewContent) previewContent = document.querySelector('.st-preview-content'); return previewContent; }; interact('.interactive-target').on('tap', (event) => { const target = event.currentTarget; if (activeInteractiveElement === target) return; deactivateAllInteractive(); activeInteractiveElement = target; target.classList.add('interactive-active'); ['top-left', 'top-right', 'bottom-left', 'bottom-right'].forEach(pos => { const handle = document.createElement('div'); handle.className = `resize-handle ${pos}`; target.appendChild(handle); }); event.preventDefault(); }).draggable({ listeners: { move(event) { const card = scriptCards.find(c => c.id === selectedCardId); if (!card) return; const layoutKey = event.target.dataset.layoutKey; const layout = card.layout[layoutKey]; if (event.shiftKey) { const pc = getPreviewContent(); const center = { x: event.target.offsetLeft + event.target.offsetWidth / 2, y: event.target.offsetTop + event.target.offsetHeight / 2 }; const angle = Math.atan2(event.clientY - (pc?.getBoundingClientRect().top || 0) - center.y, event.clientX - (pc?.getBoundingClientRect().left || 0) - center.x); layout.angle = angle * (180 / Math.PI); } else { layout.x += event.dx; layout.y += event.dy; } applyTransform(event.target, layout); } } }).resizable({ edges: { top: false, left: false, bottom: false, right: false }, listeners: { move(event) { const card = scriptCards.find(c => c.id === selectedCardId); if (!card) return; const layoutKey = event.target.dataset.layoutKey; const layout = card.layout[layoutKey]; layout.scale *= (event.rect.width / event.target.getBoundingClientRect().width); layout.x += event.deltaRect.left; layout.y += event.deltaRect.top; applyTransform(event.target, layout); } }, modifiers: [ interact.modifiers.aspectRatio({ ratio: 'preserve', modifiers: [interact.modifiers.snapSize({ targets: [interact.snappers.grid({ x: 1, y: 1 })] })], }), ], handle: '.resize-handle' }); document.body.addEventListener('click', (e) => { const pc = getPreviewContent(); if (pc && pc.contains(e.target) && !e.target.closest('.interactive-target')) { deactivateAllInteractive(); } }); }
 
         function initialize() {
             previewPanel = document.createElement('div');
