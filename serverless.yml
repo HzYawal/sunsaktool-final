@@ -37,7 +37,7 @@ functions:
 
 # 5. 추가 플러그인 설정 (FFmpeg를 위해 필요합니다)
 plugins:
-  - serverless-plugin-ffmpeg
+  - serverless-ffmpeg-plugin # 진짜 이름
 
 # 6. 플러그인에 대한 사용자 정의 설정
 custom:
