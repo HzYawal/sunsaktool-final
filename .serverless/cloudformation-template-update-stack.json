@@ -91,7 +91,7 @@
       "Properties": {
         "Code": {
           "S3Bucket": "serverless-framework-deployments-ap-northeast-2-6173bdc6-38bc",
-          "S3Key": "serverless/sunsaktool-renderer/dev/1750345669347-2025-06-19T15:07:49.347Z/sunsaktool-renderer.zip"
+          "S3Key": "serverless/sunsaktool-renderer/dev/1750345760878-2025-06-19T15:09:20.878Z/sunsaktool-renderer.zip"
         },
         "Handler": "rendering-server/handler.main",
         "Runtime": "nodejs18.x",
@@ -240,7 +240,7 @@
         "RenderVideoLambdaPermissionApiGateway"
       ]
     },
-    "ApiGatewayDeployment1750345662981": {
+    "ApiGatewayDeployment1750345753691": {
       "Type": "AWS::ApiGateway::Deployment",
       "Properties": {
         "RestApiId": {
