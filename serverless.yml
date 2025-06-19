@@ -1,16 +1,15 @@
-# serverless.yml
+# 파일 이름: serverless.yml
 
 # 1. 서비스 이름 정의 (프로젝트 식별용)
 service: sunsaktool-renderer
 
 # 2. 사용할 Serverless Framework 버전 지정
-# 사용자님의 최신 버전에 맞게 수정되었습니다.
 frameworkVersion: '^4'
 
 # 3. 클라우드 제공사(Provider) 및 환경 설정
 provider:
   name: aws
-  runtime: nodejs18.x # Node.js 18 버전을 사용
+  runtime: nodejs18.x
   region: ap-northeast-2 # AWS 서울 리전 (한국에서 가장 빠름)
   
   # Lambda 함수가 사용할 권한 설정
@@ -36,9 +35,9 @@ functions:
           path: /render-video
           method: post
 
-# 5. 추가 플러그인 설정 (나중에 FFmpeg를 위해 필요합니다)
+# 5. 추가 플러그인 설정 (FFmpeg를 위해 필요합니다)
 plugins:
-  - serverless-ffmpeg
+  - serverless-plugin-ffmpeg
 
 # 6. 플러그인에 대한 사용자 정의 설정
 custom:
