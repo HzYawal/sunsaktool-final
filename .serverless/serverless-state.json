@@ -103,7 +103,7 @@
             "Properties": {
               "Code": {
                 "S3Bucket": "serverless-framework-deployments-ap-northeast-2-6173bdc6-38bc",
-                "S3Key": "serverless/sunsaktool-renderer/dev/1750345760878-2025-06-19T15:09:20.878Z/sunsaktool-renderer.zip"
+                "S3Key": "serverless/sunsaktool-renderer/dev/1750345802274-2025-06-19T15:10:02.274Z/sunsaktool-renderer.zip"
               },
               "Handler": "rendering-server/handler.main",
               "Runtime": "nodejs18.x",
@@ -252,7 +252,7 @@
               "RenderVideoLambdaPermissionApiGateway"
             ]
           },
-          "ApiGatewayDeployment1750345753691": {
+          "ApiGatewayDeployment1750345795782": {
             "Type": "AWS::ApiGateway::Deployment",
             "Properties": {
               "RestApiId": {
@@ -410,7 +410,7 @@
     "artifact": "C:\\Users\\leebu\\OneDrive\\문서\\GitHub\\sunsaktool-final\\.serverless\\sunsaktool-renderer.zip"
   },
   "package": {
-    "artifactDirectoryName": "serverless/sunsaktool-renderer/dev/1750345760878-2025-06-19T15:09:20.878Z",
+    "artifactDirectoryName": "serverless/sunsaktool-renderer/dev/1750345802274-2025-06-19T15:10:02.274Z",
     "artifact": "sunsaktool-renderer.zip"
   }
 }
