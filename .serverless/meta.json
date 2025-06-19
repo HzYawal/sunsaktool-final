@@ -10,9 +10,6 @@
         "name": "aws",
         "runtime": "nodejs18.x",
         "region": "ap-northeast-2",
-        "httpApi": {
-          "cors": true
-        },
         "stage": "dev",
         "versionFunctions": true,
         "compiledCloudFormationTemplate": {
@@ -108,7 +105,7 @@
               "Properties": {
                 "Code": {
                   "S3Bucket": "serverless-framework-deployments-ap-northeast-2-6173bdc6-38bc",
-                  "S3Key": "serverless/sunsaktool-renderer/dev/1750344573964-2025-06-19T14:49:33.964Z/sunsaktool-renderer.zip"
+                  "S3Key": "serverless/sunsaktool-renderer/dev/1750345059076-2025-06-19T14:57:39.076Z/sunsaktool-renderer.zip"
                 },
                 "Handler": "rendering-server/handler.main",
                 "Runtime": "nodejs18.x",
@@ -120,46 +117,30 @@
                     "IamRoleLambdaExecution",
                     "Arn"
                   ]
-                }
+                },
+                "Layers": [
+                  "arn:aws:lambda:ap-northeast-2:145266761615:layer:ffmpeg-6-20230522:1"
+                ]
               },
               "DependsOn": [
                 "RenderVideoLogGroup"
               ]
             },
-            "RenderVideoLambdaVersionXftkEfB4G4Kahzqa7kd83tLAkv2tORxkfkS3pwoA": {
+            "RenderVideoLambdaVersionSaGAN17RoSdIFWPNxWNmYq2cg6Bh68mG9EtgWKYxOj8": {
               "Type": "AWS::Lambda::Version",
               "DeletionPolicy": "Retain",
               "Properties": {
                 "FunctionName": {
                   "Ref": "RenderVideoLambdaFunction"
                 },
-                "CodeSha256": "IMOTkbUqztb3/nY0Gh7rLb5HO4jgtYTiveyWPE6jqqo="
+                "CodeSha256": "R1959TjhO7SEXVwBhoKLZji2SlzQMvAzq7mdE4kiUNo="
               }
             },
             "HttpApi": {
               "Type": "AWS::ApiGatewayV2::Api",
               "Properties": {
                 "Name": "dev-sunsaktool-renderer",
-                "ProtocolType": "HTTP",
-                "CorsConfiguration": {
-                  "AllowCredentials": "<REDACTED>",
-                  "AllowHeaders": [
-                    "Content-Type",
-                    "X-Amz-Date",
-                    "Authorization",
-                    "X-Api-Key",
-                    "X-Amz-Security-Token",
-                    "X-Amz-User-Agent",
-                    "X-Amzn-Trace-Id"
-                  ],
-                  "AllowMethods": [
-                    "OPTIONS",
-                    "POST"
-                  ],
-                  "AllowOrigins": [
-                    "*"
-                  ]
-                }
+                "ProtocolType": "HTTP"
               }
             },
             "HttpApiStage": {
@@ -261,7 +242,7 @@
             "RenderVideoLambdaFunctionQualifiedArn": {
               "Description": "Current Lambda function version",
               "Value": {
-                "Ref": "RenderVideoLambdaVersionXftkEfB4G4Kahzqa7kd83tLAkv2tORxkfkS3pwoA"
+                "Ref": "RenderVideoLambdaVersionSaGAN17RoSdIFWPNxWNmYq2cg6Bh68mG9EtgWKYxOj8"
               },
               "Export": {
                 "Name": "sls-sunsaktool-renderer-dev-RenderVideoLambdaFunctionQualifiedArn"
@@ -310,11 +291,15 @@
           "handler": "rendering-server/handler.main",
           "timeout": 900,
           "memorySize": 2048,
+          "layers": [
+            "arn:aws:lambda:ap-northeast-2:145266761615:layer:ffmpeg-6-20230522:1"
+          ],
           "events": [
             {
               "httpApi": {
                 "path": "/render-video",
-                "method": "post"
+                "method": "post",
+                "cors": true
               },
               "resolvedMethod": "POST",
               "resolvedPath": "/render-video"
@@ -325,7 +310,7 @@
           "memory": 2048,
           "runtime": "nodejs18.x",
           "vpc": {},
-          "versionLogicalId": "RenderVideoLambdaVersionXftkEfB4G4Kahzqa7kd83tLAkv2tORxkfkS3pwoA"
+          "versionLogicalId": "RenderVideoLambdaVersionSaGAN17RoSdIFWPNxWNmYq2cg6Bh68mG9EtgWKYxOj8"
         }
       }
     },
@@ -333,9 +318,6 @@
       "name": "aws",
       "runtime": "nodejs18.x",
       "region": "ap-northeast-2",
-      "httpApi": {
-        "cors": true
-      },
       "stage": "dev",
       "versionFunctions": true,
       "compiledCloudFormationTemplate": {
@@ -431,7 +413,7 @@
             "Properties": {
               "Code": {
                 "S3Bucket": "serverless-framework-deployments-ap-northeast-2-6173bdc6-38bc",
-                "S3Key": "serverless/sunsaktool-renderer/dev/1750344573964-2025-06-19T14:49:33.964Z/sunsaktool-renderer.zip"
+                "S3Key": "serverless/sunsaktool-renderer/dev/1750345059076-2025-06-19T14:57:39.076Z/sunsaktool-renderer.zip"
               },
               "Handler": "rendering-server/handler.main",
               "Runtime": "nodejs18.x",
@@ -443,46 +425,30 @@
                   "IamRoleLambdaExecution",
                   "Arn"
                 ]
-              }
+              },
+              "Layers": [
+                "arn:aws:lambda:ap-northeast-2:145266761615:layer:ffmpeg-6-20230522:1"
+              ]
             },
             "DependsOn": [
               "RenderVideoLogGroup"
             ]
           },
-          "RenderVideoLambdaVersionXftkEfB4G4Kahzqa7kd83tLAkv2tORxkfkS3pwoA": {
+          "RenderVideoLambdaVersionSaGAN17RoSdIFWPNxWNmYq2cg6Bh68mG9EtgWKYxOj8": {
             "Type": "AWS::Lambda::Version",
             "DeletionPolicy": "Retain",
             "Properties": {
               "FunctionName": {
                 "Ref": "RenderVideoLambdaFunction"
               },
-              "CodeSha256": "IMOTkbUqztb3/nY0Gh7rLb5HO4jgtYTiveyWPE6jqqo="
+              "CodeSha256": "R1959TjhO7SEXVwBhoKLZji2SlzQMvAzq7mdE4kiUNo="
             }
           },
           "HttpApi": {
             "Type": "AWS::ApiGatewayV2::Api",
             "Properties": {
               "Name": "dev-sunsaktool-renderer",
-              "ProtocolType": "HTTP",
-              "CorsConfiguration": {
-                "AllowCredentials": "<REDACTED>",
-                "AllowHeaders": [
-                  "Content-Type",
-                  "X-Amz-Date",
-                  "Authorization",
-                  "X-Api-Key",
-                  "X-Amz-Security-Token",
-                  "X-Amz-User-Agent",
-                  "X-Amzn-Trace-Id"
-                ],
-                "AllowMethods": [
-                  "OPTIONS",
-                  "POST"
-                ],
-                "AllowOrigins": [
-                  "*"
-                ]
-              }
+              "ProtocolType": "HTTP"
             }
           },
           "HttpApiStage": {
@@ -584,7 +550,7 @@
           "RenderVideoLambdaFunctionQualifiedArn": {
             "Description": "Current Lambda function version",
             "Value": {
-              "Ref": "RenderVideoLambdaVersionXftkEfB4G4Kahzqa7kd83tLAkv2tORxkfkS3pwoA"
+              "Ref": "RenderVideoLambdaVersionSaGAN17RoSdIFWPNxWNmYq2cg6Bh68mG9EtgWKYxOj8"
             },
             "Export": {
               "Name": "sls-sunsaktool-renderer-dev-RenderVideoLambdaFunctionQualifiedArn"
@@ -637,7 +603,12 @@
       "serviceProvider": null,
       "instanceParameters": null
     },
-    "serviceRawFile": "# 파일 이름: serverless.yml (CORS 해결 최종 버전)\r\n\r\nservice: sunsaktool-renderer\r\nframeworkVersion: '^4'\r\n\r\nprovider:\r\n  name: aws\r\n  runtime: nodejs18.x\r\n  region: ap-northeast-2\r\n  \r\n  # ✨ CORS 문제를 해결하기 위한 설정 추가 ✨\r\n  httpApi:\r\n    cors: true # 이 한 줄이 마법입니다!\r\n\r\nfunctions:\r\n  renderVideo:\r\n    handler: rendering-server/handler.main\r\n    timeout: 900\r\n    memorySize: 2048\r\n    events:\r\n      - httpApi:\r\n          path: /render-video\r\n          method: post\r\n",
+    "error": {
+      "message": "An error occurred: RenderVideoLambdaFunction - Resource handler returned message: \"User: arn:aws:iam::610726994046:user/sunsak-admin is not authorized to perform: lambda:GetLayerVersion on resource: arn:aws:lambda:ap-northeast-2:145266761615:layer:ffmpeg-6-20230522:1 because no resource-based policy allows the lambda:GetLayerVersion action (Service: Lambda, Status Code: 403, Request ID: d4b1bcdc-d07f-43f6-a959-6918215f120d) (SDK Attempt Count: 1)\" (RequestToken: 2549bd50-eca1-3c4d-12b3-d926f1ffd8f5, HandlerErrorCode: AccessDenied).",
+      "stack": "ServerlessError2: An error occurred: RenderVideoLambdaFunction - Resource handler returned message: \"User: arn:aws:iam::610726994046:user/sunsak-admin is not authorized to perform: lambda:GetLayerVersion on resource: arn:aws:lambda:ap-northeast-2:145266761615:layer:ffmpeg-6-20230522:1 because no resource-based policy allows the lambda:GetLayerVersion action (Service: Lambda, Status Code: 403, Request ID: d4b1bcdc-d07f-43f6-a959-6918215f120d) (SDK Attempt Count: 1)\" (RequestToken: 2549bd50-eca1-3c4d-12b3-d926f1ffd8f5, HandlerErrorCode: AccessDenied).\n    at file:///C:/Users/leebu/.serverless/releases/4.17.1/package/dist/sf-core.js:1175:828\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async AwsDeploy.update (file:///C:/Users/leebu/.serverless/releases/4.17.1/package/dist/sf-core.js:1175:25279)\n    at async aws:deploy:deploy:updateStack (file:///C:/Users/leebu/.serverless/releases/4.17.1/package/dist/sf-core.js:1186:7908)\n    at async PluginManager.runHooks (file:///C:/Users/leebu/.serverless/releases/4.17.1/package/dist/sf-core.js:1377:9870)\n    at async PluginManager.invoke (file:///C:/Users/leebu/.serverless/releases/4.17.1/package/dist/sf-core.js:1377:10639)\n    at async PluginManager.spawn (file:///C:/Users/leebu/.serverless/releases/4.17.1/package/dist/sf-core.js:1377:11000)\n    at async PluginManager.runHooks (file:///C:/Users/leebu/.serverless/releases/4.17.1/package/dist/sf-core.js:1377:9870)\n    at async PluginManager.invoke (file:///C:/Users/leebu/.serverless/releases/4.17.1/package/dist/sf-core.js:1377:10639)\n    at async PluginManager.run (file:///C:/Users/leebu/.serverless/releases/4.17.1/package/dist/sf-core.js:1377:11373)",
+      "code": "AWS_CLOUD_FORMATION_UPDATE_STACK_INTERNAL_INSUFFICIENT_PERMISSIONS"
+    },
+    "serviceRawFile": "# 파일 이름: serverless.yml (플러그인을 버리고 Layer를 사용하는 최종 버전)\r\n\r\nservice: sunsaktool-renderer\r\nframeworkVersion: '^4'\r\n\r\nprovider:\r\n  name: aws\r\n  runtime: nodejs18.x\r\n  region: ap-northeast-2\r\n\r\nfunctions:\r\n  renderVideo:\r\n    handler: rendering-server/handler.main\r\n    timeout: 900\r\n    memorySize: 2048\r\n    # ✨ 여기에 FFmpeg Layer를 직접 장착합니다. ✨\r\n    layers:\r\n      - arn:aws:lambda:ap-northeast-2:145266761615:layer:ffmpeg-6-20230522:1\r\n    events:\r\n      - httpApi:\r\n          path: /render-video\r\n          method: post\r\n          cors: true\r\n",
     "command": [
       "deploy"
     ],
@@ -650,313 +621,32 @@
     "serviceProviderAwsCfStackName": "sunsaktool-renderer-dev",
     "serviceProviderAwsCfStackId": "arn:aws:cloudformation:ap-northeast-2:610726994046:stack/sunsaktool-renderer-dev/0a188870-4d14-11f0-a5e2-02be15ef2b07",
     "serviceProviderAwsCfStackCreated": "2025-06-19T13:48:11.929Z",
-    "serviceProviderAwsCfStackUpdated": "2025-06-19T13:58:14.261Z",
+    "serviceProviderAwsCfStackUpdated": "2025-06-19T14:49:37.481Z",
     "serviceProviderAwsCfStackStatus": "UPDATE_COMPLETE",
     "serviceProviderAwsCfStackOutputs": [
       {
         "OutputKey": "RenderVideoLambdaFunctionQualifiedArn",
-        "OutputValue": "arn:aws:lambda:ap-northeast-2:610726994046:function:sunsaktool-renderer-dev-renderVideo:2",
+        "OutputValue": "arn:aws:lambda:ap-northeast-2:610726994046:function:sunsaktool-renderer-dev-renderVideo:3",
         "Description": "Current Lambda function version",
         "ExportName": "sls-sunsaktool-renderer-dev-RenderVideoLambdaFunctionQualifiedArn"
       },
       {
-        "OutputKey": "ServiceEndpoint",
-        "OutputValue": "https://7rsba7hpje.execute-api.ap-northeast-2.amazonaws.com/dev",
-        "Description": "URL of the service endpoint",
-        "ExportName": "sls-sunsaktool-renderer-dev-ServiceEndpoint"
+        "OutputKey": "HttpApiId",
+        "OutputValue": "fwbhhvq8gk",
+        "Description": "Id of the HTTP API",
+        "ExportName": "sls-sunsaktool-renderer-dev-HttpApiId"
       },
       {
         "OutputKey": "ServerlessDeploymentBucketName",
         "OutputValue": "serverless-framework-deployments-ap-northeast-2-6173bdc6-38bc",
         "ExportName": "sls-sunsaktool-renderer-dev-ServerlessDeploymentBucketName"
-      }
-    ],
-    "compiledCloudFormationTemplate": {
-      "AWSTemplateFormatVersion": "2010-09-09",
-      "Description": "The AWS CloudFormation template for this Serverless application",
-      "Resources": {
-        "RenderVideoLogGroup": {
-          "Type": "AWS::Logs::LogGroup",
-          "Properties": {
-            "LogGroupName": "/aws/lambda/sunsaktool-renderer-dev-renderVideo"
-          }
-        },
-        "IamRoleLambdaExecution": {
-          "Type": "AWS::IAM::Role",
-          "Properties": {
-            "AssumeRolePolicyDocument": {
-              "Version": "2012-10-17",
-              "Statement": [
-                {
-                  "Effect": "Allow",
-                  "Principal": {
-                    "Service": [
-                      "lambda.amazonaws.com"
-                    ]
-                  },
-                  "Action": [
-                    "sts:AssumeRole"
-                  ]
-                }
-              ]
-            },
-            "Policies": [
-              {
-                "PolicyName": {
-                  "Fn::Join": [
-                    "-",
-                    [
-                      "sunsaktool-renderer",
-                      "dev",
-                      "lambda"
-                    ]
-                  ]
-                },
-                "PolicyDocument": {
-                  "Version": "2012-10-17",
-                  "Statement": [
-                    {
-                      "Effect": "Allow",
-                      "Action": [
-                        "logs:CreateLogStream",
-                        "logs:CreateLogGroup",
-                        "logs:TagResource"
-                      ],
-                      "Resource": [
-                        {
-                          "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/sunsaktool-renderer-dev*:*"
-                        }
-                      ]
-                    },
-                    {
-                      "Effect": "Allow",
-                      "Action": [
-                        "logs:PutLogEvents"
-                      ],
-                      "Resource": [
-                        {
-                          "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/sunsaktool-renderer-dev*:*:*"
-                        }
-                      ]
-                    }
-                  ]
-                }
-              }
-            ],
-            "Path": "/",
-            "RoleName": {
-              "Fn::Join": [
-                "-",
-                [
-                  "sunsaktool-renderer",
-                  "dev",
-                  {
-                    "Ref": "AWS::Region"
-                  },
-                  "lambdaRole"
-                ]
-              ]
-            }
-          }
-        },
-        "RenderVideoLambdaFunction": {
-          "Type": "AWS::Lambda::Function",
-          "Properties": {
-            "Code": {
-              "S3Bucket": "serverless-framework-deployments-ap-northeast-2-6173bdc6-38bc",
-              "S3Key": "serverless/sunsaktool-renderer/dev/1750344573964-2025-06-19T14:49:33.964Z/sunsaktool-renderer.zip"
-            },
-            "Handler": "rendering-server/handler.main",
-            "Runtime": "nodejs18.x",
-            "FunctionName": "sunsaktool-renderer-dev-renderVideo",
-            "MemorySize": 2048,
-            "Timeout": 900,
-            "Role": {
-              "Fn::GetAtt": [
-                "IamRoleLambdaExecution",
-                "Arn"
-              ]
-            }
-          },
-          "DependsOn": [
-            "RenderVideoLogGroup"
-          ]
-        },
-        "RenderVideoLambdaVersionXftkEfB4G4Kahzqa7kd83tLAkv2tORxkfkS3pwoA": {
-          "Type": "AWS::Lambda::Version",
-          "DeletionPolicy": "Retain",
-          "Properties": {
-            "FunctionName": {
-              "Ref": "RenderVideoLambdaFunction"
-            },
-            "CodeSha256": "IMOTkbUqztb3/nY0Gh7rLb5HO4jgtYTiveyWPE6jqqo="
-          }
-        },
-        "HttpApi": {
-          "Type": "AWS::ApiGatewayV2::Api",
-          "Properties": {
-            "Name": "dev-sunsaktool-renderer",
-            "ProtocolType": "HTTP",
-            "CorsConfiguration": {
-              "AllowHeaders": [
-                "Content-Type",
-                "X-Amz-Date",
-                "Authorization",
-                "X-Api-Key",
-                "X-Amz-Security-Token",
-                "X-Amz-User-Agent",
-                "X-Amzn-Trace-Id"
-              ],
-              "AllowMethods": [
-                "OPTIONS",
-                "POST"
-              ],
-              "AllowOrigins": [
-                "*"
-              ]
-            }
-          }
-        },
-        "HttpApiStage": {
-          "Type": "AWS::ApiGatewayV2::Stage",
-          "Properties": {
-            "ApiId": {
-              "Ref": "HttpApi"
-            },
-            "StageName": "$default",
-            "AutoDeploy": true,
-            "DefaultRouteSettings": {
-              "DetailedMetricsEnabled": false
-            }
-          }
-        },
-        "RenderVideoLambdaPermissionHttpApi": {
-          "Type": "AWS::Lambda::Permission",
-          "Properties": {
-            "FunctionName": {
-              "Fn::GetAtt": [
-                "RenderVideoLambdaFunction",
-                "Arn"
-              ]
-            },
-            "Action": "lambda:InvokeFunction",
-            "Principal": "apigateway.amazonaws.com",
-            "SourceArn": {
-              "Fn::Join": [
-                "",
-                [
-                  "arn:",
-                  {
-                    "Ref": "AWS::Partition"
-                  },
-                  ":execute-api:",
-                  {
-                    "Ref": "AWS::Region"
-                  },
-                  ":",
-                  {
-                    "Ref": "AWS::AccountId"
-                  },
-                  ":",
-                  {
-                    "Ref": "HttpApi"
-                  },
-                  "/*"
-                ]
-              ]
-            }
-          }
-        },
-        "HttpApiIntegrationRenderVideo": {
-          "Type": "AWS::ApiGatewayV2::Integration",
-          "Properties": {
-            "ApiId": {
-              "Ref": "HttpApi"
-            },
-            "IntegrationType": "AWS_PROXY",
-            "IntegrationUri": {
-              "Fn::GetAtt": [
-                "RenderVideoLambdaFunction",
-                "Arn"
-              ]
-            },
-            "PayloadFormatVersion": "2.0",
-            "TimeoutInMillis": 30000
-          }
-        },
-        "HttpApiRoutePostRenderDashvideo": {
-          "Type": "AWS::ApiGatewayV2::Route",
-          "Properties": {
-            "ApiId": {
-              "Ref": "HttpApi"
-            },
-            "RouteKey": "POST /render-video",
-            "Target": {
-              "Fn::Join": [
-                "/",
-                [
-                  "integrations",
-                  {
-                    "Ref": "HttpApiIntegrationRenderVideo"
-                  }
-                ]
-              ]
-            }
-          },
-          "DependsOn": "HttpApiIntegrationRenderVideo"
-        }
       },
-      "Outputs": {
-        "ServerlessDeploymentBucketName": {
-          "Value": "serverless-framework-deployments-ap-northeast-2-6173bdc6-38bc",
-          "Export": {
-            "Name": "sls-sunsaktool-renderer-dev-ServerlessDeploymentBucketName"
-          }
-        },
-        "RenderVideoLambdaFunctionQualifiedArn": {
-          "Description": "Current Lambda function version",
-          "Value": {
-            "Ref": "RenderVideoLambdaVersionXftkEfB4G4Kahzqa7kd83tLAkv2tORxkfkS3pwoA"
-          },
-          "Export": {
-            "Name": "sls-sunsaktool-renderer-dev-RenderVideoLambdaFunctionQualifiedArn"
-          }
-        },
-        "HttpApiId": {
-          "Description": "Id of the HTTP API",
-          "Value": {
-            "Ref": "HttpApi"
-          },
-          "Export": {
-            "Name": "sls-sunsaktool-renderer-dev-HttpApiId"
-          }
-        },
-        "HttpApiUrl": {
-          "Description": "URL of the HTTP API",
-          "Value": {
-            "Fn::Join": [
-              "",
-              [
-                "https://",
-                {
-                  "Ref": "HttpApi"
-                },
-                ".execute-api.",
-                {
-                  "Ref": "AWS::Region"
-                },
-                ".",
-                {
-                  "Ref": "AWS::URLSuffix"
-                }
-              ]
-            ]
-          },
-          "Export": {
-            "Name": "sls-sunsaktool-renderer-dev-HttpApiUrl"
-          }
-        }
+      {
+        "OutputKey": "HttpApiUrl",
+        "OutputValue": "https://fwbhhvq8gk.execute-api.ap-northeast-2.amazonaws.com",
+        "Description": "URL of the HTTP API",
+        "ExportName": "sls-sunsaktool-renderer-dev-HttpApiUrl"
       }
-    }
+    ]
   }
 }
