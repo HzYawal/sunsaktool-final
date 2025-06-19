@@ -9,13 +9,22 @@
         @font-face { font-family: 'Pretendard'; src: url('https://cdn.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Regular.woff') format('woff'); font-weight: 400; }
         @font-face { font-family: 'Spoqa Han Sans Neo'; src: url('https://cdn.jsdelivr.net/gh/spoqa/spoqa-han-sans@latest/Subset/SpoqaHanSansNeo/SpoqaHanSansNeo-Regular.woff2') format('woff2'); font-weight: 400; }
         @font-face { font-family: 'GmarketSans'; src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansBold.woff') format('woff'); }
-        :root { --st-accent-color: #e82c43; --st-bg-color: #1e1e1e; --st-panel-color: #2a2a2a; --st-border-color: #383838; --st-text-color: #e0e0e0; --st-subtext-color: #aaa; }* { box-sizing: border-box; }body { font-family: 'Noto Sans KR', sans-serif; background-color: var(--st-bg-color); color: var(--st-text-color); display: flex; height: 100vh; margin: 0; overflow: hidden; -webkit-font-smoothing: antialiased; }.st-panel { height: 100vh; display: flex; flex-direction: column; }.st-sidebar { width: 200px; background-color: var(--st-panel-color); padding: 20px; border-right: 1px solid var(--st-border-color); }.st-main-container { flex-grow: 1; display: flex; flex-direction: column; }.st-top-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background-color: var(--st-panel-color); border-bottom: 1px solid var(--st-border-color); flex-shrink: 0; height: 50px;}.st-logo { font-family: 'GmarketSans', sans-serif; font-weight: bold; }.st-main-content { display: flex; flex-grow: 1; overflow: hidden; }.st-preview-area { flex-basis: 400px; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }.st-editor-area { flex-grow: 1; border-left: 1px solid var(--st-border-color); border-right: 1px solid var(--st-border-color); overflow-y: auto; padding: 20px; }.st-settings-area { flex-basis: 280px; overflow-y: auto; padding: 20px; background-color: var(--st-panel-color); }button { background-color: var(--st-accent-color); color: #fff; font-weight: bold; cursor: pointer; border: none; border-radius: 4px; padding: 8px 12px; }.st-preview-panel { width: 100%; max-width: 380px; aspect-ratio: 9 / 16; background-color: #fff; box-shadow: 0 0 20px rgba(0,0,0,0.2); display: flex; flex-direction: column; overflow: hidden; }
+        :root { --st-accent-color: #e82c43; --st-bg-color: #1e1e1e; --st-panel-color: #2a2a2a; --st-border-color: #383838; --st-text-color: #e0e0e0; --st-subtext-color: #aaa; }* { box-sizing: border-box; }body { font-family: 'Noto Sans KR', sans-serif; background-color: var(--st-bg-color); color: var(--st-text-color); display: flex; height: 100vh; margin: 0; overflow: hidden; -webkit-font-smoothing: antialiased; }.st-panel { height: 100vh; display: flex; flex-direction: column; }.st-sidebar { width: 200px; background-color: var(--st-panel-color); padding: 20px; border-right: 1px solid var(--st-border-color); }.st-main-container { flex-grow: 1; display: flex; flex-direction: column; }.st-top-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background-color: var(--st-panel-color); border-bottom: 1px solid var(--st-border-color); flex-shrink: 0; height: 50px;}.st-logo { font-family: 'GmarketSans', sans-serif; font-weight: bold; }.st-main-content { display: flex; flex-grow: 1; overflow: hidden; }.st-preview-area { flex-basis: 400px; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; position:relative;}.st-editor-area { flex-grow: 1; border-left: 1px solid var(--st-border-color); border-right: 1px solid var(--st-border-color); overflow-y: auto; padding: 20px; }.st-settings-area { flex-basis: 280px; overflow-y: auto; padding: 20px; background-color: var(--st-panel-color); }button { background-color: var(--st-accent-color); color: #fff; font-weight: bold; cursor: pointer; border: none; border-radius: 4px; padding: 8px 12px; }.st-preview-panel { width: 100%; max-width: 380px; aspect-ratio: 9 / 16; background-color: #fff; box-shadow: 0 0 20px rgba(0,0,0,0.2); display: flex; flex-direction: column; overflow: hidden; }
         .st-preview-header { font-family: 'GmarketSans', sans-serif; color: white; font-weight: bold; flex-shrink: 0; height: 65px; display: flex; justify-content: center; align-items: center; padding: 0 15px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
         .st-preview-content { padding: 10px; color: black; flex-grow: 1; display: flex; flex-direction: column; background-color: white; overflow: hidden; }.st-project-info { font-size: 13px; color: #555; margin: 0 0 16px 0; border-bottom: 1px solid #eee; padding-bottom: 16px; }.st-project-info .title { font-size: 22px; color: black; font-weight: bold; margin-bottom: 5px; }.st-script-display { flex-grow: 1; display: flex; flex-direction: column; align-items: center; text-align: center; }
-        #st-preview-text-container { width: 100%; }
+        #st-preview-text-container { position: relative; width: 100%; border: 2px solid transparent; cursor: move; transition: border-color 0.2s; touch-action: none; }
+        #st-preview-image-container { position: relative; width: 100%; margin-top: 8px; /* 원본 간격 유지 */ border: 2px solid transparent; cursor: move; transition: border-color 0.2s; touch-action: none;}
         #st-preview-text { width: 100%; font-size: 24px; color: #000; white-space: pre-wrap; margin-bottom: 8px; flex-shrink: 0; }
-        #st-preview-image-container { width: 100%; display: flex; justify-content: center; align-items: flex-start; margin-top: 8px; /* 원본 간격 유지 */ }
         #st-preview-image { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+        .interactive-target.interactive-active { border-color: var(--st-accent-color); z-index: 100; }
+        .resize-handle { position: absolute; width: 12px; height: 12px; background: #fff; border: 2px solid var(--st-accent-color); border-radius: 50%; z-index: 101; display: none; }
+        .interactive-active .resize-handle { display: block; }
+        .resize-handle.top-left { top: -6px; left: -6px; cursor: nwse-resize; }
+        .resize-handle.top-right { top: -6px; right: -6px; cursor: nesw-resize; }
+        .resize-handle.bottom-left { bottom: -6px; left: -6px; cursor: nesw-resize; }
+        .resize-handle.bottom-right { bottom: -6px; right: -6px; cursor: nwse-resize; }
+        body.is-rotating * { cursor: grabbing !important; }
+        .snap-guide-v { position: absolute; top: 0; bottom: 0; width: 1px; background-color: var(--st-accent-color); display: none; z-index: 999; }
         .st-timeline-controls { width: 100%; max-width: 380px; display: flex; align-items: center; gap: 10px; margin-top: 15px;}.st-play-all-btn { background: none; font-size: 24px; padding: 0;}#st-timeline-slider { flex-grow: 1; }.st-editor-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }.st-editor-header h3 { margin: 0; }.st-editor-header .button-group { display: flex; gap: 8px; }.st-card { background-color: var(--st-panel-color); border: 2px solid transparent; padding: 15px; margin-top: 15px; border-radius: 4px; cursor: pointer; position: relative; }.st-card.active { border-color: var(--st-accent-color); }.st-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .st-card-drag-handle { cursor: grab; }
         .st-card-drag-handle:active { cursor: grabbing; }
@@ -34,7 +43,65 @@
     </style>
 </head>
 <body>
-    <!-- 원본 HTML 구조 (변경 없음) -->
+    <!-- ✨ 원본 HTML 구조 완벽 복구 ✨ -->
+    <div class="st-panel st-sidebar" id="st-settings-panel"></div>
+    <div class="st-main-container">
+        <div class="st-top-header">
+            <div class="st-logo">SunsakTool</div>
+            <button id="st-btn-export-video">🎬 영상 출력</button>
+        </div>
+        <div class="st-main-content">
+            <div class="st-panel st-preview-area">
+                <div class="snap-guide-v"></div>
+                <div class="st-preview-panel" id="st-preview-panel"></div>
+                <div class="st-timeline-controls">
+                    <button class="st-play-all-btn" id="st-btn-play-all">▶</button>
+                    <input type="range" id="st-timeline-slider" value="0" step="0.1">
+                </div>
+            </div>
+            <div class="st-panel st-editor-area">
+                <div class="st-editor-header">
+                    <h3>스크립트 & 타임라인</h3>
+                    <div class="button-group">
+                        <button id="st-btn-add-project" style="background-color: #555;">+ 새 프로젝트</button>
+                        <button id="st-btn-add-gpts" style="background-color: #3e3e3e;">✨ AI 스크립트</button>
+                        <button id="st-btn-add-card">+ 수동 추가</button>
+                    </div>
+                </div>
+                <div id="st-card-container"></div>
+            </div>
+        </div>
+    </div>
+    <div id="st-modal-gpts" class="st-modal-overlay">
+        <div class="st-modal-dialog">
+            <h2>GPTs 스크립트 추가</h2>
+            <p>GPTs에서 생성된 스크립트를 입력하세요. 빈 줄로 구분하여 여러 스크립트를 한번에 추가할 수 있습니다.</p>
+            <textarea id="st-gpts-textarea" placeholder="여기에 GPTs 스크립트를 입력하세요..."></textarea>
+            <div class="st-modal-actions">
+                <button id="st-btn-gpts-cancel" class="cancel">취소</button>
+                <button id="st-btn-gpts-confirm">확인</button>
+            </div>
+        </div>
+    </div>
+    <div id="st-modal-bgm" class="st-modal-overlay">
+        <div class="st-modal-dialog">
+            <h2>BGM 구간 설정</h2>
+            <p>오디오 파형 위에서 원하는 구간을 드래그하여 선택하세요.</p>
+            <div id="st-waveform-container"><div id="st-waveform-loading">BGM 로딩 중...</div></div>
+            <div class="st-waveform-controls">
+                <button id="st-btn-bgm-play-pause">재생/일시정지</button>
+                <button id="st-btn-bgm-play-region">선택 구간 미리듣기</button>
+                <span id="st-bgm-time-display">0.00s - 0.00s</span>
+            </div>
+            <div class="st-modal-actions">
+                <button id="st-btn-bgm-cancel" class="cancel">취소</button>
+                <button id="st-btn-bgm-confirm">확인</button>
+            </div>
+        </div>
+    </div>
+    <audio id="st-tts-player" style="display:none;"></audio>
+    <audio id="st-bgm-player" style="display:none;" loop></audio>
+    <audio id="st-sfx-player" style="display:none;"></audio>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/6.4.0/wavesurfer.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/6.4.0/plugin/wavesurfer.regions.min.js"></script>
@@ -66,35 +133,27 @@
         const gptsCancelBtn = document.getElementById('st-btn-gpts-cancel');
         const gptsConfirmBtn = document.getElementById('st-btn-gpts-confirm');
         const gptsTextarea = document.getElementById('st-gpts-textarea');
+        const newProjectBtn = document.getElementById('st-btn-add-project');
         let wavesurfer = null;
         let activeRegion = null;
         let bgmEditorContext = { callback: null, currentBgm: null };
         
-        // --- 원본 함수 (모두 보존) ---
         function initializeBgmEditor() { if (wavesurfer) return; if (typeof WaveSurfer === 'undefined') { return alert("BGM 편집기 라이브러리 로딩에 실패했습니다. 인터넷 연결을 확인하고 페이지를 새로고침 해주세요."); } wavesurfer = WaveSurfer.create({ container: '#st-waveform-container', waveColor: '#ddd', progressColor: '#e82c43', cursorColor: '#fff', barWidth: 2, barRadius: 3, plugins: [ WaveSurfer.regions.create({ dragSelection: { slop: 5 } }) ] }); wavesurfer.on('error', (err) => { console.error('WaveSurfer Error:', err); alert('BGM 파일을 불러오는 데 실패했습니다.'); closeBgmEditor(); }); wavesurfer.on('ready', () => { document.getElementById('st-waveform-loading').style.display = 'none'; wavesurfer.clearRegions(); const totalDuration = wavesurfer.getDuration(); const regionDuration = Math.min(60, totalDuration); let region = wavesurfer.addRegion({ start: 0, end: regionDuration, color: 'rgba(232, 44, 67, 0.3)', drag: true, resize: true }); activeRegion = region; document.getElementById('st-bgm-time-display').textContent = `${region.start.toFixed(2)}s - ${region.end.toFixed(2)}s`; }); wavesurfer.on('region-updated', (region) => { activeRegion = region; document.getElementById('st-bgm-time-display').textContent = `${region.start.toFixed(2)}s - ${region.end.toFixed(2)}s`; }); wavesurfer.on('region-clicked', (region, e) => { e.stopPropagation(); activeRegion = region; region.play(); }); document.getElementById('st-btn-bgm-play-pause').addEventListener('click', () => wavesurfer.playPause()); document.getElementById('st-btn-bgm-play-region').addEventListener('click', () => { if (activeRegion) activeRegion.play(); }); document.getElementById('st-btn-bgm-confirm').addEventListener('click', () => { if (bgmEditorContext.callback && activeRegion) { bgmEditorContext.callback({ startTime: activeRegion.start, endTime: activeRegion.end }); } closeBgmEditor(); }); document.getElementById('st-btn-bgm-cancel').addEventListener('click', closeBgmEditor); }
         function openBgmEditor(url, currentBgm, callback) { bgmEditorContext = { callback, currentBgm }; document.getElementById('st-modal-bgm').classList.add('visible'); document.getElementById('st-waveform-loading').style.display = 'block'; if (!wavesurfer) initializeBgmEditor(); if (wavesurfer) { if(wavesurfer.isReady) { wavesurfer.destroy(); initializeBgmEditor(); } wavesurfer.load(url); } }
         function closeBgmEditor() { document.getElementById('st-modal-bgm').classList.remove('visible'); if (wavesurfer) { wavesurfer.stop(); } }
         const debounce = (callback, delay) => { let timeout; return (...args) => { clearTimeout(timeout); timeout = setTimeout(() => callback(...args), delay); }; };
         const getAudioDuration = (url) => new Promise(resolve => { const audio = new Audio(); audio.onloadedmetadata = () => resolve(audio.duration); audio.src = url; });
         async function fetchTTS(text, cardId) { text = text.trim(); if (!text) return null; const cacheKey = text; if (ttsCache.has(cacheKey)) return ttsCache.get(cacheKey); showLoadingOnCard(cardId, true, '서버에 요청 중...'); try { const response = await fetch('/.netlify/functions/create-tts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: text }) }); if (!response.ok) { const errorResult = await response.json(); throw new Error(`[${response.status}] ${errorResult.error || '서버 요청 실패'}`); } const result = await response.json(); const audioUrl = result.audioUrl; const duration = await getAudioDuration(audioUrl); const ttsData = { audioUrl, duration }; ttsCache.set(cacheKey, ttsData); return ttsData; } catch (error) { console.error('TTS 생성 오류:', error); alert(`음성 생성 중 오류가 발생했습니다: ${error.message}`); return null; } finally { showLoadingOnCard(cardId, false); } }
-        
-        // --- 원본 renderControls 함수 (X,Y 입력 필드만 제거) ---
         function renderControls() {
             const fontOptions = FONT_LIST.map(font => `<option value="${font.value}" style="font-family: ${font.value};">${font.name}</option>`).join('');
             const bgmOptions = BGM_LIST.map(bgm => `<option value="${bgm.url}">${bgm.name}</option>`).join('');
-            settingsPanel.innerHTML = `<div class="st-accordion-item active"><div class="st-accordion-header">헤더 스타일</div><div class="st-accordion-content"><div class="st-control-group"><label>헤더 텍스트</label><input type="text" id="st-setting-header-text" value="썰쑈"></div><div class="st-flex-group"><div><label>배경 색상</label><input type="color" id="st-setting-header-bg" value="#e82c43"></div><div><label>글자 색상</label><input type="color" id="st-setting-header-color" value="#FFFFFF"></div></div><div class="st-flex-group"><div><label>폰트</label><select id="st-setting-header-font">${fontOptions}</select></div><div><label>크기</label><input type="number" id="st-setting-header-size" value="24"></div></div></div></div><div class="st-accordion-item"><div class="st-accordion-header">스크립트 스타일</div><div class="st-accordion-content"><div class="st-control-group"><label>텍스트 색상</label><input type="color" id="st-setting-script-color" value="#000000"></div><div class="st-flex-group"><div><label>폰트</label><select id="st-setting-script-font">${fontOptions}</select></div><div><label>크기</label><input type="number" id="st-setting-script-size" value="24"></div></div></div></div><div class="st-accordion-item"><div class="st-accordion-header">프로젝트 정보</div><div class="st-accordion-content"><div class="st-control-group"><label>제목</label><input type="text" id="st-setting-project-title" value=""></div><div class="st-control-group"><label>작성자</label><input type="text" id="st-setting-project-author" value=""></div><div class="st-control-group"><label>조회수</label><input type="number" id="st-setting-project-views" value="0"></div><div class="st-flex-group"><div><label>제목 색상</label><input type="color" id="st-setting-title-color" value="#000000"></div><div><label>작성자/조회수 색상</label><input type="color" id="st-setting-meta-color" value="#555555"></div></div></div></div><div class="st-accordion-item"><div class="st-accordion-header">배경음악 설정</div><div class="st-accordion-content"><div class="st-control-group"><label>전체 배경음악 선택</label><select id="st-setting-global-bgm">${bgmOptions}</select></div><div class="st-control-group"><label>BGM 볼륨</label><input type="range" id="st-setting-global-bgm-volume" min="0" max="1" step="0.01" value="${globalBGM.volume}"></div></div></div>`;
+            settingsPanel.innerHTML = `<div class="st-accordion-item active"><div class="st-accordion-header">헤더 스타일</div><div class="st-accordion-content"><div class="st-control-group"><label>헤더 텍스트</label><input type="text" id="st-setting-header-text" value="썰쑈"></div><div class="st-flex-group"><div><label>배경 색상</label><input type="color" id="st-setting-header-bg" value="#e82c43"></div><div><label>글자 색상</label><input type="color" id="st-setting-header-color" value="#FFFFFF"></div></div><div class="st-flex-group"><div><label>폰트</label><select id="st-setting-header-font">${fontOptions}</select></div><div><label>크기</label><input type="number" id="st-setting-header-size" value="24"></div></div></div></div><div class="st-accordion-item"><div class="st-accordion-header">스크립트 스타일</div><div class="st-accordion-content"><div class="st-control-group"><label>텍스트 색상</label><input type="color" id="st-setting-script-color" value="#000000"></div><div class="st-flex-group"><div><label>폰트</label><select id="st-setting-script-font">${fontOptions}</select></div><div><label>크기</label><input type="number" id="st-setting-script-size" value="24"></div></div><div class="st-flex-group"><div><label>X</label><input type="number" id="st-setting-script-x" value="0"></div><div><label>Y</label><input type="number" id="st-setting-script-y" value="0"></div></div></div></div><div class="st-accordion-item"><div class="st-accordion-header">프로젝트 정보</div><div class="st-accordion-content"><div class="st-control-group"><label>제목</label><input type="text" id="st-setting-project-title" value=""></div><div class="st-control-group"><label>작성자</label><input type="text" id="st-setting-project-author" value=""></div><div class="st-control-group"><label>조회수</label><input type="number" id="st-setting-project-views" value="0"></div><div class="st-flex-group"><div><label>제목 색상</label><input type="color" id="st-setting-title-color" value="#000000"></div><div><label>작성자/조회수 색상</label><input type="color" id="st-setting-meta-color" value="#555555"></div></div></div></div><div class="st-accordion-item"><div class="st-accordion-header">배경음악 설정</div><div class="st-accordion-content"><div class="st-control-group"><label>전체 배경음악 선택</label><select id="st-setting-global-bgm">${bgmOptions}</select></div><div class="st-control-group"><label>BGM 볼륨</label><input type="range" id="st-setting-global-bgm-volume" min="0" max="1" step="0.01" value="${globalBGM.volume}"></div></div></div>`;
             document.querySelectorAll('#st-settings-panel input, #st-settings-panel select').forEach(el => { if (el.id.includes('script')) { el.addEventListener('input', applyScriptStylesToSelectedCard); } else { el.addEventListener('input', updatePreviewDisplay); } });
             document.querySelectorAll('.st-accordion-header').forEach(h => h.addEventListener('click', () => h.parentElement.classList.toggle('active')));
         }
-        
-        // --- ✨ 카드 추가 함수: layout 데이터 추가 --- ✨
         function addScriptCard(text = '') {
             const cardId = `card-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
-            const cardData = {
-                id: cardId, text, duration: 0.5, imageUrl: null,
-                style: {}, audioUrl: null, ttsReady: false, sfxUrl: null,
-                layout: { text:  { x: 0, y: 0, scale: 1, angle: 0 }, image: { x: 0, y: 0, scale: 1, angle: 0 } }
-            };
+            const cardData = { id: cardId, text, duration: 0.5, imageUrl: null, style: {}, audioUrl: null, ttsReady: false, sfxUrl: null };
             scriptCards.push(cardData);
             const cardEl = document.createElement('div');
             cardEl.className = 'st-card'; cardEl.dataset.id = cardId;
@@ -106,7 +165,7 @@
             cardEl.querySelector('.st-play-clip-btn').addEventListener('click', (e) => { e.stopPropagation(); if (isPlaying) stopPlayback(); if (cardData.ttsReady && cardData.audioUrl) { ttsPlayer.src = cardData.audioUrl; ttsPlayer.play(); } });
             cardEl.querySelector('.st-sfx-select').addEventListener('change', (e) => { cardData.sfxUrl = e.target.value || null; });
             const debouncedFetchAndUpdate = debounce(async (newText, id) => { const cardToUpdate = scriptCards.find(c => c.id === id); const ttsData = await fetchTTS(newText, id); if (ttsData && cardToUpdate) { cardToUpdate.duration = ttsData.duration; cardToUpdate.audioUrl = ttsData.audioUrl; cardToUpdate.ttsReady = true; const currentCardEl = document.querySelector(`.st-card[data-id="${id}"]`); if(currentCardEl) { currentCardEl.querySelector('.st-duration-label').textContent = `타임라인 (${ttsData.duration.toFixed(2)}초)`; currentCardEl.querySelector('.st-play-clip-btn').disabled = false; } updateTotalDuration(); } }, 800);
-            cardEl.querySelector('textarea').addEventListener('input', (e) => { cardData.text = e.target.value; updatePreviewDisplay(); debouncedFetchAndUpdate(cardData.text, cardId); });
+            cardEl.querySelector('textarea').addEventListener('input', (e) => { cardData.text = e.target.value; debouncedFetchAndUpdate(cardData.text, cardId); });
             cardEl.querySelector('.st-btn-delete-card').addEventListener('click', (e) => { e.stopPropagation(); deleteCard(cardId); });
             cardEl.addEventListener('click', () => selectCard(cardId));
             if (text) debouncedFetchAndUpdate(text, cardId);
@@ -117,69 +176,33 @@
         function updateCardNumbers() { document.querySelectorAll('.st-card').forEach((card, index) => { card.querySelector('.st-card-number').textContent = index + 1; }); }
         function updateTotalDuration() { const total = scriptCards.reduce((sum, card) => sum + (card.duration || 0.5), 0); if(timelineSlider) timelineSlider.max = total; }
         function showLoadingOnCard(cardId, show, message = '음성 생성 중...') { const cardEl = document.querySelector(`.st-card[data-id="${cardId}"]`); if (!cardEl) return; let overlay = cardEl.querySelector('.st-card-loading'); if (show) { if (!overlay) { overlay = document.createElement('div'); overlay.className = 'st-card-loading'; cardEl.appendChild(overlay); } overlay.textContent = message; } else { if (overlay) overlay.remove(); } }
-        
-        let activeInteractiveElement = null;
-        function setActiveInteractiveElement(element) {
-            document.querySelectorAll('.interactive-target').forEach(el => {
-                el.classList.remove('interactive-active');
-                el.querySelectorAll('.resize-handle').forEach(h => h.remove());
-            });
-            activeInteractiveElement = element;
-            if (activeInteractiveElement) {
-                activeInteractiveElement.classList.add('interactive-active');
-                ['top-left', 'top-right', 'bottom-left', 'bottom-right'].forEach(pos => {
-                    const handle = document.createElement('div');
-                    handle.className = `resize-handle ${pos}`;
-                    activeInteractiveElement.appendChild(handle);
-                });
-            }
-        }
-        function selectCard(cardId, fromPlayback = false) {
-            if (isPlaying && !fromPlayback) stopPlayback();
-            selectedCardId = cardId;
-            setActiveInteractiveElement(null);
-            document.querySelectorAll('.st-card').forEach(c => c.classList.remove('active'));
-            const cardEl = document.querySelector(`.st-card[data-id="${cardId}"]`);
-            if (cardEl) {
-                cardEl.classList.add('active');
-                if (!fromPlayback) cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                updateScriptStyleControls();
-                updatePreviewDisplay();
-            } else {
-                updatePreviewDisplay();
-            }
-        }
-        
+        function selectCard(cardId, fromPlayback = false) { if (isPlaying && !fromPlayback) stopPlayback(); selectedCardId = cardId; document.querySelectorAll('.st-card').forEach(c => c.classList.remove('active')); const cardEl = document.querySelector(`.st-card[data-id="${cardId}"]`); if (cardEl) { cardEl.classList.add('active'); if (!fromPlayback) cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' }); updateScriptStyleControls(); updatePreviewDisplay(); } else { updatePreviewDisplay(); } }
         function updatePreviewDisplay() {
             const headerEl = document.querySelector('.st-preview-header'); if (headerEl) { headerEl.textContent = document.getElementById('st-setting-header-text')?.value || ''; headerEl.style.backgroundColor = document.getElementById('st-setting-header-bg')?.value || '#e82c43'; headerEl.style.color = document.getElementById('st-setting-header-color')?.value || '#ffffff'; headerEl.style.fontFamily = document.getElementById('st-setting-header-font')?.value || 'GmarketSans'; headerEl.style.fontSize = (document.getElementById('st-setting-header-size')?.value || '24') + 'px'; }
             const titleEl = document.querySelector('.st-project-info .title'); if (titleEl) { titleEl.textContent = document.getElementById('st-setting-project-title')?.value || ''; titleEl.style.color = document.getElementById('st-setting-title-color')?.value || '#000'; }
             const metaEl = document.querySelector('.st-project-info span'); if (metaEl) { metaEl.textContent = `${document.getElementById('st-setting-project-author')?.value || ''} | 조회수 ${Number(document.getElementById('st-setting-project-views')?.value || 0).toLocaleString()}`; metaEl.style.color = document.getElementById('st-setting-meta-color')?.value || '#555'; }
             const card = scriptCards.find(c => c.id === selectedCardId);
-            const textContainer = document.getElementById('st-preview-text-container');
             const previewText = document.getElementById('st-preview-text');
-            const imageContainer = document.getElementById('st-preview-image-container');
             const previewImage = document.getElementById('st-preview-image');
-            if (!previewText) return;
+            if (!previewText || !previewImage) return;
             previewText.textContent = card ? card.text : '스크립트를 추가하거나 선택하세요.';
             if (card && card.imageUrl) { previewImage.src = card.imageUrl; previewImage.style.display = 'block'; } else { previewImage.src = ''; previewImage.style.display = 'none'; }
-            if (card) {
-                Object.assign(previewText.style, card.style);
-                const applyTransform = (el, layout) => { if (el) el.style.transform = `translate(${layout.x}px, ${layout.y}px) scale(${layout.scale}) rotate(${layout.angle}deg)`; };
-                applyTransform(textContainer, card.layout.text);
-                applyTransform(imageContainer, card.layout.image);
-            } else {
-                Object.assign(previewText.style, { color: '#000', fontFamily: 'Noto Sans KR', fontSize: '24px' });
-                if(textContainer) textContainer.style.transform = 'translate(0, 0) scale(1) rotate(0deg)';
-                if(imageContainer) imageContainer.style.transform = 'translate(0, 0) scale(1) rotate(0deg)';
-            }
+            if (card) { Object.assign(previewText.style, { color: card.style.color || '#000', fontFamily: card.style.fontFamily || 'Noto Sans KR', fontSize: card.style.fontSize || '24px', transform: card.style.transform || 'translate(0px, 0px)' }); } else { Object.assign(previewText.style, { color: '#000', fontFamily: 'Noto Sans KR', fontSize: '24px', transform: 'translate(0px, 0px)' }); }
         }
         function updateScriptStyleControls() {
             const card = scriptCards.find(c => c.id === selectedCardId); if (!card) return;
             document.getElementById('st-setting-script-color').value = card.style?.color || '#000000';
             document.getElementById('st-setting-script-font').value = card.style?.fontFamily || "'Noto Sans KR', sans-serif";
             document.getElementById('st-setting-script-size').value = (card.style?.fontSize || '24px').replace('px','');
+            const [x, y] = (card.style?.transform || 'translate(0px, 0px)').match(/-?\d+/g) || ['0', '0'];
+            document.getElementById('st-setting-script-x').value = x;
+            document.getElementById('st-setting-script-y').value = y;
         }
-        function applyScriptStylesToSelectedCard() { const card = scriptCards.find(c => c.id === selectedCardId); if (!card) return; card.style = { color: document.getElementById('st-setting-script-color').value, fontFamily: document.getElementById('st-setting-script-font').value, fontSize: document.getElementById('st-setting-script-size').value + 'px' }; updatePreviewDisplay(); }
+        function applyScriptStylesToSelectedCard() {
+            const card = scriptCards.find(c => c.id === selectedCardId); if (!card) return;
+            card.style = { color: document.getElementById('st-setting-script-color').value, fontFamily: document.getElementById('st-setting-script-font').value, fontSize: document.getElementById('st-setting-script-size').value + 'px', transform: `translate(${document.getElementById('st-setting-script-x').value}px, ${document.getElementById('st-setting-script-y').value}px)` };
+            updatePreviewDisplay();
+        }
         function playBGM(bgmData = globalBGM) { if (bgmData && bgmData.url) { if (bgmPlayer.src !== bgmData.url) bgmPlayer.src = bgmData.url; bgmPlayer.volume = globalBGM.volume; bgmPlayer.currentTime = bgmData.startTime || 0; bgmPlayer.play().catch(e => console.error("BGM Playback Error:", e)); } else { bgmPlayer.pause(); } }
         bgmPlayer.addEventListener('timeupdate', () => { if (!isPlaying) return; if (globalBGM.endTime && bgmPlayer.currentTime >= globalBGM.endTime) { bgmPlayer.currentTime = globalBGM.startTime || 0; } });
         function togglePlay() { isPlaying ? stopPlayback() : startPlayback(); }
@@ -195,110 +218,24 @@
         function setupExportButton() {
             const exportBtn = document.getElementById('st-btn-export-video');
             if (!exportBtn) return;
+            const RENDER_SERVER_URL = 'https://fwbhhvq8gk.execute-api.ap-northeast-2.amazonaws.com/dev/render-video';
             exportBtn.addEventListener('click', async () => {
+                if (scriptCards.some(c => !c.ttsReady && c.text.trim())) return alert('아직 음성 생성이 완료되지 않은 스크립트가 있습니다. 모두 생성된 후 시도해주세요.');
                 if (scriptCards.length === 0) return alert('출력할 스크립트가 없습니다.');
-                if (isPlaying) stopPlayback();
-
-                const totalDuration = scriptCards.reduce((sum, card) => sum + (card.duration || 0.5), 0);
-                if (totalDuration <= 0) return alert('영상의 총 길이가 0초입니다.');
-
-                exportBtn.disabled = true;
-                exportBtn.textContent = '녹화 준비 중...';
-
+                exportBtn.disabled = true; exportBtn.textContent = '렌더링 요청 중...';
                 try {
-                    const previewPanel = document.getElementById('st-preview-panel');
-                    const audioContext = new AudioContext();
-                    const destinationNode = audioContext.createMediaStreamDestination();
-                    
-                    const videoStream = await navigator.mediaDevices.getDisplayMedia({ video: { mediaSource: 'browser' }, audio: false });
-                    const videoTrack = videoStream.getVideoTracks()[0];
-
-                    if (globalBGM.url) {
-                        const bgmResponse = await fetch(globalBGM.url);
-                        const bgmArrayBuffer = await bgmResponse.arrayBuffer();
-                        const bgmBuffer = await audioContext.decodeAudioData(bgmArrayBuffer);
-                        const bgmSource = audioContext.createBufferSource();
-                        bgmSource.buffer = bgmBuffer;
-                        bgmSource.connect(destinationNode);
-                        bgmSource.loop = true;
-                    }
-                    
-                    const combinedStream = new MediaStream([videoTrack, ...destinationNode.stream.getAudioTracks()]);
-                    const recorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm; codecs=vp9,opus' });
-                    const chunks = [];
-                    recorder.ondataavailable = e => chunks.push(e.data);
-                    recorder.onstop = () => {
-                        const blob = new Blob(chunks, { type: 'video/webm' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = `sunsak-video-${Date.now()}.webm`;
-                        a.click();
-                        URL.revokeObjectURL(url);
-                        exportBtn.disabled = false;
-                        exportBtn.textContent = '🎬 영상 출력 (1080p)';
+                    const projectData = {
+                        resolution: { width: 1080, height: 1920 }, fps: 60,
+                        styles: { header: { text: document.getElementById('st-setting-header-text')?.value, backgroundColor: document.getElementById('st-setting-header-bg')?.value, color: document.getElementById('st-setting-header-color')?.value, fontFamily: document.getElementById('st-setting-header-font')?.value, fontSize: parseInt(document.getElementById('st-setting-header-size')?.value) }, projectInfo: { title: document.getElementById('st-setting-project-title')?.value, author: document.getElementById('st-setting-project-author')?.value, views: document.getElementById('st-setting-project-views')?.value, titleColor: document.getElementById('st-setting-title-color')?.value, metaColor: document.getElementById('st-setting-meta-color')?.value } },
+                        bgm: { url: globalBGM.url, volume: globalBGM.volume, startTime: globalBGM.startTime, endTime: globalBGM.endTime },
+                        scenes: scriptCards.map(card => ({ text: card.text, duration: card.duration, audioUrl: card.audioUrl, imageUrl: card.imageUrl, sfxUrl: card.sfxUrl, style: card.style, layout: card.layout }))
                     };
-
-                    exportBtn.textContent = '녹화 중... (종료 시 자동 다운로드)';
-                    recorder.start();
-                    
-                    // --- 타임라인에 맞춰 자동 재생 및 녹화 ---
-                    await playAllForRecording();
-
-                    recorder.stop();
-                    videoTrack.stop();
-                    audioContext.close();
-
-                } catch (err) {
-                    console.error("녹화 오류:", err);
-                    alert("영상 출력 중 오류가 발생했습니다: " + err.message);
-                    exportBtn.disabled = false;
-                    exportBtn.textContent = '🎬 영상 출력 (1080p)';
-                }
-            });
-        }
-        
-        async function playAllForRecording() {
-            return new Promise(async (resolve) => {
-                if (scriptCards.length === 0) return resolve();
-                
-                let currentIndex = 0;
-                
-                const playNext = () => {
-                    if (currentIndex >= scriptCards.length) {
-                        resolve();
-                        return;
-                    }
-                    
-                    const card = scriptCards[currentIndex];
-                    selectCard(card.id, true);
-                    
-                    const duration = (card.duration || 0.5) * 1000;
-                    
-                    if (card.sfxUrl) {
-                        const sfx = new Audio(card.sfxUrl);
-                        sfx.play();
-                    }
-
-                    if(card.audioUrl) {
-                        const tts = new Audio(card.audioUrl);
-                        tts.play();
-                    }
-                    
-                    setTimeout(() => {
-                        currentIndex++;
-                        playNext();
-                    }, duration);
-                };
-
-                if (globalBGM.url) {
-                    bgmPlayer.src = globalBGM.url;
-                    bgmPlayer.volume = globalBGM.volume;
-                    bgmPlayer.currentTime = globalBGM.startTime || 0;
-                    await bgmPlayer.play();
-                }
-
-                playNext();
+                    const response = await fetch(RENDER_SERVER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(projectData) });
+                    if (!response.ok) { const errorResult = await response.json(); throw new Error(errorResult.error || '서버에서 렌더링 요청에 실패했습니다.'); }
+                    const result = await response.json();
+                    alert(`영상 렌더링 요청에 성공했습니다! (작업 ID: ${result.jobId})\n\n(주의: 실제 렌더링 기능은 서버에 구현이 필요합니다.)`);
+                } catch (error) { console.error('영상 출력 요청 오류:', error); alert(`오류가 발생했습니다: ${error.message}`); } 
+                finally { exportBtn.disabled = false; exportBtn.textContent = '🎬 영상 출력 (1080p)'; }
             });
         }
 
