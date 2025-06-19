@@ -1,4 +1,4 @@
-# 파일 이름: serverless.yml (가장 단순한 최종 버전)
+# 파일 이름: serverless.yml (CORS 해결 최종 버전)
 
 service: sunsaktool-renderer
 frameworkVersion: '^4'
@@ -7,6 +7,10 @@ provider:
   name: aws
   runtime: nodejs18.x
   region: ap-northeast-2
+  
+  # ✨ CORS 문제를 해결하기 위한 설정 추가 ✨
+  httpApi:
+    cors: true # 이 한 줄이 마법입니다!
 
 functions:
   renderVideo:
@@ -14,7 +18,6 @@ functions:
     timeout: 900
     memorySize: 2048
     events:
-      - http:
+      - httpApi:
           path: /render-video
           method: post
-          cors: true
