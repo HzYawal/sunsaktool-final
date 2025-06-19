@@ -25,15 +25,19 @@
         .st-preview-panel { width: 100%; max-width: 380px; aspect-ratio: 9 / 16; background-color: #fff; box-shadow: 0 0 20px rgba(0,0,0,0.2); display: flex; flex-direction: column; overflow: hidden; position: relative; }
         .st-preview-header { font-family: 'GmarketSans', sans-serif; color: white; font-weight: bold; flex-shrink: 0; height: 65px; display: flex; justify-content: center; align-items: center; padding: 0 15px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
         .st-preview-content { padding: 10px; color: black; flex-grow: 1; display: flex; flex-direction: column; background-color: white; overflow: hidden; position: relative; }
-        .st-project-info { font-size: 13px; color: #555; margin: 0 0 16px 0; border-bottom: 1px solid #eee; padding-bottom: 16px; }
+        .st-project-info { font-size: 13px; color: #555; margin: 0 0 16px 0; border-bottom: 1px solid #eee; padding-bottom: 16px; flex-shrink: 0; }
         .st-project-info .title { font-size: 22px; color: black; font-weight: bold; margin-bottom: 5px; }
-        .st-script-display { flex-grow: 1; display: flex; flex-direction: column; align-items: center; text-align: center; }
-        .interactive-target { position: relative; width: 100%; touch-action: none; }
-        #st-preview-image-container-wrapper { margin-top: 8px; }
+        
+        /* ✨ 핵심 수정: position absolute로 레이아웃 안정화 */
+        .st-script-display { flex-grow: 1; position: relative; }
+        .interactive-target { position: absolute; width: 100%; text-align: center; }
+        #st-preview-text-container-wrapper { top: 0; }
+        #st-preview-image-container-wrapper { top: 120px; /* 텍스트와 겹치지 않게 기본 위치 설정 */ height: 50%; }
+
         .interactive-target.interactive-active { outline: 2px dashed var(--st-interact-color); z-index: 100; }
         .resize-handle { position: absolute; width: 10px; height: 10px; background: var(--st-interact-color); border: 1px solid white; border-radius: 50%; z-index: 101; display: none; }
         .interactive-active .resize-handle { display: block; }
-        #st-preview-text { width: 100%; font-size: 24px; color: #000; white-space: pre-wrap; flex-shrink: 0; }
+        #st-preview-text { width: 100%; font-size: 24px; color: #000; white-space: pre-wrap; }
         #st-preview-image { max-width: 100%; max-height: 100%; object-fit: contain; }
         .st-timeline-controls { width: 100%; max-width: 380px; display: flex; align-items: center; gap: 10px; margin-top: 15px;}
         .st-play-all-btn { background: none; font-size: 24px; padding: 0;}
@@ -78,10 +82,8 @@
         </div>
         <div class="st-main-content">
             <div class="st-panel st-preview-area">
-                <div id="st-preview-placeholder">
-                    <div class="st-preview-panel" id="st-preview-panel">
-                         <div class="st-preview-header"></div><div class="st-preview-content"><div class="st-project-info"><div class="title"></div><span></span></div><div class="st-script-display"><div id="st-preview-text-container-wrapper" class="interactive-target" data-layout-key="text"><div id="st-preview-text"></div></div><div id="st-preview-image-container-wrapper" class="interactive-target" data-layout-key="image"><div id="st-preview-image-container"><img id="st-preview-image"></div></div></div></div>
-                    </div>
+                <div class="st-preview-panel" id="st-preview-panel">
+                     <div class="st-preview-header"></div><div class="st-preview-content"><div class="st-project-info"><div class="title"></div><span></span></div><div class="st-script-display"><div id="st-preview-text-container-wrapper" class="interactive-target" data-layout-key="text"><div id="st-preview-text"></div></div><div id="st-preview-image-container-wrapper" class="interactive-target" data-layout-key="image"><img id="st-preview-image"></div></div></div>
                 </div>
                 <div class="st-timeline-controls">
                     <button class="st-play-all-btn" id="st-btn-play-all">▶</button>
@@ -192,8 +194,8 @@
             const PREVIEW_WIDTH = 380;
             const SCALE = RENDER_WIDTH / PREVIEW_WIDTH;
 
-            function wrapText(context, text, x, y, maxWidth, lineHeight) { /* ... same as before ... */ }
-            async function renderFrame(ctx, card, imageCache) { /* ... same as before ... */ }
+            function wrapText(context, text, x, y, maxWidth, lineHeight) { const lines = text.split('\n'); let currentY = y; for (const line of lines) { let words = line.split(' '); let currentLine = words[0] || ''; for (let i = 1; i < words.length; i++) { let testLine = currentLine + ' ' + words[i]; if (context.measureText(testLine).width > maxWidth && currentLine.length > 0) { context.fillText(currentLine, x, currentY); currentLine = words[i]; currentY += lineHeight; } else { currentLine = testLine; } } context.fillText(currentLine, x, currentY); currentY += lineHeight; } }
+            async function renderFrame(ctx, card, imageCache) { ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, RENDER_WIDTH, RENDER_HEIGHT); const headerHeight = 65 * SCALE; ctx.fillStyle = document.getElementById('st-setting-header-bg')?.value || '#e82c43'; ctx.fillRect(0, 0, RENDER_WIDTH, headerHeight); const fontName = getComputedStyle(document.querySelector('.st-preview-header')).fontFamily.split(',')[0].trim().replace(/"/g, ''); ctx.font = `bold ${24 * SCALE}px "${fontName}"`; ctx.fillStyle = document.getElementById('st-setting-header-color')?.value || '#FFFFFF'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(document.getElementById('st-setting-header-text')?.value, RENDER_WIDTH / 2, headerHeight / 2); const infoPadding = 10 * SCALE; const infoY = headerHeight + infoPadding; const titleFontSize = 22 * SCALE; const metaFontSize = 13 * SCALE; ctx.font = `bold ${titleFontSize}px sans-serif`; ctx.fillStyle = document.getElementById('st-setting-title-color')?.value || '#000'; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillText(document.getElementById('st-setting-project-title')?.value || '', infoPadding, infoY); ctx.font = `${metaFontSize}px sans-serif`; ctx.fillStyle = document.getElementById('st-setting-meta-color')?.value || '#555'; const metaText = `${document.getElementById('st-setting-project-author')?.value || ''} | 조회수 ${Number(document.getElementById('st-setting-project-views')?.value || 0).toLocaleString()}`; ctx.fillText(metaText, infoPadding, infoY + titleFontSize + (5 * SCALE)); const scriptDisplayY = headerHeight + (65 * SCALE); ctx.save(); const textLayout = card.layout.text; const scriptFontSize = (parseInt(card.style.fontSize) || 24) * SCALE; ctx.translate(RENDER_WIDTH / 2 + textLayout.x * SCALE, scriptDisplayY + textLayout.y * SCALE); ctx.rotate(textLayout.angle * Math.PI / 180); ctx.scale(textLayout.scale, textLayout.scale); ctx.font = `${scriptFontSize}px "${card.style.fontFamily || 'Noto Sans KR'}"`; ctx.fillStyle = card.style.color || '#000'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; wrapText(ctx, card.text, 0, 0, (PREVIEW_WIDTH - 20) * SCALE, scriptFontSize * 1.3); ctx.restore(); if (card.imageUrl && imageCache[card.imageUrl] && imageCache[card.imageUrl].complete) { ctx.save(); const imageLayout = card.layout.image; const img = imageCache[card.imageUrl]; const imgX = RENDER_WIDTH / 2 + imageLayout.x * SCALE; const imgY = scriptDisplayY + (100 * SCALE) + imageLayout.y * SCALE; ctx.translate(imgX, imgY); ctx.rotate(imageLayout.angle * Math.PI / 180); ctx.scale(imageLayout.scale, imageLayout.scale); const imgWidth = (PREVIEW_WIDTH - 20) * SCALE; const imgHeight = img.height * (imgWidth / img.width); ctx.drawImage(img, -imgWidth/2, -imgHeight/2, imgWidth, imgHeight); ctx.restore(); }  }
 
             exportBtn.addEventListener('click', async () => {
                 if (scriptCards.some(c => !c.ttsReady && c.text.trim())) return alert('아직 음성 생성이 완료되지 않은 스크립트가 있습니다.');
@@ -230,7 +232,23 @@
                     const destination = audioContext.createMediaStreamDestination();
                     const totalDuration = scriptCards.reduce((sum, card) => sum + (card.duration || 0.5), 0);
                     
-                    const audioPromises = scriptCards.flatMap((card, index) => {
+                    const audioSources = [];
+                    if (globalBGM.url) {
+                        try {
+                            const response = await fetch(globalBGM.url);
+                            const arrayBuffer = await response.arrayBuffer();
+                            const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                            const bgmSource = audioContext.createBufferSource();
+                            bgmSource.buffer = audioBuffer;
+                            bgmSource.loop = true;
+                            const gainNode = audioContext.createGain();
+                            gainNode.gain.value = globalBGM.volume;
+                            bgmSource.connect(gainNode).connect(destination);
+                            audioSources.push(bgmSource);
+                        } catch (e) { console.error("BGM 로딩 실패:", e); }
+                    }
+
+                    const audioFilePromises = scriptCards.flatMap((card, index) => {
                         const timeOffset = scriptCards.slice(0, index).reduce((sum, c) => sum + (c.duration || 0.5), 0);
                         const promises = [];
                         if (card.audioUrl) promises.push({ url: card.audioUrl, time: timeOffset });
@@ -238,27 +256,16 @@
                         return promises;
                     });
                     
-                    if (globalBGM.url) {
-                        const response = await fetch(globalBGM.url);
-                        const arrayBuffer = await response.arrayBuffer();
-                        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-                        const bgmSource = audioContext.createBufferSource();
-                        bgmSource.buffer = audioBuffer;
-                        bgmSource.loop = true;
-                        const gainNode = audioContext.createGain();
-                        gainNode.gain.value = globalBGM.volume;
-                        bgmSource.connect(gainNode).connect(destination);
-                        bgmSource.start(0);
-                    }
-
-                    await Promise.all(audioPromises.map(async (audio) => {
-                        const response = await fetch(audio.url);
-                        const arrayBuffer = await response.arrayBuffer();
-                        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-                        const source = audioContext.createBufferSource();
-                        source.buffer = audioBuffer;
-                        source.connect(destination);
-                        source.start(audio.time);
+                    await Promise.all(audioFilePromises.map(async (audio) => {
+                        try {
+                            const response = await fetch(audio.url);
+                            const arrayBuffer = await response.arrayBuffer();
+                            const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                            const source = audioContext.createBufferSource();
+                            source.buffer = audioBuffer;
+                            source.connect(destination);
+                            source.start(audio.time);
+                        } catch(e) { console.error(`오디오 로딩 실패: ${audio.url}`, e); }
                     }));
                     
                     const canvasStream = canvas.captureStream(FPS);
@@ -281,17 +288,14 @@
                     };
                     
                     recorder.start();
-
+                    audioSources.forEach(s => s.start(0));
                     progressText.textContent = '프레임 렌더링 중...';
-                    progressSubText.textContent = '오디오에 맞춰 영상을 그립니다.';
                     
-                    // ✨ 마스터 시계 사용
-                    const startTime = audioContext.currentTime;
+                    const startTime = performance.now();
                     let animationFrameId;
 
-                    const renderLoop = async (timestamp) => {
-                        const elapsedTime = audioContext.currentTime - startTime;
-
+                    const renderLoop = async () => {
+                        const elapsedTime = (performance.now() - startTime) / 1000;
                         if (elapsedTime >= totalDuration) {
                             recorder.stop();
                             cancelAnimationFrame(animationFrameId);
@@ -311,6 +315,7 @@
                         await renderFrame(ctx, scriptCards[currentCardIndex], imageCache);
                         
                         const progress = Math.min(100, (elapsedTime / totalDuration) * 100);
+                        progressSubText.textContent = `${elapsedTime.toFixed(2)}s / ${totalDuration.toFixed(2)}s`;
                         progressBarInner.style.width = `${progress}%`;
                         
                         animationFrameId = requestAnimationFrame(renderLoop);
@@ -325,10 +330,6 @@
                     if (audioContext) audioContext.close();
                 }
             });
-
-            // 내부 함수들은 여기에 그대로 위치합니다.
-            wrapText = function(context, text, x, y, maxWidth, lineHeight) { const lines = text.split('\n'); let currentY = y; for (const line of lines) { let words = line.split(' '); let currentLine = words[0] || ''; for (let i = 1; i < words.length; i++) { let testLine = currentLine + ' ' + words[i]; if (context.measureText(testLine).width > maxWidth && currentLine.length > 0) { context.fillText(currentLine, x, currentY); currentLine = words[i]; currentY += lineHeight; } else { currentLine = testLine; } } context.fillText(currentLine, x, currentY); currentY += lineHeight; } }
-            renderFrame = async function(ctx, card, imageCache) { ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, RENDER_WIDTH, RENDER_HEIGHT); const headerHeight = 65 * SCALE; ctx.fillStyle = document.getElementById('st-setting-header-bg')?.value || '#e82c43'; ctx.fillRect(0, 0, RENDER_WIDTH, headerHeight); const fontName = getComputedStyle(document.querySelector('.st-preview-header')).fontFamily.split(',')[0].trim(); ctx.font = `bold ${24 * SCALE}px ${fontName}`; ctx.fillStyle = document.getElementById('st-setting-header-color')?.value || '#FFFFFF'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(document.getElementById('st-setting-header-text')?.value, RENDER_WIDTH / 2, headerHeight / 2); const infoPadding = 10 * SCALE; const infoY = headerHeight + infoPadding; const titleFontSize = 22 * SCALE; const metaFontSize = 13 * SCALE; ctx.font = `bold ${titleFontSize}px sans-serif`; ctx.fillStyle = document.getElementById('st-setting-title-color')?.value || '#000'; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillText(document.getElementById('st-setting-project-title')?.value || '', infoPadding, infoY); ctx.font = `${metaFontSize}px sans-serif`; ctx.fillStyle = document.getElementById('st-setting-meta-color')?.value || '#555'; const metaText = `${document.getElementById('st-setting-project-author')?.value || ''} | 조회수 ${Number(document.getElementById('st-setting-project-views')?.value || 0).toLocaleString()}`; ctx.fillText(metaText, infoPadding, infoY + titleFontSize + (5 * SCALE)); const scriptDisplayY = headerHeight + (65 * SCALE); if (card.imageUrl && imageCache[card.imageUrl] && imageCache[card.imageUrl].complete) { ctx.save(); const imageLayout = card.layout.image; const img = imageCache[card.imageUrl]; const imgX = RENDER_WIDTH / 2 + imageLayout.x * SCALE; const imgY = scriptDisplayY + (100 * SCALE) + imageLayout.y * SCALE; ctx.translate(imgX, imgY); ctx.rotate(imageLayout.angle * Math.PI / 180); ctx.scale(imageLayout.scale, imageLayout.scale); const imgWidth = (PREVIEW_WIDTH - 20) * SCALE; const imgHeight = img.height * (imgWidth / img.width); ctx.drawImage(img, -imgWidth/2, -imgHeight/2, imgWidth, imgHeight); ctx.restore(); } ctx.save(); const textLayout = card.layout.text; const scriptFontSize = (parseInt(card.style.fontSize) || 24) * SCALE; ctx.translate(RENDER_WIDTH / 2 + textLayout.x * SCALE, scriptDisplayY + textLayout.y * SCALE); ctx.rotate(textLayout.angle * Math.PI / 180); ctx.scale(textLayout.scale, textLayout.scale); ctx.font = `${scriptFontSize}px "${card.style.fontFamily || 'Noto Sans KR'}"`; ctx.fillStyle = card.style.color || '#000'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; wrapText(ctx, card.text, 0, 0, (PREVIEW_WIDTH - 20) * SCALE, scriptFontSize * 1.3); ctx.restore(); }
         }
         
         function initialize() {
@@ -345,7 +346,7 @@
         }
         
         function deactivateAllInteractive() { document.querySelectorAll('.interactive-target.interactive-active').forEach(el => { el.classList.remove('interactive-active'); el.querySelectorAll('.resize-handle').forEach(h => h.remove()); }); activeInteractiveElement = null; }
-        function initializeInteract() { let previewContent = null; const getPreviewContent = () => { if (!previewContent) previewContent = document.querySelector('.st-preview-content'); return previewContent; }; interact('.interactive-target').on('tap', (event) => { const target = event.currentTarget; if (activeInteractiveElement === target) return; deactivateAllInteractive(); activeInteractiveElement = target; target.classList.add('interactive-active'); ['top-left', 'top-right', 'bottom-left', 'bottom-right'].forEach(pos => { const handle = document.createElement('div'); handle.className = `resize-handle ${pos}`; target.appendChild(handle); }); event.preventDefault(); }).draggable({ listeners: { move(event) { const card = scriptCards.find(c => c.id === selectedCardId); if (!card) return; const layoutKey = event.target.dataset.layoutKey; const layout = card.layout[layoutKey]; if (event.shiftKey) { const pc = getPreviewContent(); const center = { x: event.target.offsetLeft + event.target.offsetWidth / 2, y: event.target.offsetTop + event.target.offsetHeight / 2 }; const angle = Math.atan2(event.clientY - (pc?.getBoundingClientRect().top || 0) - center.y, event.clientX - (pc?.getBoundingClientRect().left || 0) - center.x); layout.angle = angle * (180 / Math.PI); } else { layout.x += event.dx; layout.y += event.dy; } applyTransform(event.target, layout); } } }).resizable({ edges: { top: false, left: false, bottom: false, right: false }, listeners: { move(event) { const card = scriptCards.find(c => c.id === selectedCardId); if (!card) return; const layoutKey = event.target.dataset.layoutKey; const layout = card.layout[layoutKey]; layout.scale *= (event.rect.width / event.target.getBoundingClientRect().width); layout.x += event.deltaRect.left; layout.y += event.deltaRect.top; applyTransform(event.target, layout); } }, modifiers: [ interact.modifiers.aspectRatio({ ratio: 'preserve', modifiers: [interact.modifiers.snapSize({ targets: [interact.snappers.grid({ x: 1, y: 1 })] })], }), ], handle: '.resize-handle' }); document.body.addEventListener('click', (e) => { const pc = getPreviewContent(); if (pc && pc.contains(e.target) && !e.target.closest('.interactive-target')) { deactivateAllInteractive(); } }); }
+        function initializeInteract() { let previewContent = document.querySelector('.st-preview-content'); interact('.interactive-target').on('tap', (event) => { const target = event.currentTarget; if (activeInteractiveElement === target) return; deactivateAllInteractive(); activeInteractiveElement = target; target.classList.add('interactive-active'); ['top-left', 'top-right', 'bottom-left', 'bottom-right'].forEach(pos => { const handle = document.createElement('div'); handle.className = `resize-handle ${pos}`; handle.style.top = pos.includes('top') ? '-5px' : ''; handle.style.bottom = pos.includes('bottom') ? '-5px' : ''; handle.style.left = pos.includes('left') ? '-5px' : ''; handle.style.right = pos.includes('right') ? '-5px' : ''; handle.style.cursor = pos === 'top-left' || pos === 'bottom-right' ? 'nwse-resize' : 'nesw-resize'; target.appendChild(handle); }); event.preventDefault(); }).draggable({ listeners: { move(event) { const card = scriptCards.find(c => c.id === selectedCardId); if (!card) return; const layoutKey = event.target.dataset.layoutKey; const layout = card.layout[layoutKey]; if (event.shiftKey) { const center = { x: event.target.offsetLeft + event.target.offsetWidth / 2, y: event.target.offsetTop + event.target.offsetHeight / 2 }; const angle = Math.atan2(event.clientY - (previewContent.getBoundingClientRect().top) - center.y, event.clientX - (previewContent.getBoundingClientRect().left) - center.x); layout.angle = angle * (180 / Math.PI); } else { layout.x += event.dx; layout.y += event.dy; } applyTransform(event.target, layout); } } }).resizable({ edges: { top: true, left: true, bottom: true, right: true }, listeners: { move(event) { const card = scriptCards.find(c => c.id === selectedCardId); if (!card) return; const layoutKey = event.target.dataset.layoutKey; const layout = card.layout[layoutKey]; layout.scale *= (event.rect.width / event.target.getBoundingClientRect().width); layout.x += event.deltaRect.left; layout.y += event.deltaRect.top; applyTransform(event.target, layout); } }, modifiers: [ interact.modifiers.aspectRatio({ ratio: 'preserve' }) ], inertia: true }); document.body.addEventListener('click', (e) => { if (previewContent.contains(e.target) && !e.target.closest('.interactive-target')) { deactivateAllInteractive(); } }); }
         
         initialize();
     });
