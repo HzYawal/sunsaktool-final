@@ -1,4 +1,4 @@
-# 파일 이름: serverless.yml (플러그인을 버리고 Layer를 사용하는 최종 버전)
+# 파일 이름: serverless.yml (권한 문제 해결 최종 버전)
 
 service: sunsaktool-renderer
 frameworkVersion: '^4'
@@ -13,11 +13,11 @@ functions:
     handler: rendering-server/handler.main
     timeout: 900
     memorySize: 2048
-    # ✨ 여기에 FFmpeg Layer를 직접 장착합니다. ✨
     layers:
       - arn:aws:lambda:ap-northeast-2:145266761615:layer:ffmpeg-6-20230522:1
     events:
-      - httpApi:
+      # httpApi 대신 http를 사용하고, cors를 여기에 설정하는 것이 더 안정적입니다.
+      - http:
           path: /render-video
           method: post
           cors: true
