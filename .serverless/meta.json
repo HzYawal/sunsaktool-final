@@ -1,0 +1,34 @@
+{
+  "C:\\Users\\leebu\\OneDrive\\문서\\GitHub\\sunsaktool-final\\serverless.yml": {
+    "versionFramework": "4.17.1",
+    "servicePath": "C:\\Users\\leebu\\OneDrive\\문서\\GitHub\\sunsaktool-final\\serverless.yml",
+    "serviceConfigFileName": "serverless.yml",
+    "service": {
+      "service": "sunsaktool-renderer",
+      "frameworkVersion": "^4",
+      "provider": {
+        "name": "aws",
+        "runtime": "nodejs18.x",
+        "region": "ap-northeast-2"
+      },
+      "functions": {
+        "renderVideo": {
+          "handler": "rendering-server/handler.main"
+        }
+      }
+    },
+    "provider": {
+      "name": "aws",
+      "runtime": "nodejs18.x",
+      "region": "ap-northeast-2"
+    },
+    "serviceRawFile": "# 파일 이름: serverless.yml\r\n\r\n# 1. 서비스 이름 정의\r\nservice: sunsaktool-renderer\r\n\r\n# 2. 사용할 Serverless Framework 버전 지정\r\nframeworkVersion: '^4'\r\n\r\n# 3. 클라우드 제공사(Provider) 및 환경 설정\r\nprovider:\r\n  name: aws\r\n  runtime: nodejs18.x\r\n  region: ap-northeast-2 # AWS 서울 리전\r\n\r\n# 4. 우리가 배포할 함수(기능) 목록\r\nfunctions:\r\n  renderVideo:\r\n    handler: rendering-server/handler.main\r\n",
+    "command": [],
+    "options": {},
+    "serviceProviderAwsCfStackId": null,
+    "serviceProviderAwsCfStackCreated": null,
+    "serviceProviderAwsCfStackUpdated": null,
+    "serviceProviderAwsCfStackStatus": null,
+    "serviceProviderAwsCfStackOutputs": null
+  }
+}
