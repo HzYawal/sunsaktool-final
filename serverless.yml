@@ -1,0 +1,10 @@
+service: sunsaktool-renderer
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+
+functions:
+  renderVideo:
+    handler: rendering-server/handler.main # 나중에 만들 파일 경로
