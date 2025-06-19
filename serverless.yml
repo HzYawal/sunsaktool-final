@@ -1,4 +1,4 @@
-# 파일 이름: serverless.yml (수정된 최종 버전)
+# 파일 이름: serverless.yml (가장 단순한 최종 버전)
 
 service: sunsaktool-renderer
 frameworkVersion: '^4'
@@ -7,35 +7,14 @@ provider:
   name: aws
   runtime: nodejs18.x
   region: ap-northeast-2
-  
-  # API Gateway에 대한 기본 설정을 추가합니다.
-  httpApi:
-    cors: true # CORS 문제를 자동으로 해결해줍니다.
-
-  iam:
-    role:
-      statements:
-        - Effect: "Allow"
-          Action:
-            - "s3:*"
-          Resource: "*"
 
 functions:
   renderVideo:
     handler: rendering-server/handler.main
     timeout: 900
     memorySize: 2048
-    
-    # ✨ events 부분을 더 명확한 구조로 수정합니다. ✨
     events:
-      - httpApi:
-          method: post
+      - http:
           path: /render-video
-
-# plugins와 custom 섹션은 그대로 둡니다.
-plugins:
-  - serverless-ffmpeg-plugin
-
-custom:
-  ffmpeg:
-    version: '6.0'
+          method: post
+          cors: true
