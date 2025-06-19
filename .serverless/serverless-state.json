@@ -8,6 +8,9 @@
       "name": "aws",
       "runtime": "nodejs18.x",
       "region": "ap-northeast-2",
+      "httpApi": {
+        "cors": true
+      },
       "stage": "dev",
       "versionFunctions": true,
       "compiledCloudFormationTemplate": {
@@ -103,7 +106,7 @@
             "Properties": {
               "Code": {
                 "S3Bucket": "serverless-framework-deployments-ap-northeast-2-6173bdc6-38bc",
-                "S3Key": "serverless/sunsaktool-renderer/dev/1750344499715-2025-06-19T14:48:19.715Z/sunsaktool-renderer.zip"
+                "S3Key": "serverless/sunsaktool-renderer/dev/1750344573964-2025-06-19T14:49:33.964Z/sunsaktool-renderer.zip"
               },
               "Handler": "rendering-server/handler.main",
               "Runtime": "nodejs18.x",
@@ -121,148 +124,55 @@
               "RenderVideoLogGroup"
             ]
           },
-          "RenderVideoLambdaVersionfpdF694RMPENocmLV16D9VcTvBNTKNqHxoaskQ": {
+          "RenderVideoLambdaVersionXftkEfB4G4Kahzqa7kd83tLAkv2tORxkfkS3pwoA": {
             "Type": "AWS::Lambda::Version",
             "DeletionPolicy": "Retain",
             "Properties": {
               "FunctionName": {
                 "Ref": "RenderVideoLambdaFunction"
               },
-              "CodeSha256": "raQ9/fhdma3deSd1IOKgCoz8a0HU3nfNVvULeuGe3kU="
+              "CodeSha256": "IMOTkbUqztb3/nY0Gh7rLb5HO4jgtYTiveyWPE6jqqo="
             }
           },
-          "ApiGatewayRestApi": {
-            "Type": "AWS::ApiGateway::RestApi",
+          "HttpApi": {
+            "Type": "AWS::ApiGatewayV2::Api",
             "Properties": {
               "Name": "dev-sunsaktool-renderer",
-              "EndpointConfiguration": {
-                "Types": [
-                  "EDGE"
+              "ProtocolType": "HTTP",
+              "CorsConfiguration": {
+                "AllowHeaders": [
+                  "Content-Type",
+                  "X-Amz-Date",
+                  "Authorization",
+                  "X-Api-Key",
+                  "X-Amz-Security-Token",
+                  "X-Amz-User-Agent",
+                  "X-Amzn-Trace-Id"
+                ],
+                "AllowMethods": [
+                  "OPTIONS",
+                  "POST"
+                ],
+                "AllowOrigins": [
+                  "*"
                 ]
-              },
-              "Policy": ""
-            }
-          },
-          "ApiGatewayResourceRenderDashvideo": {
-            "Type": "AWS::ApiGateway::Resource",
-            "Properties": {
-              "ParentId": {
-                "Fn::GetAtt": [
-                  "ApiGatewayRestApi",
-                  "RootResourceId"
-                ]
-              },
-              "PathPart": "render-video",
-              "RestApiId": {
-                "Ref": "ApiGatewayRestApi"
               }
             }
           },
-          "ApiGatewayMethodRenderDashvideoOptions": {
-            "Type": "AWS::ApiGateway::Method",
+          "HttpApiStage": {
+            "Type": "AWS::ApiGatewayV2::Stage",
             "Properties": {
-              "AuthorizationType": "NONE",
-              "HttpMethod": "OPTIONS",
-              "MethodResponses": [
-                {
-                  "StatusCode": "200",
-                  "ResponseParameters": {
-                    "method.response.header.Access-Control-Allow-Origin": true,
-                    "method.response.header.Access-Control-Allow-Headers": true,
-                    "method.response.header.Access-Control-Allow-Methods": true
-                  },
-                  "ResponseModels": {}
-                }
-              ],
-              "RequestParameters": {},
-              "Integration": {
-                "Type": "MOCK",
-                "RequestTemplates": {
-                  "application/json": "{statusCode:200}"
-                },
-                "ContentHandling": "CONVERT_TO_TEXT",
-                "IntegrationResponses": [
-                  {
-                    "StatusCode": "200",
-                    "ResponseParameters": {
-                      "method.response.header.Access-Control-Allow-Origin": "'*'",
-                      "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent,X-Amzn-Trace-Id'",
-                      "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST'"
-                    },
-                    "ResponseTemplates": {
-                      "application/json": ""
-                    }
-                  }
-                ]
+              "ApiId": {
+                "Ref": "HttpApi"
               },
-              "ResourceId": {
-                "Ref": "ApiGatewayResourceRenderDashvideo"
-              },
-              "RestApiId": {
-                "Ref": "ApiGatewayRestApi"
+              "StageName": "$default",
+              "AutoDeploy": true,
+              "DefaultRouteSettings": {
+                "DetailedMetricsEnabled": false
               }
             }
           },
-          "ApiGatewayMethodRenderDashvideoPost": {
-            "Type": "AWS::ApiGateway::Method",
-            "Properties": {
-              "HttpMethod": "POST",
-              "RequestParameters": {},
-              "ResourceId": {
-                "Ref": "ApiGatewayResourceRenderDashvideo"
-              },
-              "RestApiId": {
-                "Ref": "ApiGatewayRestApi"
-              },
-              "ApiKeyRequired": false,
-              "AuthorizationType": "NONE",
-              "Integration": {
-                "IntegrationHttpMethod": "POST",
-                "Type": "AWS_PROXY",
-                "Uri": {
-                  "Fn::Join": [
-                    "",
-                    [
-                      "arn:",
-                      {
-                        "Ref": "AWS::Partition"
-                      },
-                      ":apigateway:",
-                      {
-                        "Ref": "AWS::Region"
-                      },
-                      ":lambda:path/2015-03-31/functions/",
-                      {
-                        "Fn::GetAtt": [
-                          "RenderVideoLambdaFunction",
-                          "Arn"
-                        ]
-                      },
-                      "/invocations"
-                    ]
-                  ]
-                }
-              },
-              "MethodResponses": []
-            },
-            "DependsOn": [
-              "RenderVideoLambdaPermissionApiGateway"
-            ]
-          },
-          "ApiGatewayDeployment1750344490267": {
-            "Type": "AWS::ApiGateway::Deployment",
-            "Properties": {
-              "RestApiId": {
-                "Ref": "ApiGatewayRestApi"
-              },
-              "StageName": "dev"
-            },
-            "DependsOn": [
-              "ApiGatewayMethodRenderDashvideoOptions",
-              "ApiGatewayMethodRenderDashvideoPost"
-            ]
-          },
-          "RenderVideoLambdaPermissionApiGateway": {
+          "RenderVideoLambdaPermissionHttpApi": {
             "Type": "AWS::Lambda::Permission",
             "Properties": {
               "FunctionName": {
@@ -291,13 +201,48 @@
                     },
                     ":",
                     {
-                      "Ref": "ApiGatewayRestApi"
+                      "Ref": "HttpApi"
                     },
-                    "/*/*"
+                    "/*"
                   ]
                 ]
               }
             }
+          },
+          "HttpApiIntegrationRenderVideo": {
+            "Type": "AWS::ApiGatewayV2::Integration",
+            "Properties": {
+              "ApiId": {
+                "Ref": "HttpApi"
+              },
+              "IntegrationType": "AWS_PROXY",
+              "IntegrationUri": {
+                "$ref": "$[\"service\"][\"provider\"][\"compiledCloudFormationTemplate\"][\"Resources\"][\"RenderVideoLambdaPermissionHttpApi\"][\"Properties\"][\"FunctionName\"]"
+              },
+              "PayloadFormatVersion": "2.0",
+              "TimeoutInMillis": 30000
+            }
+          },
+          "HttpApiRoutePostRenderDashvideo": {
+            "Type": "AWS::ApiGatewayV2::Route",
+            "Properties": {
+              "ApiId": {
+                "Ref": "HttpApi"
+              },
+              "RouteKey": "POST /render-video",
+              "Target": {
+                "Fn::Join": [
+                  "/",
+                  [
+                    "integrations",
+                    {
+                      "Ref": "HttpApiIntegrationRenderVideo"
+                    }
+                  ]
+                ]
+              }
+            },
+            "DependsOn": "HttpApiIntegrationRenderVideo"
           }
         },
         "Outputs": {
@@ -310,21 +255,30 @@
           "RenderVideoLambdaFunctionQualifiedArn": {
             "Description": "Current Lambda function version",
             "Value": {
-              "Ref": "RenderVideoLambdaVersionfpdF694RMPENocmLV16D9VcTvBNTKNqHxoaskQ"
+              "Ref": "RenderVideoLambdaVersionXftkEfB4G4Kahzqa7kd83tLAkv2tORxkfkS3pwoA"
             },
             "Export": {
               "Name": "sls-sunsaktool-renderer-dev-RenderVideoLambdaFunctionQualifiedArn"
             }
           },
-          "ServiceEndpoint": {
-            "Description": "URL of the service endpoint",
+          "HttpApiId": {
+            "Description": "Id of the HTTP API",
+            "Value": {
+              "Ref": "HttpApi"
+            },
+            "Export": {
+              "Name": "sls-sunsaktool-renderer-dev-HttpApiId"
+            }
+          },
+          "HttpApiUrl": {
+            "Description": "URL of the HTTP API",
             "Value": {
               "Fn::Join": [
                 "",
                 [
                   "https://",
                   {
-                    "Ref": "ApiGatewayRestApi"
+                    "Ref": "HttpApi"
                   },
                   ".execute-api.",
                   {
@@ -333,13 +287,12 @@
                   ".",
                   {
                     "Ref": "AWS::URLSuffix"
-                  },
-                  "/dev"
+                  }
                 ]
               ]
             },
             "Export": {
-              "Name": "sls-sunsaktool-renderer-dev-ServiceEndpoint"
+              "Name": "sls-sunsaktool-renderer-dev-HttpApiUrl"
             }
           }
         }
@@ -354,28 +307,12 @@
         "memorySize": 2048,
         "events": [
           {
-            "http": {
-              "path": "render-video",
-              "method": "post",
-              "cors": {
-                "origin": "*",
-                "methods": [
-                  "OPTIONS",
-                  "POST"
-                ],
-                "headers": [
-                  "Content-Type",
-                  "X-Amz-Date",
-                  "Authorization",
-                  "X-Api-Key",
-                  "X-Amz-Security-Token",
-                  "X-Amz-User-Agent",
-                  "X-Amzn-Trace-Id"
-                ],
-                "allowCredentials": false
-              },
-              "integration": "AWS_PROXY"
-            }
+            "httpApi": {
+              "path": "/render-video",
+              "method": "post"
+            },
+            "resolvedMethod": "POST",
+            "resolvedPath": "/render-video"
           }
         ],
         "name": "sunsaktool-renderer-dev-renderVideo",
@@ -383,7 +320,7 @@
         "memory": 2048,
         "runtime": "nodejs18.x",
         "vpc": {},
-        "versionLogicalId": "RenderVideoLambdaVersionfpdF694RMPENocmLV16D9VcTvBNTKNqHxoaskQ"
+        "versionLogicalId": "RenderVideoLambdaVersionXftkEfB4G4Kahzqa7kd83tLAkv2tORxkfkS3pwoA"
       }
     },
     "configValidationMode": "warn",
@@ -404,7 +341,7 @@
     "artifact": "C:\\Users\\leebu\\OneDrive\\문서\\GitHub\\sunsaktool-final\\.serverless\\sunsaktool-renderer.zip"
   },
   "package": {
-    "artifactDirectoryName": "serverless/sunsaktool-renderer/dev/1750344499715-2025-06-19T14:48:19.715Z",
+    "artifactDirectoryName": "serverless/sunsaktool-renderer/dev/1750344573964-2025-06-19T14:49:33.964Z",
     "artifact": "sunsaktool-renderer.zip"
   }
 }
