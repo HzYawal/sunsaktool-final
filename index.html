@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <title>SunsakTool (순삭툴)</title>
     <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
-    <!-- 스타일은 이전과 동일하게 유지됩니다. -->
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=IBM+Plex+Sans+KR:wght@400;700&family=Gowun+Dodum&family=Gowun+Batang&family=Nanum+Myeongjo:wght@400;700;800&family=Do+Hyeon&family=Black+Han+Sans&family=Gaegu:wght@400;700&family=Hi+Melody&family=Noto+Serif+KR:wght@400;700&family=Dokdo&display=swap');
         @font-face { font-family: 'Pretendard'; src: url('https://cdn.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Regular.woff') format('woff'); font-weight: 400; }
@@ -34,12 +33,39 @@
         .interactive-target.interactive-active { outline: 2px dashed var(--st-interact-color); z-index: 100; }
         .resize-handle { position: absolute; width: 10px; height: 10px; background: var(--st-interact-color); border: 1px solid white; border-radius: 50%; z-index: 101; display: none; }
         .interactive-active .resize-handle { display: block; }
+        .resize-handle.top-left { top: -5px; left: -5px; cursor: nwse-resize; }
+        .resize-handle.top-right { top: -5px; right: -5px; cursor: nesw-resize; }
+        .resize-handle.bottom-left { bottom: -5px; left: -5px; cursor: nesw-resize; }
+        .resize-handle.bottom-right { bottom: -5px; right: -5px; cursor: nwse-resize; }
         #st-preview-text { width: 100%; font-size: 24px; color: #000; white-space: pre-wrap; flex-shrink: 0; }
         #st-preview-image { max-width: 100%; max-height: 100%; object-fit: contain; }
         .st-timeline-controls { width: 100%; max-width: 380px; display: flex; align-items: center; gap: 10px; margin-top: 15px;}
+        .st-play-all-btn { background: none; font-size: 24px; padding: 0;}
+        #st-timeline-slider { flex-grow: 1; }
+        .st-editor-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .st-card { background-color: var(--st-panel-color); border: 2px solid transparent; padding: 15px; margin-top: 15px; border-radius: 4px; cursor: pointer; position: relative; }
         .st-card.active { border-color: var(--st-accent-color); }
+        .st-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .st-card-drag-handle { cursor: grab; }
+        .st-card-number { font-weight: bold; font-size: 18px; }
+        textarea { width:100%; min-height:60px; background-color: #333; border: 1px solid var(--st-border-color); color: var(--st-text-color); border-radius: 4px; padding: 8px; }
+        .st-card-footer { margin-top: 10px; display: flex; align-items: center; gap: 10px; font-size: 13px; flex-wrap: wrap; }
+        input[type="file"] { display: none; }
+        .st-action-btn { background: none; border:none; color: var(--st-subtext-color); text-decoration: underline; cursor: pointer; padding: 0; font-size: 13px; }
+        .st-play-clip-btn { font-size: 18px; background: none; padding: 0 5px; cursor: pointer; border: none; color: var(--st-text-color); }
+        .st-play-clip-btn:disabled { color: #555; cursor: not-allowed; }
+        .st-card-loading { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); color: white; display: flex; justify-content: center; align-items: center; z-index: 10; border-radius: 4px; font-weight: bold; }
+        .st-accordion-header { padding: 12px 0; cursor: pointer; border-bottom: 1px solid var(--st-border-color); font-weight: bold; }
+        .st-accordion-content { padding: 15px 0; display: none; }
+        .st-accordion-item.active .st-accordion-content { display: block; }
+        .st-control-group { margin-bottom: 15px; }
+        input, select { width: 100%; padding: 8px; background-color: #1e1e1e; border: 1px solid var(--st-border-color); color: var(--st-text-color); }
+        .st-flex-group { display: flex; gap: 10px; }
+        .st-modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.7); display: none; justify-content: center; align-items: center; z-index: 1000; }
         .st-modal-overlay.visible { display: flex; }
+        .st-modal-dialog { background-color: var(--st-panel-color); padding: 24px; border-radius: 8px; width: 90%; max-width: 600px; border: 1px solid var(--st-border-color); }
+        #st-waveform-container { width: 100%; height: 128px; background-color: #1e1e1e; }
+        #st-waveform-loading { text-align: center; padding: 40px; color: var(--st-subtext-color); }
         #st-export-progress-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; color: white; display: none; flex-direction: column; justify-content: center; align-items: center; font-size: 24px; }
         #st-export-progress-text { font-weight: bold; }
         #st-export-progress-bar { width: 80%; max-width: 400px; height: 20px; background: #555; margin-top: 20px; border-radius: 10px; overflow: hidden; }
@@ -47,11 +73,41 @@
     </style>
 </head>
 <body>
-    <!-- HTML 구조는 변경 없이 유지 -->
     <div class="st-panel st-sidebar" id="st-settings-panel"></div>
     <div class="st-main-container">
-        <!-- ... -->
+        <div class="st-top-header">
+            <div class="st-logo">SunsakTool</div>
+            <button id="st-btn-export-video">🎬 1080p 영상 생성</button>
+        </div>
+        <div class="st-main-content">
+            <div class="st-panel st-preview-area">
+                <div id="st-preview-placeholder">
+                    <div class="st-preview-panel" id="st-preview-panel">
+                         <div class="st-preview-header"></div><div class="st-preview-content"><div class="st-project-info"><div class="title"></div><span></span></div><div class="st-script-display"><div id="st-preview-text-container-wrapper" class="interactive-target" data-layout-key="text"><div id="st-preview-text"></div></div><div id="st-preview-image-container-wrapper" class="interactive-target" data-layout-key="image"><div id="st-preview-image-container"><img id="st-preview-image"></div></div></div></div>
+                    </div>
+                </div>
+                <div class="st-timeline-controls">
+                    <button class="st-play-all-btn" id="st-btn-play-all">▶</button>
+                    <input type="range" id="st-timeline-slider" value="0" step="0.1">
+                </div>
+            </div>
+            <div class="st-panel st-editor-area">
+                <div class="st-editor-header">
+                    <h3>스크립트 & 타임라인</h3>
+                    <div class="button-group">
+                        <button id="st-btn-add-project" style="background-color: #555;">+ 새 프로젝트</button>
+                        <button id="st-btn-add-gpts" style="background-color: #3e3e3e;">✨ GPTs 스크립트</button>
+                        <button id="st-btn-add-card">+ 수동 추가</button>
+                    </div>
+                </div>
+                <div id="st-card-container"></div>
+            </div>
+        </div>
     </div>
+    
+    <div id="st-modal-gpts" class="st-modal-overlay"> <div class="st-modal-dialog"> <h2>GPTs 스크립트 추가</h2> <p>GPTs에서 생성된 스크립트를 입력하세요. 빈 줄로 구분하여 여러 스크립트를 한번에 추가할 수 있습니다.</p> <textarea id="st-gpts-textarea" placeholder="여기에 GPTs 스크립트를 입력하세요..."></textarea> <div class="st-modal-actions"> <button id="st-btn-gpts-cancel" class="cancel">취소</button> <button id="st-btn-gpts-confirm">확인</button> </div> </div> </div>
+    <div id="st-modal-bgm" class="st-modal-overlay"> <div class="st-modal-dialog"> <h2>BGM 구간 설정</h2> <p>오디오 파형 위에서 원하는 구간을 드래그하여 선택하세요.</p> <div id="st-waveform-container"> <div id="st-waveform-loading">BGM 로딩 중...</div> </div> <div class="st-waveform-controls"> <button id="st-btn-bgm-play-pause">재생/일시정지</button> <button id="st-btn-bgm-play-region">선택 구간 미리듣기</button> <span id="st-bgm-time-display">0.00s - 0.00s</span> </div> <div class="st-modal-actions"> <button id="st-btn-bgm-cancel" class="cancel">취소</button> <button id="st-btn-bgm-confirm">확인</button> </div> </div> </div>
+
     <div id="st-export-progress-overlay">
         <div id="st-export-progress-text">영상 생성 중...</div>
         <div id="st-export-progress-bar">
@@ -59,13 +115,72 @@
         </div>
     </div>
     <canvas id="st-render-canvas" style="display: none;"></canvas>
-    <!-- ... Modals, Audio elements ... -->
+
+    <audio id="st-tts-player" style="display:none;"></audio>
+    <audio id="st-bgm-player" style="display:none;" loop></audio>
+    <audio id="st-sfx-player" style="display:none;"></audio>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/6.4.0/wavesurfer.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/6.4.0/plugin/wavesurfer.regions.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
     <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // ... (이전 코드의 모든 변수와 함수들을 그대로 유지) ...
-        // ... all variables and non-export functions
+        const FONT_LIST = [ { name: '프리텐다드 (본문용 추천)', value: 'Pretendard' }, { name: 'Noto Sans KR (기본 고딕)', value: "'Noto Sans KR', sans-serif" }, { name: 'G마켓 산스 (개성있는 제목)', value: 'GmarketSans' }, { name: 'IBM Plex Sans KR (모던한 고딕)', value: "'IBM Plex Sans KR', sans-serif" }, { name: 'Do Hyeon (레트로 제목)', value: "'Do Hyeon', sans-serif" }, { name: '나눔명조 (감성적인 본문)', value: "'Nanum Myeongjo', serif" }, { name: '고운 바탕 (부드러운 명조)', value: "'Gowun Batang', serif" }, { name: 'Black Han Sans (강력한 제목)', value: "'Black Han Sans', sans-serif" }, { name: '개구 (귀여운 손글씨)', value: "'Gaegu', cursive" }, { name: 'Hi Melody (아기자기 손글씨)', value: "'Hi Melody', cursive" }, { name: 'Noto Serif KR (정갈한 명조)', value: "'Noto Serif KR', serif" }, { name: '스포카 한 산스 네오 (깔끔한 본문)', value: "'Spoqa Han Sans Neo', sans-serif" }, { name: '독도 (거친 붓글씨)', value: "'Dokdo', cursive" }, ];
+        const BGM_LIST = [ { name: '선택 안함', url: '' }, { name: 'big-cafe', url: 'https://sunsaktool-final.netlify.app/big-cafe.mp3' }, { name: 'blue-jacket', url: 'https://sunsaktool-final.netlify.app/blue-jacket.mp3' }, { name: 'cute-puppy', url: 'https://sunsaktool-final.netlify.app/cute-puppy.mp3' }, { name: 'laughter-in-the-breeze', url: 'https://sunsaktool-final.netlify.app/laughter-in-the-breeze-_happy_.mp3' }, { name: 'murder-in-my-mind', url: 'https://sunsaktool-final.netlify.app/murder-in-my-mind.mp3' }, { name: 'smiley-composure', url: 'https://sunsaktool-final.netlify.app/smiley-composure.mp3' }, { name: 'spider', url: 'https://sunsaktool-final.netlify.app/spider.mp3' }, { name: 'white-color', url: 'https://sunsaktool-final.netlify.app/white-color.mp3' } ];
+        const SFX_LIST = [ { name: '효과음 없음', url: '' }, { name: '뾱 (물방울)', url: `https://sunsaktool-final.netlify.app/sfx/062_${encodeURIComponent('뾱 (물방울)')}.mp3` }, { name: '찰칵 (카메라)', url: `https://sunsaktool-final.netlify.app/sfx/078_${encodeURIComponent('찰칵 (카메라)')}.mp3` }, { name: '기어 1', url: 'https://sunsaktool-final.netlify.app/sfx/gears 1.wav' }, { name: '게임클리어 (고음)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('게임클리어 (고음)')}.mp3` }, { name: '긍정적 마법 사용', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('긍정적 마법 사용')}.mp3` }, { name: '깨달음(뾰봉)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('깨달음을 얻었을 때(뾰봉)')}.mp3` }, { name: '놀람 반전', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('놀람 반전')}.mp3` }, { name: '다음 장면전환(뾰로롱)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('다음 장면전환(뾰로롱)')}.mp3` }, { name: '넘어가는 맑은 소리(띠링~)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('다음으로 넘어가는 맑은 소리(띠링~)')}.mp3` }, { name: '동전먹는소리 2연속(중음)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('동전먹는소리 2연속(중음)')}.mp3` }, { name: '딩동댕동 (전자음)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('딩동댕동 (전자음)')}.mp3` }, { name: '문자 전송음(또로롱)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('문자 전송음(또로롱)')}.mp3` }, { name: '복싱 타이머(땡땡땡)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('복싱 훈련 타이머가 울리는 소리 (땡땡땡)')}.mp3` }, { name: '비디오 빨리감기 예능음', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('비디오 테이프 빨리감기 예능음')}.mp3` }, { name: '뾰로롱', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('뾰로롱')}.mp3` }, { name: '휙 날카롭게 지나가는', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('휙 날카롭게 지나가는')}.mp3` }, { name: '시한폭탄 초시계 (timer)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('시한폭탄 초시계 (timer)')}.mp3` }, { name: '알람 시간 종료 -2 (차분_ beep)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('알람 시간 종료 -2 (차분_ beep)')}.mp3` }, { name: '엘리베이터 도착음2 (띵동)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('엘리베이터 도착음2 (띵동)')}.mp3` }, { name: '욕 가리는 삐처리', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('욕 가리는 삐처리')}.mp3` }, { name: '작은 카메라 찰칵 소리', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('작은 카메라 찰칵 소리')}.mp3` }, { name: '저녁숲 (개구리, 곤충)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('저녁숲 (개구리와 곤충울음소리)')}.mp3` }, { name: '플래래 걸어가는 소리(뽀복)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('플래래 걸어가는 소리(뽀복)')}.mp3` }, { name: '천사의 강림', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('천사의 강림')}.mp3` }, { name: '개서 (철컥쿵)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('개서 (철컥쿵)')}.mp3` }, { name: '컴퓨터 키보드 타자', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('컴퓨터 키보드 타자')}.mp3` }, { name: '타이머 (째깍째깍)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('타이머 재는 시계음(째깍째깍)')}.mp3` }, { name: '황당할 때 (띠요옹)', url: `https://sunsaktool-final.netlify.app/sfx/mp_${encodeURIComponent('황당할 때 효과음 (띠요옹)')}.mp3` }, { name: 'Riser 1', url: 'https://sunsaktool-final.netlify.app/sfx/riser 1.wav' }, { name: 'Whoosh 1', url: 'https://sunsaktool-final.netlify.app/sfx/whoosh1.mp3' }, { name: 'Whoosh 2', url: 'https://sunsaktool-final.netlify.app/sfx/whoosh2.mp3' }, { name: 'Whoosh 3', url: 'https://sunsaktool-final.netlify.app/sfx/whoosh3.wav' }, { name: 'Whoosh 4', url: 'https://sunsaktool-final.netlify.app/sfx/whoosh4.mp3' }, { name: '또로롱', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('또로롱')}.wav` }, { name: '또아앙', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('또아앙')}.wav` }, { name: '띠로록', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('띠로록')}.mp3` }, { name: '띠롱(슈퍼마리오)', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('띠롱_슈퍼마리오')}.mp3` }, { name: '띠리링', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('띠리링')}.wav` }, { name: '띠링 1', url: 'https://sunsaktool-final.netlify.app/sfx/띠링1.wav' }, { name: '띠링 1초', url: 'https://sunsaktool-final.netlify.app/sfx/띠링1초.mp3' }, { name: '띠링 2', url: 'https://sunsaktool-final.netlify.app/sfx/띠링2.mp3' }, { name: '띠링 2초', url: 'https://sunsaktool-final.netlify.app/sfx/띠링2초.mp3' }, { name: '띠링 3', url: 'https://sunsaktool-final.netlify.app/sfx/띠링3.mp3' }, { name: '띠링 4', url: 'https://sunsaktool-final.netlify.app/sfx/띠링4.wav' }, { name: '띵', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('띵')}.mp3` }, { name: '마우스클릭(딸깍)', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('마우스클릭_딸깍')}.mp3` }, { name: '뾰옥 1', url: 'https://sunsaktool-final.netlify.app/sfx/뾰옥1.wav' }, { name: '뾰옥 2', url: 'https://sunsaktool-final.netlify.app/sfx/뾰옥2.mp3' }, { name: '뾰옥 3', url: 'https://sunsaktool-final.netlify.app/sfx/뾰옥3.wav' }, { name: '뽁 1초', url: 'https://sunsaktool-final.netlify.app/sfx/뽁1초.mp3' }, { name: '삐리삐빅', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('삐리삐빅')}.mp3` }, { name: '삑', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('삑')}.mp3` }, { name: '셔터', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('셔터')}.wav` }, { name: '슉 1초', url: 'https://sunsaktool-final.netlify.app/sfx/슉1초.mp3' }, { name: '스윽', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('스윽')}.mp3` }, { name: '예!', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('예!')}.mp3` }, { name: '와우', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('와우')}.wav` }, { name: '찰칵(소리)', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('찰칵')}.wav` }, { name: '캐서', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('캐서')}.mp3` }, { name: '키보드타이핑', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('키보드타이핑')}.mp3` }, { name: '툽', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('툽')}.mp3` }, { name: '폭발 1', url: 'https://sunsaktool-final.netlify.app/sfx/폭발1.mp3' }, { name: '폭발 2', url: 'https://sunsaktool-final.netlify.app/sfx/폭발2.mp3' }, { name: '폭발(큰)', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('폭발_큰')}.mp3` }, { name: '후욱', url: `https://sunsaktool-final.netlify.app/sfx/${encodeURIComponent('후욱')}.mp3` } ];
         
-        // ✨ 영상 생성 버튼 로직 (Canvas 렌더링 방식으로 전면 교체)
+        let globalBGM = { url: null, volume: 0.3, startTime: 0, endTime: null };
+        let scriptCards = [];
+        let isPlaying = false;
+        let ttsCache = new Map();
+        let playbackCurrentIndex = 0;
+        let selectedCardId = null;
+        let activeInteractiveElement = null;
+
+        const cardContainer = document.getElementById('st-card-container');
+        const playAllBtn = document.getElementById('st-btn-play-all');
+        const timelineSlider = document.getElementById('st-timeline-slider');
+        const ttsPlayer = document.getElementById('st-tts-player');
+        const bgmPlayer = document.getElementById('st-bgm-player');
+        const sfxPlayer = document.getElementById('st-sfx-player'); 
+        const settingsPanel = document.getElementById('st-settings-panel');
+        const addCardBtn = document.getElementById('st-btn-add-card');
+        const addGptsBtn = document.getElementById('st-btn-add-gpts');
+        const newProjectBtn = document.getElementById('st-btn-add-project');
+        const gptsModal = document.getElementById('st-modal-gpts');
+        const gptsCancelBtn = document.getElementById('st-btn-gpts-cancel');
+        const gptsConfirmBtn = document.getElementById('st-btn-gpts-confirm');
+        const gptsTextarea = document.getElementById('st-gpts-textarea');
+        let wavesurfer = null;
+        let activeRegion = null;
+        let bgmEditorContext = { callback: null, currentBgm: null };
+        
+        function initializeBgmEditor() { if (wavesurfer) return; if (typeof WaveSurfer === 'undefined') { return alert("BGM 편집기 라이브러리 로딩에 실패했습니다. 인터넷 연결을 확인하고 페이지를 새로고침 해주세요."); } wavesurfer = WaveSurfer.create({ container: '#st-waveform-container', waveColor: '#ddd', progressColor: '#e82c43', cursorColor: '#fff', barWidth: 2, barRadius: 3, plugins: [ WaveSurfer.regions.create({ dragSelection: { slop: 5 } }) ] }); wavesurfer.on('error', (err) => { console.error('WaveSurfer Error:', err); alert('BGM 파일을 불러오는 데 실패했습니다.'); closeBgmEditor(); }); wavesurfer.on('ready', () => { document.getElementById('st-waveform-loading').style.display = 'none'; wavesurfer.clearRegions(); const totalDuration = wavesurfer.getDuration(); const regionDuration = Math.min(60, totalDuration); let region = wavesurfer.addRegion({ start: 0, end: regionDuration, color: 'rgba(232, 44, 67, 0.3)', drag: true, resize: true }); activeRegion = region; document.getElementById('st-bgm-time-display').textContent = `${region.start.toFixed(2)}s - ${region.end.toFixed(2)}s`; }); wavesurfer.on('region-updated', (region) => { activeRegion = region; document.getElementById('st-bgm-time-display').textContent = `${region.start.toFixed(2)}s - ${region.end.toFixed(2)}s`; }); wavesurfer.on('region-clicked', (region, e) => { e.stopPropagation(); activeRegion = region; region.play(); }); document.getElementById('st-btn-bgm-play-pause').addEventListener('click', () => wavesurfer.playPause()); document.getElementById('st-btn-bgm-play-region').addEventListener('click', () => { if (activeRegion) activeRegion.play(); }); document.getElementById('st-btn-bgm-confirm').addEventListener('click', () => { if (bgmEditorContext.callback && activeRegion) { bgmEditorContext.callback({ startTime: activeRegion.start, endTime: activeRegion.end }); } closeBgmEditor(); }); document.getElementById('st-btn-bgm-cancel').addEventListener('click', closeBgmEditor); }
+        function openBgmEditor(url, currentBgm, callback) { bgmEditorContext = { callback, currentBgm }; document.getElementById('st-modal-bgm').classList.add('visible'); document.getElementById('st-waveform-loading').style.display = 'block'; if (!wavesurfer) initializeBgmEditor(); if (wavesurfer) { if(wavesurfer.isReady) { wavesurfer.destroy(); initializeBgmEditor(); } wavesurfer.load(url); } }
+        function closeBgmEditor() { document.getElementById('st-modal-bgm').classList.remove('visible'); if (wavesurfer) { wavesurfer.stop(); } }
+        const debounce = (callback, delay) => { let timeout; return (...args) => { clearTimeout(timeout); timeout = setTimeout(() => callback(...args), delay); }; };
+        const getAudioDuration = (url) => new Promise(resolve => { const audio = new Audio(); audio.onloadedmetadata = () => resolve(audio.duration); audio.src = url; });
+        async function fetchTTS(text, cardId) { text = text.trim(); if (!text) return null; const cacheKey = text; if (ttsCache.has(cacheKey)) return ttsCache.get(cacheKey); showLoadingOnCard(cardId, true, '서버에 요청 중...'); try { const response = await fetch('/.netlify/functions/create-tts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: text }) }); if (!response.ok) { const errorResult = await response.json(); throw new Error(`[${response.status}] ${errorResult.error || '서버 요청 실패'}`); } const result = await response.json(); const audioUrl = result.audioUrl; const duration = await getAudioDuration(audioUrl); const ttsData = { audioUrl, duration }; ttsCache.set(cacheKey, ttsData); return ttsData; } catch (error) { console.error('TTS 생성 오류:', error); alert(`음성 생성 중 오류가 발생했습니다: ${error.message}`); return null; } finally { showLoadingOnCard(cardId, false); } }
+        function renderControls() { const fontOptions = FONT_LIST.map(font => `<option value="${font.value}" style="font-family: ${font.value};">${font.name}</option>`).join(''); const bgmOptions = BGM_LIST.map(bgm => `<option value="${bgm.url}">${bgm.name}</option>`).join(''); settingsPanel.innerHTML = `<div class="st-accordion-item active"><div class="st-accordion-header">헤더 스타일</div><div class="st-accordion-content"><div class="st-control-group"><label>헤더 텍스트</label><input type="text" id="st-setting-header-text" value="썰쑈"></div><div class="st-flex-group"><div><label>배경 색상</label><input type="color" id="st-setting-header-bg" value="#e82c43"></div><div><label>글자 색상</label><input type="color" id="st-setting-header-color" value="#FFFFFF"></div></div><div class="st-flex-group"><div><label>폰트</label><select id="st-setting-header-font">${fontOptions}</select></div><div><label>크기</label><input type="number" id="st-setting-header-size" value="24"></div></div></div></div><div class="st-accordion-item"><div class="st-accordion-header">스크립트 스타일</div><div class="st-accordion-content"><div class="st-control-group"><label>텍스트 색상</label><input type="color" id="st-setting-script-color" value="#000000"></div><div class="st-flex-group"><div><label>폰트</label><select id="st-setting-script-font">${fontOptions}</select></div><div><label>크기</label><input type="number" id="st-setting-script-size" value="24"></div></div></div></div><div class="st-accordion-item"><div class="st-accordion-header">프로젝트 정보</div><div class="st-accordion-content"><div class="st-control-group"><label>제목</label><input type="text" id="st-setting-project-title" value=""></div><div class="st-control-group"><label>작성자</label><input type="text" id="st-setting-project-author" value=""></div><div class="st-control-group"><label>조회수</label><input type="number" id="st-setting-project-views" value="0"></div><div class="st-flex-group"><div><label>제목 색상</label><input type="color" id="st-setting-title-color" value="#000000"></div><div><label>작성자/조회수 색상</label><input type="color" id="st-setting-meta-color" value="#555555"></div></div></div></div><div class="st-accordion-item"><div class="st-accordion-header">배경음악 설정</div><div class="st-accordion-content"><div class="st-control-group"><label>전체 배경음악 선택</label><select id="st-setting-global-bgm">${bgmOptions}</select></div><div class="st-control-group"><label>BGM 볼륨</label><input type="range" id="st-setting-global-bgm-volume" min="0" max="1" step="0.01" value="${globalBGM.volume}"></div></div></div>`; document.querySelectorAll('#st-settings-panel input, #st-settings-panel select').forEach(el => { if (el.id.includes('script')) { el.addEventListener('input', applyScriptStylesToSelectedCard); } else { el.addEventListener('input', updatePreviewDisplay); } }); document.querySelectorAll('.st-accordion-header').forEach(h => h.addEventListener('click', () => h.parentElement.classList.toggle('active'))); document.getElementById('st-setting-global-bgm').addEventListener('change', (e) => { const url = e.target.value; if (url) { openBgmEditor(url, globalBGM, ({ startTime, endTime }) => { globalBGM = { ...globalBGM, url, startTime, endTime }; if (isPlaying) playBGM(); }); } else { globalBGM.url = null; if (isPlaying) bgmPlayer.pause(); } }); document.getElementById('st-setting-global-bgm-volume').addEventListener('input', (e) => { globalBGM.volume = parseFloat(e.target.value); if (bgmPlayer) bgmPlayer.volume = globalBGM.volume; }); }
+        function addScriptCard(text = '') { const cardId = `card-${Date.now()}-${Math.floor(Math.random() * 10000)}`; const cardData = { id: cardId, text, duration: 0.5, imageUrl: null, style: {}, audioUrl: null, ttsReady: false, sfxUrl: null, layout: { text: { x: 0, y: 0, scale: 1, angle: 0 }, image: { x: 0, y: 0, scale: 1, angle: 0 } } }; scriptCards.push(cardData); const cardEl = document.createElement('div'); cardEl.className = 'st-card'; cardEl.dataset.id = cardId; const sfxOptions = SFX_LIST.map(sfx => `<option value="${sfx.url || ''}">${sfx.name}</option>`).join(''); cardEl.innerHTML = `<div class="st-card-header st-card-drag-handle"><span class="st-card-number"></span><button class="st-btn-delete-card">🗑️</button></div><textarea placeholder="스크립트를 입력하세요...">${text}</textarea><div class="st-card-footer"><button class="st-play-clip-btn" title="미리듣기" disabled>▶️</button><span class="st-duration-label">타임라인 (---초)</span><label class="st-action-btn" for="${cardId}-file">이미지</label><input type="file" id="${cardId}-file" accept="image/*"><select class="st-sfx-select" style="width: auto; margin-left: auto;">${sfxOptions}</select></div>`; cardContainer.appendChild(cardEl); const fileInput = cardEl.querySelector(`#${cardId}-file`); fileInput.addEventListener('change', (e) => { if (e.target.files && e.target.files[0]) { const reader = new FileReader(); reader.onload = (event) => { cardData.imageUrl = event.target.result; if (selectedCardId === cardId) { updatePreviewDisplay(); } }; reader.readAsDataURL(e.target.files[0]); } }); cardEl.querySelector('.st-play-clip-btn').addEventListener('click', (e) => { e.stopPropagation(); if (isPlaying) stopPlayback(); if (cardData.ttsReady && cardData.audioUrl) { ttsPlayer.src = cardData.audioUrl; ttsPlayer.play(); } }); cardEl.querySelector('.st-sfx-select').addEventListener('change', (e) => { cardData.sfxUrl = e.target.value || null; }); const debouncedFetchAndUpdate = debounce(async (newText, id) => { const cardToUpdate = scriptCards.find(c => c.id === id); const ttsData = await fetchTTS(newText, id); if (ttsData && cardToUpdate) { cardToUpdate.duration = ttsData.duration; cardToUpdate.audioUrl = ttsData.audioUrl; cardToUpdate.ttsReady = true; const currentCardEl = document.querySelector(`.st-card[data-id="${id}"]`); if(currentCardEl) { currentCardEl.querySelector('.st-duration-label').textContent = `타임라인 (${ttsData.duration.toFixed(2)}초)`; currentCardEl.querySelector('.st-play-clip-btn').disabled = false; } updateTotalDuration(); } }, 800); cardEl.querySelector('textarea').addEventListener('input', (e) => { cardData.text = e.target.value; if (selectedCardId === cardId) updatePreviewDisplay(); debouncedFetchAndUpdate(cardData.text, cardId); }); cardEl.querySelector('.st-btn-delete-card').addEventListener('click', (e) => { e.stopPropagation(); deleteCard(cardId); }); cardEl.addEventListener('click', () => selectCard(cardId)); if (text) debouncedFetchAndUpdate(text, cardId); if (!selectedCardId) selectCard(cardId); updateCardNumbers(); }
+        function deleteCard(cardId) { const cardIndex = scriptCards.findIndex(c => c.id === cardId); if(cardIndex === -1) return; scriptCards.splice(cardIndex, 1); document.querySelector(`.st-card[data-id="${cardId}"]`).remove(); if (selectedCardId === cardId) { selectedCardId = null; if(scriptCards.length > 0) { const nextIndex = Math.max(0, cardIndex - 1); if (scriptCards[nextIndex]) selectCard(scriptCards[nextIndex].id); } else { updatePreviewDisplay(); } } updateTotalDuration(); updateCardNumbers(); deactivateAllInteractive(); }
+        function updateCardNumbers() { document.querySelectorAll('.st-card').forEach((card, index) => { card.querySelector('.st-card-number').textContent = index + 1; }); }
+        function updateTotalDuration() { const total = scriptCards.reduce((sum, card) => sum + (card.duration || 0.5), 0); if(timelineSlider) timelineSlider.max = total; }
+        function showLoadingOnCard(cardId, show, message = '음성 생성 중...') { const cardEl = document.querySelector(`.st-card[data-id="${cardId}"]`); if (!cardEl) return; let overlay = cardEl.querySelector('.st-card-loading'); if (show) { if (!overlay) { overlay = document.createElement('div'); overlay.className = 'st-card-loading'; cardEl.appendChild(overlay); } overlay.textContent = message; } else { if (overlay) overlay.remove(); } }
+        function selectCard(cardId, fromPlayback = false) { if (isPlaying && !fromPlayback) stopPlayback(); selectedCardId = cardId; deactivateAllInteractive(); document.querySelectorAll('.st-card').forEach(c => c.classList.remove('active')); const cardEl = document.querySelector(`.st-card[data-id="${cardId}"]`); if (cardEl) { cardEl.classList.add('active'); if (!fromPlayback) cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' }); updateScriptStyleControls(); updatePreviewDisplay(); } else { updatePreviewDisplay(); } }
+        function updatePreviewDisplay() { const headerEl = document.querySelector('.st-preview-header'); if (headerEl) { headerEl.textContent = document.getElementById('st-setting-header-text')?.value || ''; headerEl.style.backgroundColor = document.getElementById('st-setting-header-bg')?.value || '#e82c43'; headerEl.style.color = document.getElementById('st-setting-header-color')?.value || '#ffffff'; headerEl.style.fontFamily = document.getElementById('st-setting-header-font')?.value || 'GmarketSans'; headerEl.style.fontSize = (document.getElementById('st-setting-header-size')?.value || '24') + 'px'; } const titleEl = document.querySelector('.st-project-info .title'); if (titleEl) { titleEl.textContent = document.getElementById('st-setting-project-title')?.value || ''; titleEl.style.color = document.getElementById('st-setting-title-color')?.value || '#000'; } const metaEl = document.querySelector('.st-project-info span'); if (metaEl) { metaEl.textContent = `${document.getElementById('st-setting-project-author')?.value || ''} | 조회수 ${Number(document.getElementById('st-setting-project-views')?.value || 0).toLocaleString()}`; metaEl.style.color = document.getElementById('st-setting-meta-color')?.value || '#555'; } const card = scriptCards.find(c => c.id === selectedCardId); const textWrapper = document.getElementById('st-preview-text-container-wrapper'); const previewText = document.getElementById('st-preview-text'); const imageWrapper = document.getElementById('st-preview-image-container-wrapper'); const previewImage = document.getElementById('st-preview-image'); if (!previewText || !previewImage) return; if (card) { previewText.textContent = card.text; if (card.imageUrl) { previewImage.src = card.imageUrl; imageWrapper.style.display = ''; } else { previewImage.src = ''; imageWrapper.style.display = 'none'; } Object.assign(previewText.style, card.style); applyTransform(textWrapper, card.layout.text); applyTransform(imageWrapper, card.layout.image); } else { previewText.textContent = '스크립트를 추가하거나 선택하세요.'; imageWrapper.style.display = 'none'; Object.assign(previewText.style, { color: '#000', fontFamily: 'Noto Sans KR', fontSize: '24px' }); applyTransform(textWrapper, { x: 0, y: 0, scale: 1, angle: 0 }); applyTransform(imageWrapper, { x: 0, y: 0, scale: 1, angle: 0 }); } }
+        function applyTransform(el, layout) { if (el && layout) el.style.transform = `translate(${layout.x}px, ${layout.y}px) scale(${layout.scale}) rotate(${layout.angle}deg)`; }
+        function updateScriptStyleControls() { const card = scriptCards.find(c => c.id === selectedCardId); if (!card) return; document.getElementById('st-setting-script-color').value = card.style?.color || '#000000'; document.getElementById('st-setting-script-font').value = card.style?.fontFamily || "'Noto Sans KR', sans-serif"; document.getElementById('st-setting-script-size').value = (card.style?.fontSize || '24px').replace('px',''); }
+        function applyScriptStylesToSelectedCard() { const card = scriptCards.find(c => c.id === selectedCardId); if (!card) return; card.style = { color: document.getElementById('st-setting-script-color').value, fontFamily: document.getElementById('st-setting-script-font').value, fontSize: document.getElementById('st-setting-script-size').value + 'px' }; updatePreviewDisplay(); }
+        function playBGM(bgmData = globalBGM) { if (bgmData && bgmData.url) { if (bgmPlayer.src !== bgmData.url) bgmPlayer.src = bgmData.url; bgmPlayer.volume = globalBGM.volume; bgmPlayer.currentTime = bgmData.startTime || 0; bgmPlayer.play().catch(e => console.error("BGM Playback Error:", e)); } else { bgmPlayer.pause(); } }
+        bgmPlayer.addEventListener('timeupdate', () => { if (!isPlaying) return; if (globalBGM.endTime && bgmPlayer.currentTime >= globalBGM.endTime) { bgmPlayer.currentTime = globalBGM.startTime || 0; } });
+        function togglePlay() { isPlaying ? stopPlayback() : startPlayback(); }
+        function startPlayback() { deactivateAllInteractive(); const unready = scriptCards.some(c => !c.ttsReady && c.text.trim()); if (unready) return alert('아직 음성 생성이 완료되지 않은 스크립트가 있습니다.'); if (scriptCards.length === 0) return; isPlaying = true; playAllBtn.textContent = '❚❚'; playBGM(); playCardByIndex(0); }
+        function stopPlayback() { isPlaying = false; playAllBtn.textContent = '▶'; ttsPlayer.pause(); bgmPlayer.pause(); sfxPlayer.pause(); }
+        function playCardByIndex(index) { if (index >= scriptCards.length || !isPlaying) { stopPlayback(); return; } playbackCurrentIndex = index; const card = scriptCards[index]; selectCard(card.id, true); if (card.sfxUrl) { sfxPlayer.src = card.sfxUrl; sfxPlayer.play(); } setTimeout(() => { if (isPlaying && playbackCurrentIndex === index) { ttsPlayer.src = card.audioUrl; ttsPlayer.play(); } }, 30); ttsPlayer.onended = () => playCardByIndex(index + 1); }
+        function setupGptsModal() { addGptsBtn.addEventListener('click', () => { gptsModal.classList.add('visible'); }); function closeModal() { gptsModal.classList.remove('visible'); gptsTextarea.value = ''; } gptsCancelBtn.addEventListener('click', closeModal); gptsModal.addEventListener('click', (e) => { if (e.target === gptsModal) { closeModal(); } }); gptsConfirmBtn.addEventListener('click', () => { const text = gptsTextarea.value.trim(); if (!text) return; const lines = text.split(/\n\s*\n/).filter(line => line.trim() !== ''); lines.forEach(line => { addScriptCard(line.trim()); }); closeModal(); if(lines.length > 0 && scriptCards.length > 0) { const firstNewCardId = scriptCards[scriptCards.length - lines.length].id; selectCard(firstNewCardId); } }); }
+        
         function setupExportButton() {
             const exportBtn = document.getElementById('st-btn-export-video');
             const progressOverlay = document.getElementById('st-export-progress-overlay');
@@ -75,119 +190,110 @@
             
             const RENDER_WIDTH = 1080;
             const RENDER_HEIGHT = 1920;
-            const SCALE = RENDER_WIDTH / 380; // 380px 너비 기준 스케일
+            const FPS = 30;
+            const FRAME_DURATION = 1 / FPS;
+            const PREVIEW_WIDTH = 380;
+            const SCALE = RENDER_WIDTH / PREVIEW_WIDTH;
 
-            // 캔버스에 텍스트를 줄바꿈하여 그리는 헬퍼 함수
             function wrapText(context, text, x, y, maxWidth, lineHeight) {
-                const words = text.split(' ');
-                let line = '';
-                let testY = y;
-                for(let n = 0; n < words.length; n++) {
-                    const testLine = line + words[n] + ' ';
-                    const metrics = context.measureText(testLine);
-                    const testWidth = metrics.width;
-                    if (testWidth > maxWidth && n > 0) {
-                        context.fillText(line, x, testY);
-                        line = words[n] + ' ';
-                        testY += lineHeight;
-                    } else {
-                        line = testLine;
+                const lines = text.split('\n');
+                let currentY = y;
+                for (const line of lines) {
+                    let words = line.split(' ');
+                    let currentLine = words[0];
+                    for (let i = 1; i < words.length; i++) {
+                        let testLine = currentLine + ' ' + words[i];
+                        if (context.measureText(testLine).width > maxWidth) {
+                            context.fillText(currentLine, x, currentY);
+                            currentLine = words[i];
+                            currentY += lineHeight;
+                        } else {
+                            currentLine = testLine;
+                        }
                     }
+                    context.fillText(currentLine, x, currentY);
+                    currentY += lineHeight;
                 }
-                context.fillText(line, x, testY);
             }
 
-            // 캔버스에 프레임을 그리는 함수
             async function renderFrame(ctx, card, imageCache) {
-                ctx.clearRect(0, 0, RENDER_WIDTH, RENDER_HEIGHT);
                 ctx.fillStyle = '#FFFFFF';
                 ctx.fillRect(0, 0, RENDER_WIDTH, RENDER_HEIGHT);
 
-                // Header
                 const headerHeight = 65 * SCALE;
                 ctx.fillStyle = document.getElementById('st-setting-header-bg')?.value || '#e82c43';
                 ctx.fillRect(0, 0, RENDER_WIDTH, headerHeight);
-                ctx.font = `bold ${24 * SCALE}px ${document.getElementById('st-setting-header-font')?.value || 'GmarketSans'}`;
+                ctx.font = `bold ${24 * SCALE}px '${getComputedStyle(document.querySelector('.st-preview-header')).fontFamily.split(',')[0]}'`;
                 ctx.fillStyle = document.getElementById('st-setting-header-color')?.value || '#FFFFFF';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillText(document.getElementById('st-setting-header-text')?.value, RENDER_WIDTH / 2, headerHeight / 2);
 
-                // Project Info
-                const infoY = headerHeight + (10 * SCALE);
                 const infoPadding = 10 * SCALE;
-                ctx.save();
-                ctx.translate(infoPadding, infoY);
-                ctx.font = `bold ${22 * SCALE}px sans-serif`;
+                const infoY = headerHeight + infoPadding;
+                const titleFontSize = 22 * SCALE;
+                const metaFontSize = 13 * SCALE;
+                ctx.font = `bold ${titleFontSize}px sans-serif`;
                 ctx.fillStyle = document.getElementById('st-setting-title-color')?.value || '#000';
                 ctx.textAlign = 'left';
                 ctx.textBaseline = 'top';
-                ctx.fillText(document.getElementById('st-setting-project-title')?.value, 0, 0);
-
-                ctx.font = `${13 * SCALE}px sans-serif`;
+                ctx.fillText(document.getElementById('st-setting-project-title')?.value || '', infoPadding, infoY);
+                ctx.font = `${metaFontSize}px sans-serif`;
                 ctx.fillStyle = document.getElementById('st-setting-meta-color')?.value || '#555';
                 const metaText = `${document.getElementById('st-setting-project-author')?.value || ''} | 조회수 ${Number(document.getElementById('st-setting-project-views')?.value || 0).toLocaleString()}`;
-                ctx.fillText(metaText, 0, (22 + 5) * SCALE);
-                ctx.restore();
+                ctx.fillText(metaText, infoPadding, infoY + titleFontSize + (5 * SCALE));
                 
-                // --- Main Content ---
-                const scriptDisplayY = headerHeight + ((10 + 16 + 16 + 10) * SCALE);
+                const scriptDisplayY = headerHeight + (65 * SCALE);
                 
-                // Text
-                ctx.save();
-                const textLayout = card.layout.text;
-                ctx.translate(RENDER_WIDTH / 2 + textLayout.x * SCALE, scriptDisplayY + textLayout.y * SCALE);
-                ctx.rotate(textLayout.angle * Math.PI / 180);
-                ctx.scale(textLayout.scale, textLayout.scale);
-                ctx.font = `${(parseInt(card.style.fontSize) || 24) * SCALE}px ${card.style.fontFamily || 'Noto Sans KR'}`;
-                ctx.fillStyle = card.style.color || '#000';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                wrapText(ctx, card.text, 0, 0, (380 - 20) * SCALE, (parseInt(card.style.fontSize) || 24) * 1.3 * SCALE);
-                ctx.restore();
-
-                // Image
                 if (card.imageUrl && imageCache[card.imageUrl] && imageCache[card.imageUrl].complete) {
                     ctx.save();
                     const imageLayout = card.layout.image;
                     const img = imageCache[card.imageUrl];
                     const imgX = RENDER_WIDTH / 2 + imageLayout.x * SCALE;
                     const imgY = scriptDisplayY + (100 * SCALE) + imageLayout.y * SCALE;
-                    
                     ctx.translate(imgX, imgY);
                     ctx.rotate(imageLayout.angle * Math.PI / 180);
                     ctx.scale(imageLayout.scale, imageLayout.scale);
-
-                    const imgWidth = (380 - 20) * SCALE;
+                    const imgWidth = (PREVIEW_WIDTH - 20) * SCALE;
                     const imgHeight = img.height * (imgWidth / img.width);
                     ctx.drawImage(img, -imgWidth/2, -imgHeight/2, imgWidth, imgHeight);
                     ctx.restore();
                 }
+
+                ctx.save();
+                const textLayout = card.layout.text;
+                const scriptFontSize = (parseInt(card.style.fontSize) || 24) * SCALE;
+                ctx.translate(RENDER_WIDTH / 2 + textLayout.x * SCALE, scriptDisplayY + textLayout.y * SCALE);
+                ctx.rotate(textLayout.angle * Math.PI / 180);
+                ctx.scale(textLayout.scale, textLayout.scale);
+                ctx.font = `${scriptFontSize}px "${card.style.fontFamily || 'Noto Sans KR'}"`;
+                ctx.fillStyle = card.style.color || '#000';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                wrapText(ctx, card.text, 0, 0, (PREVIEW_WIDTH - 20) * SCALE, scriptFontSize * 1.3);
+                ctx.restore();
             }
 
             exportBtn.addEventListener('click', async () => {
-                if (scriptCards.some(c => !c.ttsReady && c.text.trim())) {
-                    return alert('아직 음성 생성이 완료되지 않은 스크립트가 있습니다.');
-                }
+                if (scriptCards.some(c => !c.ttsReady && c.text.trim())) return alert('아직 음성 생성이 완료되지 않은 스크립트가 있습니다.');
                 if (scriptCards.length === 0) return alert('출력할 영상이 없습니다.');
 
                 exportBtn.disabled = true;
                 progressOverlay.style.display = 'flex';
-                progressText.textContent = '폰트 및 이미지 로딩 중...';
+                progressText.textContent = '자원 로딩 중...';
+                progressBarInner.style.width = `0%`;
                 
-                await document.fonts.ready; // 웹 폰트 로딩 대기
+                await document.fonts.ready;
 
                 const imageCache = {};
-                const imagePromises = scriptCards
-                    .filter(card => card.imageUrl)
-                    .map(card => new Promise((resolve) => {
-                        const img = new Image();
-                        img.crossOrigin = 'anonymous';
-                        img.src = card.imageUrl;
-                        img.onload = resolve;
-                        img.onerror = resolve; // 에러가 나도 진행
-                        imageCache[card.imageUrl] = img;
-                    }));
+                const imagePromises = scriptCards.filter(card => card.imageUrl).map(card => new Promise((resolve) => {
+                    const img = new Image();
+                    img.crossOrigin = 'anonymous';
+                    img.src = card.imageUrl;
+                    img.onload = () => resolve(img);
+                    img.onerror = () => resolve(null);
+                    imageCache[card.imageUrl] = img;
+                }));
                 await Promise.all(imagePromises);
 
                 try {
@@ -196,18 +302,24 @@
                     canvas.height = RENDER_HEIGHT;
                     const ctx = canvas.getContext('2d');
                     
-                    // 오디오 트랙 믹싱
-                    progressText.textContent = '오디오 트랙 처리 중...';
+                    progressText.textContent = '오디오 처리 중...';
                     const audioContext = new AudioContext();
                     const destination = audioContext.createMediaStreamDestination();
-                    let totalDuration = 0;
-                    
-                    // BGM
-                    if (globalBGM.url) {
-                        // BGM은 별도 트랙으로 추가하는 것이 더 안정적일 수 있으나 여기서는 믹싱
+                    let totalDuration = scriptCards.reduce((sum, card) => sum + (card.duration || 0.5), 0);
+                    let timeOffset = 0;
+
+                    const audioSources = [];
+                    if(globalBGM.url) {
+                        const response = await fetch(globalBGM.url);
+                        const arrayBuffer = await response.arrayBuffer();
+                        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                        const source = audioContext.createBufferSource();
+                        source.buffer = audioBuffer;
+                        source.loop = true;
+                        source.connect(destination);
+                        audioSources.push(source);
                     }
 
-                    // TTS + SFX
                     for(const card of scriptCards) {
                         if (card.audioUrl) {
                             const response = await fetch(card.audioUrl);
@@ -216,7 +328,7 @@
                             const source = audioContext.createBufferSource();
                             source.buffer = audioBuffer;
                             source.connect(destination);
-                            source.start(totalDuration);
+                            source.start(timeOffset);
                         }
                         if (card.sfxUrl) {
                             const response = await fetch(card.sfxUrl);
@@ -225,16 +337,14 @@
                             const source = audioContext.createBufferSource();
                             source.buffer = audioBuffer;
                             source.connect(destination);
-                            source.start(totalDuration);
+                            source.start(timeOffset);
                         }
-                        totalDuration += card.duration || 0.5;
+                        timeOffset += card.duration || 0.5;
                     }
+                    audioSources.forEach(s => s.start(0));
 
-                    const canvasStream = canvas.captureStream(30); // 30fps
-                    const combinedStream = new MediaStream([
-                        ...canvasStream.getVideoTracks(),
-                        ...destination.stream.getAudioTracks()
-                    ]);
+                    const canvasStream = canvas.captureStream(FPS);
+                    const combinedStream = new MediaStream([...canvasStream.getVideoTracks(), ...destination.stream.getAudioTracks()]);
                     
                     const recorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm;codecs=vp9,opus' });
                     const chunks = [];
@@ -249,27 +359,23 @@
                         URL.revokeObjectURL(url);
                         progressOverlay.style.display = 'none';
                         exportBtn.disabled = false;
+                        audioSources.forEach(s => s.stop());
+                        audioContext.close();
                     };
                     
                     recorder.start();
 
-                    // 프레임 렌더링 루프
-                    progressText.textContent = '프레임 렌더링 중... (0%)';
                     let currentTime = 0;
-                    let currentCardIndex = 0;
-                    const frameDuration = 1 / 30; // 30fps
-
                     const renderLoop = async () => {
-                        if (currentTime >= totalDuration) {
+                        if (currentTime > totalDuration) {
                             recorder.stop();
                             return;
                         }
-
-                        // 현재 시간에 맞는 카드 찾기
                         let timeTally = 0;
+                        let currentCardIndex = 0;
                         for(let i = 0; i < scriptCards.length; i++) {
-                            timeTally += scriptCards[i].duration;
-                            if (currentTime < timeTally) {
+                            timeTally += scriptCards[i].duration || 0.5;
+                            if (currentTime <= timeTally) {
                                 currentCardIndex = i;
                                 break;
                             }
@@ -277,14 +383,13 @@
                         
                         await renderFrame(ctx, scriptCards[currentCardIndex], imageCache);
                         
-                        currentTime += frameDuration;
                         const progress = Math.min(100, (currentTime / totalDuration) * 100);
                         progressText.textContent = `프레임 렌더링 중... (${Math.round(progress)}%)`;
                         progressBarInner.style.width = `${progress}%`;
                         
-                        setTimeout(renderLoop, frameDuration * 1000);
+                        currentTime += FRAME_DURATION;
+                        requestAnimationFrame(renderLoop);
                     };
-
                     renderLoop();
 
                 } catch (error) {
@@ -296,23 +401,22 @@
             });
         }
         
-        // --- 애플리케이션 초기화 ---
         function initialize() {
-            // ... (이전과 동일한 초기화 로직)
             renderControls();
             updatePreviewDisplay();
             addCardBtn.addEventListener('click', () => addScriptCard(''));
             newProjectBtn.addEventListener('click', () => { if(confirm('정말로 새 프로젝트를 시작하시겠습니까? 모든 작업 내용이 사라집니다.')) { location.reload(); } });
             playAllBtn.addEventListener('click', togglePlay);
             setupGptsModal();
-            setupExportButton(); // ✨ 새로 만든 함수 호출
-            new Sortable(cardContainer, { /* ... */ });
+            setupExportButton();
+            new Sortable(cardContainer, { animation: 150, handle: '.st-card-drag-handle', onEnd: function(evt) { const { oldIndex, newIndex } = evt; const [movedItem] = scriptCards.splice(oldIndex, 1); scriptCards.splice(newIndex, 0, movedItem); updateCardNumbers(); } });
             initializeInteract();
             addScriptCard('SunsakTool에 오신 것을 환영합니다!');
         }
         
-        // 이전 코드의 모든 함수를 여기에 포함시켜야 합니다.
-        // 예시로 생략된 함수가 많으니 전체 코드를 복사해서 사용하세요.
+        function deactivateAllInteractive() { document.querySelectorAll('.interactive-target.interactive-active').forEach(el => { el.classList.remove('interactive-active'); el.querySelectorAll('.resize-handle').forEach(h => h.remove()); }); activeInteractiveElement = null; }
+        function initializeInteract() { let previewContent = null; const getPreviewContent = () => { if (!previewContent) previewContent = document.querySelector('.st-preview-content'); return previewContent; }; interact('.interactive-target').on('tap', (event) => { const target = event.currentTarget; if (activeInteractiveElement === target) return; deactivateAllInteractive(); activeInteractiveElement = target; target.classList.add('interactive-active'); ['top-left', 'top-right', 'bottom-left', 'bottom-right'].forEach(pos => { const handle = document.createElement('div'); handle.className = `resize-handle ${pos}`; target.appendChild(handle); }); event.preventDefault(); }).draggable({ listeners: { move(event) { const card = scriptCards.find(c => c.id === selectedCardId); if (!card) return; const layoutKey = event.target.dataset.layoutKey; const layout = card.layout[layoutKey]; if (event.shiftKey) { const pc = getPreviewContent(); const center = { x: event.target.offsetLeft + event.target.offsetWidth / 2, y: event.target.offsetTop + event.target.offsetHeight / 2 }; const angle = Math.atan2(event.clientY - (pc?.getBoundingClientRect().top || 0) - center.y, event.clientX - (pc?.getBoundingClientRect().left || 0) - center.x); layout.angle = angle * (180 / Math.PI); } else { layout.x += event.dx; layout.y += event.dy; } applyTransform(event.target, layout); } } }).resizable({ edges: { top: false, left: false, bottom: false, right: false }, listeners: { move(event) { const card = scriptCards.find(c => c.id === selectedCardId); if (!card) return; const layoutKey = event.target.dataset.layoutKey; const layout = card.layout[layoutKey]; layout.scale *= (event.rect.width / event.target.getBoundingClientRect().width); layout.x += event.deltaRect.left; layout.y += event.deltaRect.top; applyTransform(event.target, layout); } }, modifiers: [ interact.modifiers.aspectRatio({ ratio: 'preserve', modifiers: [interact.modifiers.snapSize({ targets: [interact.snappers.grid({ x: 1, y: 1 })] })], }), ], handle: '.resize-handle' }); document.body.addEventListener('click', (e) => { const pc = getPreviewContent(); if (pc && pc.contains(e.target) && !e.target.closest('.interactive-target')) { deactivateAllInteractive(); } }); }
+        
         initialize();
     });
     </script>
