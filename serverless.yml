@@ -1,6 +1,6 @@
 # 파일 이름: serverless.yml
 
-# 1. 서비스 이름 정의 (프로젝트 식별용)
+# 1. 서비스 이름 정의
 service: sunsaktool-renderer
 
 # 2. 사용할 Serverless Framework 버전 지정
@@ -10,36 +10,9 @@ frameworkVersion: '^4'
 provider:
   name: aws
   runtime: nodejs18.x
-  region: ap-northeast-2 # AWS 서울 리전 (한국에서 가장 빠름)
-  
-  # Lambda 함수가 사용할 권한 설정
-  iam:
-    role:
-      statements:
-        - Effect: "Allow"
-          Action:
-            - "s3:*" # S3(저장소)에 대한 모든 권한 허용
-          Resource: "*" # 모든 리소스에 대해
+  region: ap-northeast-2 # AWS 서울 리전
 
 # 4. 우리가 배포할 함수(기능) 목록
 functions:
-  # 'renderVideo' 라는 이름의 함수
   renderVideo:
-    handler: rendering-server/handler.main # 실행할 파일 경로 및 함수 이름
-    timeout: 900 # Lambda 함수의 최대 실행 시간을 15분(900초)으로 설정
-    memorySize: 2048 # 메모리를 2GB로 넉넉하게 할당하여 렌더링 성능 확보
-    
-    # 이 함수가 어떤 이벤트에 의해 실행될지 정의
-    events:
-      - httpApi:
-          path: /render-video
-          method: post
-
-# 5. 추가 플러그인 설정 (FFmpeg를 위해 필요합니다)
-plugins:
-  - serverless-ffmpeg-plugin # 진짜 이름
-
-# 6. 플러그인에 대한 사용자 정의 설정
-custom:
-  ffmpeg:
-    version: '6.0' # 사용할 FFmpeg 버전
+    handler: rendering-server/handler.main
