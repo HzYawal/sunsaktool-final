@@ -1,13 +1,9 @@
-# 파일 이름: serverless.yml (모든 것을 초기화한 최종 버전)
-
 service: sunsaktool-renderer
 frameworkVersion: '^4'
-
 provider:
   name: aws
   runtime: nodejs18.x
   region: ap-northeast-2
-
 functions:
   renderVideo:
     handler: rendering-server/handler.main
