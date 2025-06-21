@@ -40,6 +40,10 @@
         #st-preview-source-container-wrapper { bottom: 5px; right: 5px; width: auto; max-width: 95%; font-size: 10px; color: #888; text-align: right;}
         .interactive-target.interactive-active { outline: 2px dashed var(--st-interact-color); z-index: 100; }
         .resize-handle { position: absolute; width: 12px; height: 12px; background: white; border-radius: 50%; border: 2px solid var(--st-interact-color); z-index: 101; display: none; }
+        .resize-handle.top-left { top: -6px; left: -6px; cursor: nwse-resize; }
+        .resize-handle.top-right { top: -6px; right: -6px; cursor: nesw-resize; }
+        .resize-handle.bottom-left { bottom: -6px; left: -6px; cursor: nesw-resize; }
+        .resize-handle.bottom-right { bottom: -6px; right: -6px; cursor: nwse-resize; }
         .rotation-handle { position: absolute; bottom: -35px; left: 50%; transform: translateX(-50%); width: 24px; height: 24px; background-color: white; border-radius: 50%; border: 1px solid #ccc; cursor: grab; display: none; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 102; }
         .rotation-handle:active { cursor: grabbing; }
         .interactive-active .resize-handle, .interactive-active .rotation-handle { display: flex; }
