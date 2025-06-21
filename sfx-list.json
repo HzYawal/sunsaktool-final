@@ -1,0 +1,670 @@
+[
+  {
+    "name": "효과음 없음",
+    "url": ""
+  },
+  {
+    "name": "Clean Paper Rip",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_Clean%20Paper%20Rip.mp3"
+  },
+  {
+    "name": "NO~ (아이 음성)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_NO~%20%28%EC%95%84%EC%9D%B4%20%EC%9D%8C%EC%84%B1%29.mp3"
+  },
+  {
+    "name": "Oops~ (아이 음성)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_Oops~%20%28%EC%95%84%EC%9D%B4%20%EC%9D%8C%EC%84%B1%29.mp3"
+  },
+  {
+    "name": "shift(쉬프트키)키 잘못 눌렀을 때 나는 소리",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_shift%28%EC%89%AC%ED%94%84%ED%8A%B8%ED%82%A4%29%ED%82%A4%20%EC%9E%98%EB%AA%BB%20%EB%88%8C%EB%A0%80%EC%9D%84%20%EB%95%8C%20%EB%82%98%EB%8A%94%20%EC%86%8C%EB%A6%AC.mp3"
+  },
+  {
+    "name": "STOP~ (아이 음성)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_STOP~%20%28%EC%95%84%EC%9D%B4%20%EC%9D%8C%EC%84%B1%29.mp3"
+  },
+  {
+    "name": "swosh (강) - 1",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_swosh%20%28%EA%B0%95%29%20-%201.mp3"
+  },
+  {
+    "name": "swosh (고음)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_swosh%20%28%EA%B3%A0%EC%9D%8C%29.mp3"
+  },
+  {
+    "name": "swosh-42",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_swosh-42.mp3"
+  },
+  {
+    "name": "Tearing Paper",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_Tearing%20Paper.mp3"
+  },
+  {
+    "name": "가격 소리 1 (퍽)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EA%B0%80%EA%B2%A9%20%EC%86%8C%EB%A6%AC%201%20%28%ED%8D%BD%29.mp3"
+  },
+  {
+    "name": "가격 소리 2 (퍽)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EA%B0%80%EA%B2%A9%20%EC%86%8C%EB%A6%AC%202%20%28%ED%8D%BD%29.mp3"
+  },
+  {
+    "name": "가벼운 타격 임팩트 2",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EA%B0%80%EB%B2%BC%EC%9A%B4%20%ED%83%80%EA%B2%A9%20%EC%9E%84%ED%8C%A9%ED%8A%B8%202.mp3"
+  },
+  {
+    "name": "가전제품 종료음(띵동)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EA%B0%80%EC%A0%84%EC%A0%9C%ED%92%88%20%EC%A2%85%EB%A3%8C%EC%9D%8C%28%EB%9D%B5%EB%8F%99%29.mp3"
+  },
+  {
+    "name": "게임 효과음 1 (젤리 밟는)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EA%B2%8C%EC%9E%84%20%ED%9A%A8%EA%B3%BC%EC%9D%8C%201%20%28%EC%A0%A4%EB%A6%AC%20%EB%B0%9F%EB%8A%94%29.mp3"
+  },
+  {
+    "name": "게임 효과음 5 (뽀잉 점프)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EA%B2%8C%EC%9E%84%20%ED%9A%A8%EA%B3%BC%EC%9D%8C%205%20%28%EB%BD%80%EC%9E%89%20%EC%A0%90%ED%94%84%29.mp3"
+  },
+  {
+    "name": "경찰차 소리 (삐용삐용)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EA%B2%BD%EC%B0%B0%EC%B0%A8%20%EC%86%8C%EB%A6%AC%20%28%EC%82%90%EC%9A%A9%EC%82%90%EC%9A%A9%29.mp3"
+  },
+  {
+    "name": "계산 완료 소리 (짤랑~)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EA%B3%84%EC%82%B0%20%EC%99%84%EB%A3%8C%20%EC%86%8C%EB%A6%AC%20%28%EC%A7%A4%EB%9E%91~%29.mp3"
+  },
+  {
+    "name": "고퀄리티 게임 뿅 소리",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EA%B3%A0%ED%80%84%EB%A6%AC%ED%8B%B0%20%EA%B2%8C%EC%9E%84%20%EB%BF%85%20%EC%86%8C%EB%A6%AC.mp3"
+  },
+  {
+    "name": "공간감 있는 임팩트 효과 2",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EA%B3%B5%EA%B0%84%EA%B0%90%20%EC%9E%88%EB%8A%94%20%EC%9E%84%ED%8C%A9%ED%8A%B8%20%ED%9A%A8%EA%B3%BC%202.mp3"
+  },
+  {
+    "name": "과자 봉지 구기는 소리",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EA%B3%BC%EC%9E%90%20%EB%B4%89%EC%A7%80%20%EA%B5%AC%EA%B8%B0%EB%8A%94%20%EC%86%8C%EB%A6%AC.mp3"
+  },
+  {
+    "name": "궁금증 (레트로)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EA%B6%81%EA%B8%88%EC%A6%9D%20%28%EB%A0%88%ED%8A%B8%EB%A1%9C%29.mp3"
+  },
+  {
+    "name": "귀여운 만화 등장음",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EA%B7%80%EC%97%AC%EC%9A%B4%20%EB%A7%8C%ED%99%94%20%EB%93%B1%EC%9E%A5%EC%9D%8C.mp3"
+  },
+  {
+    "name": "귀여운 자막용(또잉퐁)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EA%B7%80%EC%97%AC%EC%9A%B4%20%EC%9E%90%EB%A7%89%EC%9A%A9%28%EB%98%90%EC%9E%89%ED%90%81%29.mp3"
+  },
+  {
+    "name": "귀엽게 뽁하는 알람소리",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EA%B7%80%EC%97%BD%EA%B2%8C%20%EB%BD%81%ED%95%98%EB%8A%94%20%EC%95%8C%EB%9E%8C%EC%86%8C%EB%A6%AC.mp3"
+  },
+  {
+    "name": "글리치(삑 포잉 지직)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EA%B8%80%EB%A6%AC%EC%B9%98%28%EC%82%91%20%ED%8F%AC%EC%9E%89%20%EC%A7%80%EC%A7%81%29.mp3"
+  },
+  {
+    "name": "긍정적 마법 사용",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EA%B8%8D%EC%A0%95%EC%A0%81%20%EB%A7%88%EB%B2%95%20%EC%82%AC%EC%9A%A9.mp3"
+  },
+  {
+    "name": "기대하시라 (둥~ 타닥!)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EA%B8%B0%EB%8C%80%ED%95%98%EC%8B%9C%EB%9D%BC%20%28%EB%91%A5~%20%ED%83%80%EB%8B%A5%21%29.mp3"
+  },
+  {
+    "name": "기분 좋은 아기 웃음",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EA%B8%B0%EB%B6%84%20%EC%A2%8B%EC%9D%80%20%EC%95%84%EA%B8%B0%20%EC%9B%83%EC%9D%8C.mp3"
+  },
+  {
+    "name": "까마귀 까악까악까악 소리",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EA%B9%8C%EB%A7%88%EA%B7%80%20%EA%B9%8C%EC%95%85%EA%B9%8C%EC%95%85%EA%B9%8C%EC%95%85%20%EC%86%8C%EB%A6%AC.mp3"
+  },
+  {
+    "name": "깨달음을 얻었을 때(뾰봉)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EA%B9%A8%EB%8B%AC%EC%9D%8C%EC%9D%84%20%EC%96%BB%EC%97%88%EC%9D%84%20%EB%95%8C%28%EB%BE%B0%EB%B4%89%29.mp3"
+  },
+  {
+    "name": "깨달음을 얻은 소리1(뚱)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EA%B9%A8%EB%8B%AC%EC%9D%8C%EC%9D%84%20%EC%96%BB%EC%9D%80%20%EC%86%8C%EB%A6%AC1%28%EB%9A%B1%29.mp3"
+  },
+  {
+    "name": "날아가는 소리 1 (스윕)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%82%A0%EC%95%84%EA%B0%80%EB%8A%94%20%EC%86%8C%EB%A6%AC%201%20%28%EC%8A%A4%EC%9C%95%29.mp3"
+  },
+  {
+    "name": "날아가는 소리 2 (스윕)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%82%A0%EC%95%84%EA%B0%80%EB%8A%94%20%EC%86%8C%EB%A6%AC%202%20%28%EC%8A%A4%EC%9C%95%29.mp3"
+  },
+  {
+    "name": "네 말이 정답이야(또로롱~)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%84%A4%20%EB%A7%90%EC%9D%B4%20%EC%A0%95%EB%8B%B5%EC%9D%B4%EC%95%BC%28%EB%98%90%EB%A1%9C%EB%A1%B1~%29.mp3"
+  },
+  {
+    "name": "놀람 반전",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%86%80%EB%9E%8C%20%EB%B0%98%EC%A0%84.mp3"
+  },
+  {
+    "name": "눈물 떨어지는 소리 (또로롱)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%88%88%EB%AC%BC%20%EB%96%A8%EC%96%B4%EC%A7%80%EB%8A%94%20%EC%86%8C%EB%A6%AC%20%28%EB%98%90%EB%A1%9C%EB%A1%B1%29.mp3"
+  },
+  {
+    "name": "눈물 떨어지는 소리 2 (또롱)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%88%88%EB%AC%BC%20%EB%96%A8%EC%96%B4%EC%A7%80%EB%8A%94%20%EC%86%8C%EB%A6%AC%202%20%28%EB%98%90%EB%A1%B1%29.mp3"
+  },
+  {
+    "name": "눈물 떨어지는 소리 3 (서라운드)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%88%88%EB%AC%BC%20%EB%96%A8%EC%96%B4%EC%A7%80%EB%8A%94%20%EC%86%8C%EB%A6%AC%203%20%28%EC%84%9C%EB%9D%BC%EC%9A%B4%EB%93%9C%29.mp3"
+  },
+  {
+    "name": "눈물 떨어지는 소리 4 (크게 똑)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%88%88%EB%AC%BC%20%EB%96%A8%EC%96%B4%EC%A7%80%EB%8A%94%20%EC%86%8C%EB%A6%AC%204%20%28%ED%81%AC%EA%B2%8C%20%EB%98%91%29.mp3"
+  },
+  {
+    "name": "다음 문제 효과음(띠링~)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%8B%A4%EC%9D%8C%20%EB%AC%B8%EC%A0%9C%20%ED%9A%A8%EA%B3%BC%EC%9D%8C%28%EB%9D%A0%EB%A7%81~%29.mp3"
+  },
+  {
+    "name": "다음으로 넘어가는 맑은 소리(띠링~)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%8B%A4%EC%9D%8C%EC%9C%BC%EB%A1%9C%20%EB%84%98%EC%96%B4%EA%B0%80%EB%8A%94%20%EB%A7%91%EC%9D%80%20%EC%86%8C%EB%A6%AC%28%EB%9D%A0%EB%A7%81~%29.mp3"
+  },
+  {
+    "name": "당황했을 때(띠리리링)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%8B%B9%ED%99%A9%ED%96%88%EC%9D%84%20%EB%95%8C%28%EB%9D%A0%EB%A6%AC%EB%A6%AC%EB%A7%81%29.mp3"
+  },
+  {
+    "name": "돈통 소리 1",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%8F%88%ED%86%B5%20%EC%86%8C%EB%A6%AC%201.mp3"
+  },
+  {
+    "name": "돈통 소리 2 ",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%8F%88%ED%86%B5%20%EC%86%8C%EB%A6%AC%202%20.mp3"
+  },
+  {
+    "name": "돈통 소리 3",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%8F%88%ED%86%B5%20%EC%86%8C%EB%A6%AC%203.mp3"
+  },
+  {
+    "name": "동굴 속 물방울 소리",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%8F%99%EA%B5%B4%20%EC%86%8D%20%EB%AC%BC%EB%B0%A9%EC%9A%B8%20%EC%86%8C%EB%A6%AC.mp3"
+  },
+  {
+    "name": "동전 또롱(La 톤)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%8F%99%EC%A0%84%20%EB%98%90%EB%A1%B1%28La%20%ED%86%A4%29.mp3"
+  },
+  {
+    "name": "동전먹는소리 (고음)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%8F%99%EC%A0%84%EB%A8%B9%EB%8A%94%EC%86%8C%EB%A6%AC%20%28%EA%B3%A0%EC%9D%8C%29.mp3"
+  },
+  {
+    "name": "두구두구 기대하시라",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%91%90%EA%B5%AC%EB%91%90%EA%B5%AC%20%EA%B8%B0%EB%8C%80%ED%95%98%EC%8B%9C%EB%9D%BC.mp3"
+  },
+  {
+    "name": "두둥3",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%91%90%EB%91%A53.mp3"
+  },
+  {
+    "name": "두둥탁 (작게)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%91%90%EB%91%A5%ED%83%81%20%28%EC%9E%91%EA%B2%8C%29.mp3"
+  },
+  {
+    "name": "따라랑랑",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%94%B0%EB%9D%BC%EB%9E%91%EB%9E%91.mp3"
+  },
+  {
+    "name": "때리는 소리 (파악!)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%95%8C%EB%A6%AC%EB%8A%94%20%EC%86%8C%EB%A6%AC%20%28%ED%8C%8C%EC%95%85%21%29.mp3"
+  },
+  {
+    "name": "땡~(둔탁한)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%95%A1~%28%EB%91%94%ED%83%81%ED%95%9C%29.mp3"
+  },
+  {
+    "name": "또잉! 등장음",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%98%90%EC%9E%89%21%20%EB%93%B1%EC%9E%A5%EC%9D%8C.mp3"
+  },
+  {
+    "name": "똑 클릭 반응음 Yes",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%98%91%20%ED%81%B4%EB%A6%AD%20%EB%B0%98%EC%9D%91%EC%9D%8C%20Yes.mp3"
+  },
+  {
+    "name": "띠딩 창이 뜨는 음",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%9D%A0%EB%94%A9%20%EC%B0%BD%EC%9D%B4%20%EB%9C%A8%EB%8A%94%20%EC%9D%8C.mp3"
+  },
+  {
+    "name": "마법의 가루",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%A7%88%EB%B2%95%EC%9D%98%20%EA%B0%80%EB%A3%A8.mp3"
+  },
+  {
+    "name": "마우스 클릭음",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%A7%88%EC%9A%B0%EC%8A%A4%20%ED%81%B4%EB%A6%AD%EC%9D%8C.mp3"
+  },
+  {
+    "name": "맑은 깨달음 소리 (스냅)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%A7%91%EC%9D%80%20%EA%B9%A8%EB%8B%AC%EC%9D%8C%20%EC%86%8C%EB%A6%AC%20%28%EC%8A%A4%EB%83%85%29.mp3"
+  },
+  {
+    "name": "맑은 벨 알림음 - 7",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%A7%91%EC%9D%80%20%EB%B2%A8%20%EC%95%8C%EB%A6%BC%EC%9D%8C%20-%207.mp3"
+  },
+  {
+    "name": "맑은 알림음 (띠링)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%A7%91%EC%9D%80%20%EC%95%8C%EB%A6%BC%EC%9D%8C%20%28%EB%9D%A0%EB%A7%81%29.mp3"
+  },
+  {
+    "name": "맑은 알림음 - 8(jingle)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%A7%91%EC%9D%80%20%EC%95%8C%EB%A6%BC%EC%9D%8C%20-%208%28jingle%29.mp3"
+  },
+  {
+    "name": "먹먹한 웅장 임팩트 (쿵)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%A8%B9%EB%A8%B9%ED%95%9C%20%EC%9B%85%EC%9E%A5%20%EC%9E%84%ED%8C%A9%ED%8A%B8%20%28%EC%BF%B5%29.mp3"
+  },
+  {
+    "name": "멍 때리다가 깰 때(댕~)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%A9%8D%20%EB%95%8C%EB%A6%AC%EB%8B%A4%EA%B0%80%20%EA%B9%B0%20%EB%95%8C%28%EB%8C%95~%29.mp3"
+  },
+  {
+    "name": "목탁 소리 (따닥~)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%AA%A9%ED%83%81%20%EC%86%8C%EB%A6%AC%20%28%EB%94%B0%EB%8B%A5~%29.mp3"
+  },
+  {
+    "name": "문자 전송음(또로롱)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%AC%B8%EC%9E%90%20%EC%A0%84%EC%86%A1%EC%9D%8C%28%EB%98%90%EB%A1%9C%EB%A1%B1%29.mp3"
+  },
+  {
+    "name": "문제 정답 맞춤",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%AC%B8%EC%A0%9C%20%EC%A0%95%EB%8B%B5%20%EB%A7%9E%EC%B6%A4.mp3"
+  },
+  {
+    "name": "물방울 소리 2 (토옥)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%AC%BC%EB%B0%A9%EC%9A%B8%20%EC%86%8C%EB%A6%AC%202%20%28%ED%86%A0%EC%98%A5%29.mp3"
+  },
+  {
+    "name": "물방울 소리 6 (뽀잉)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%AC%BC%EB%B0%A9%EC%9A%B8%20%EC%86%8C%EB%A6%AC%206%20%28%EB%BD%80%EC%9E%89%29.mp3"
+  },
+  {
+    "name": "물방울 소리 7 (맑은)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%AC%BC%EB%B0%A9%EC%9A%B8%20%EC%86%8C%EB%A6%AC%207%20%28%EB%A7%91%EC%9D%80%29.mp3"
+  },
+  {
+    "name": "물방울 자막용(뽕)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%AC%BC%EB%B0%A9%EC%9A%B8%20%EC%9E%90%EB%A7%89%EC%9A%A9%28%EB%BD%95%29.mp3"
+  },
+  {
+    "name": "밑줄긋기",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%B0%91%EC%A4%84%EA%B8%8B%EA%B8%B0.mp3"
+  },
+  {
+    "name": "바삭 과자 씹는 소리",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%B0%94%EC%82%AD%20%EA%B3%BC%EC%9E%90%20%EC%94%B9%EB%8A%94%20%EC%86%8C%EB%A6%AC.mp3"
+  },
+  {
+    "name": "버튼 효과음 (띠리링)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%B2%84%ED%8A%BC%20%ED%9A%A8%EA%B3%BC%EC%9D%8C%20%28%EB%9D%A0%EB%A6%AC%EB%A7%81%29.mp3"
+  },
+  {
+    "name": "버튼음2(띠링)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%B2%84%ED%8A%BC%EC%9D%8C2%28%EB%9D%A0%EB%A7%81%29.mp3"
+  },
+  {
+    "name": "북소리 (두둥)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%B6%81%EC%86%8C%EB%A6%AC%20%28%EB%91%90%EB%91%A5%29.mp3"
+  },
+  {
+    "name": "불길한 뱃고동 배경음2 (대)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%B6%88%EA%B8%B8%ED%95%9C%20%EB%B1%83%EA%B3%A0%EB%8F%99%20%EB%B0%B0%EA%B2%BD%EC%9D%8C2%20%28%EB%8C%80%29.mp3"
+  },
+  {
+    "name": "뻘쭘한 자막용(띠용↘)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%BB%98%EC%AD%98%ED%95%9C%20%EC%9E%90%EB%A7%89%EC%9A%A9%28%EB%9D%A0%EC%9A%A9%E2%86%98%29.mp3"
+  },
+  {
+    "name": "뼈 부러지는 소리 (콰득)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%BC%88%20%EB%B6%80%EB%9F%AC%EC%A7%80%EB%8A%94%20%EC%86%8C%EB%A6%AC%20%28%EC%BD%B0%EB%93%9D%29.mp3"
+  },
+  {
+    "name": "뼈 부러지는 소리 2 (퍽 콰득)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%BC%88%20%EB%B6%80%EB%9F%AC%EC%A7%80%EB%8A%94%20%EC%86%8C%EB%A6%AC%202%20%28%ED%8D%BD%20%EC%BD%B0%EB%93%9D%29.mp3"
+  },
+  {
+    "name": "뼈 부러지는 소리 3 (콰드득)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%BC%88%20%EB%B6%80%EB%9F%AC%EC%A7%80%EB%8A%94%20%EC%86%8C%EB%A6%AC%203%20%28%EC%BD%B0%EB%93%9C%EB%93%9D%29.mp3"
+  },
+  {
+    "name": "뽁딱!",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%BD%81%EB%94%B1%21.mp3"
+  },
+  {
+    "name": "뾰로롱",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%BE%B0%EB%A1%9C%EB%A1%B1.mp3"
+  },
+  {
+    "name": "뾱 빠지는 소리",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%BE%B1%20%EB%B9%A0%EC%A7%80%EB%8A%94%20%EC%86%8C%EB%A6%AC.mp3"
+  },
+  {
+    "name": "뿅하고클릭하는소리",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EB%BF%85%ED%95%98%EA%B3%A0%ED%81%B4%EB%A6%AD%ED%95%98%EB%8A%94%EC%86%8C%EB%A6%AC.mp3"
+  },
+  {
+    "name": "스테이지 클리어 (레트로)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%8A%A4%ED%85%8C%EC%9D%B4%EC%A7%80%20%ED%81%B4%EB%A6%AC%EC%96%B4%20%28%EB%A0%88%ED%8A%B8%EB%A1%9C%29.mp3"
+  },
+  {
+    "name": "스페이스바 터치음2(딸깍)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%8A%A4%ED%8E%98%EC%9D%B4%EC%8A%A4%EB%B0%94%20%ED%84%B0%EC%B9%98%EC%9D%8C2%28%EB%94%B8%EA%B9%8D%29.mp3"
+  },
+  {
+    "name": "승리(또롱~)4",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%8A%B9%EB%A6%AC%28%EB%98%90%EB%A1%B1~%294.mp3"
+  },
+  {
+    "name": "싸늘한 등장음(치잉)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%8B%B8%EB%8A%98%ED%95%9C%20%EB%93%B1%EC%9E%A5%EC%9D%8C%28%EC%B9%98%EC%9E%89%29.mp3"
+  },
+  {
+    "name": "아그작 과자 먹는 소리",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%95%84%EA%B7%B8%EC%9E%91%20%EA%B3%BC%EC%9E%90%20%EB%A8%B9%EB%8A%94%20%EC%86%8C%EB%A6%AC.mp3"
+  },
+  {
+    "name": "아기 신발 소리 (삑삑)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%95%84%EA%B8%B0%20%EC%8B%A0%EB%B0%9C%20%EC%86%8C%EB%A6%AC%20%28%EC%82%91%EC%82%91%29.mp3"
+  },
+  {
+    "name": "아날로그 작동 소리 (철컥)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%95%84%EB%82%A0%EB%A1%9C%EA%B7%B8%20%EC%9E%91%EB%8F%99%20%EC%86%8C%EB%A6%AC%20%28%EC%B2%A0%EC%BB%A5%29.mp3"
+  },
+  {
+    "name": "아이들 환호 소리",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%95%84%EC%9D%B4%EB%93%A4%20%ED%99%98%ED%98%B8%20%EC%86%8C%EB%A6%AC.mp3"
+  },
+  {
+    "name": "아이템 먹는 소리 (띠링)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%95%84%EC%9D%B4%ED%85%9C%20%EB%A8%B9%EB%8A%94%20%EC%86%8C%EB%A6%AC%20%28%EB%9D%A0%EB%A7%81%29.mp3"
+  },
+  {
+    "name": "얌전한 벨소리(띠링)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%96%8C%EC%A0%84%ED%95%9C%20%EB%B2%A8%EC%86%8C%EB%A6%AC%28%EB%9D%A0%EB%A7%81%29.mp3"
+  },
+  {
+    "name": "양동이 맞는 소리(퍽! 땡~)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%96%91%EB%8F%99%EC%9D%B4%20%EB%A7%9E%EB%8A%94%20%EC%86%8C%EB%A6%AC%28%ED%8D%BD%21%20%EB%95%A1~%29.mp3"
+  },
+  {
+    "name": "예능 자막용(두두둥)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%98%88%EB%8A%A5%20%EC%9E%90%EB%A7%89%EC%9A%A9%28%EB%91%90%EB%91%90%EB%91%A5%29.mp3"
+  },
+  {
+    "name": "예능 효과음 6 (타닥~!)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%98%88%EB%8A%A5%20%ED%9A%A8%EA%B3%BC%EC%9D%8C%206%20%28%ED%83%80%EB%8B%A5~%21%29.mp3"
+  },
+  {
+    "name": "오답 처리 (삐삐)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%98%A4%EB%8B%B5%20%EC%B2%98%EB%A6%AC%20%28%EC%82%90%EC%82%90%29.mp3"
+  },
+  {
+    "name": "오락실게임 점프",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%98%A4%EB%9D%BD%EC%8B%A4%EA%B2%8C%EC%9E%84%20%EC%A0%90%ED%94%84.mp3"
+  },
+  {
+    "name": "옵션 설정 변경 완료",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%98%B5%EC%85%98%20%EC%84%A4%EC%A0%95%20%EB%B3%80%EA%B2%BD%20%EC%99%84%EB%A3%8C.mp3"
+  },
+  {
+    "name": "와우3",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%99%80%EC%9A%B03.mp3"
+  },
+  {
+    "name": "웃긴 실패1 (와와와왕~)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%9B%83%EA%B8%B4%20%EC%8B%A4%ED%8C%A81%20%28%EC%99%80%EC%99%80%EC%99%80%EC%99%95~%29.mp3"
+  },
+  {
+    "name": "웅장한 괘종시계",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%9B%85%EC%9E%A5%ED%95%9C%20%EA%B4%98%EC%A2%85%EC%8B%9C%EA%B3%84.mp3"
+  },
+  {
+    "name": "윈드차임 소리 1 (샤라랑~)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%9C%88%EB%93%9C%EC%B0%A8%EC%9E%84%20%EC%86%8C%EB%A6%AC%201%20%28%EC%83%A4%EB%9D%BC%EB%9E%91~%29.mp3"
+  },
+  {
+    "name": "유리 닦기",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%9C%A0%EB%A6%AC%20%EB%8B%A6%EA%B8%B0.mp3"
+  },
+  {
+    "name": "이걸 보고서라고 써온겁니까 ",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%9D%B4%EA%B1%B8%20%EB%B3%B4%EA%B3%A0%EC%84%9C%EB%9D%BC%EA%B3%A0%20%EC%8D%A8%EC%98%A8%EA%B2%81%EB%8B%88%EA%B9%8C_.mp3"
+  },
+  {
+    "name": "임팩트 느낌표(피융)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%9E%84%ED%8C%A9%ED%8A%B8%20%EB%8A%90%EB%82%8C%ED%91%9C%28%ED%94%BC%EC%9C%B5%29.mp3"
+  },
+  {
+    "name": "자막 등장 (뾱)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%9E%90%EB%A7%89%20%EB%93%B1%EC%9E%A5%20%28%EB%BE%B1%29.mp3"
+  },
+  {
+    "name": "작업 성공 (off)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%9E%91%EC%97%85%20%EC%84%B1%EA%B3%B5%20%28off%29.mp3"
+  },
+  {
+    "name": "작은 카메라 찰칵 소리",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%9E%91%EC%9D%80%20%EC%B9%B4%EB%A9%94%EB%9D%BC%20%EC%B0%B0%EC%B9%B5%20%EC%86%8C%EB%A6%AC.mp3"
+  },
+  {
+    "name": "장난감 밟을 때 나는 소리(삐빅)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%9E%A5%EB%82%9C%EA%B0%90%20%EB%B0%9F%EC%9D%84%20%EB%95%8C%20%EB%82%98%EB%8A%94%20%EC%86%8C%EB%A6%AC%28%EC%82%90%EB%B9%85%29.mp3"
+  },
+  {
+    "name": "전송음(또동)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%A0%84%EC%86%A1%EC%9D%8C%28%EB%98%90%EB%8F%99%29.mp3"
+  },
+  {
+    "name": "전자 버튼음 - 2",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%A0%84%EC%9E%90%20%EB%B2%84%ED%8A%BC%EC%9D%8C%20-%202.mp3"
+  },
+  {
+    "name": "정답 소리(딩동)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%A0%95%EB%8B%B5%20%EC%86%8C%EB%A6%AC%28%EB%94%A9%EB%8F%99%29.mp3"
+  },
+  {
+    "name": "정보성 알림음(뾰로롱)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%A0%95%EB%B3%B4%EC%84%B1%20%EC%95%8C%EB%A6%BC%EC%9D%8C%28%EB%BE%B0%EB%A1%9C%EB%A1%B1%29.mp3"
+  },
+  {
+    "name": "정보성 자막 등장(뽕)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%A0%95%EB%B3%B4%EC%84%B1%20%EC%9E%90%EB%A7%89%20%EB%93%B1%EC%9E%A5%28%EB%BD%95%29.mp3"
+  },
+  {
+    "name": "종 소리 (때에엥)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%A2%85%20%EC%86%8C%EB%A6%AC%20%28%EB%95%8C%EC%97%90%EC%97%A5%29.mp3"
+  },
+  {
+    "name": "종이 구기기",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%A2%85%EC%9D%B4%20%EA%B5%AC%EA%B8%B0%EA%B8%B0.mp3"
+  },
+  {
+    "name": "종이 끄적끄적 로고 사운드",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%A2%85%EC%9D%B4%20%EB%81%84%EC%A0%81%EB%81%84%EC%A0%81%20%EB%A1%9C%EA%B3%A0%20%EC%82%AC%EC%9A%B4%EB%93%9C.mp3"
+  },
+  {
+    "name": "종이 넘기기",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%A2%85%EC%9D%B4%20%EB%84%98%EA%B8%B0%EA%B8%B0.mp3"
+  },
+  {
+    "name": "종이 넘기는 소리 (부드럽게 사각)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%A2%85%EC%9D%B4%20%EB%84%98%EA%B8%B0%EB%8A%94%20%EC%86%8C%EB%A6%AC%20%28%EB%B6%80%EB%93%9C%EB%9F%BD%EA%B2%8C%20%EC%82%AC%EA%B0%81%29.mp3"
+  },
+  {
+    "name": "종이 넘기는 소리 1",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%A2%85%EC%9D%B4%20%EB%84%98%EA%B8%B0%EB%8A%94%20%EC%86%8C%EB%A6%AC%201.mp3"
+  },
+  {
+    "name": "종이 넘기는 소리 2",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%A2%85%EC%9D%B4%20%EB%84%98%EA%B8%B0%EB%8A%94%20%EC%86%8C%EB%A6%AC%202.mp3"
+  },
+  {
+    "name": "종이 찢기",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%A2%85%EC%9D%B4%20%EC%B0%A2%EA%B8%B0.mp3"
+  },
+  {
+    "name": "종이 찢는소리 (쫙쫙)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%A2%85%EC%9D%B4%20%EC%B0%A2%EB%8A%94%EC%86%8C%EB%A6%AC%20%28%EC%AB%99%EC%AB%99%29.mp3"
+  },
+  {
+    "name": "종이에 연필로 낙서",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%A2%85%EC%9D%B4%EC%97%90%20%EC%97%B0%ED%95%84%EB%A1%9C%20%EB%82%99%EC%84%9C.mp3"
+  },
+  {
+    "name": "종이에 연필로 밑줄 긋기 ",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%A2%85%EC%9D%B4%EC%97%90%20%EC%97%B0%ED%95%84%EB%A1%9C%20%EB%B0%91%EC%A4%84%20%EA%B8%8B%EA%B8%B0%20.mp3"
+  },
+  {
+    "name": "좌절하는 순간(드르륵)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%A2%8C%EC%A0%88%ED%95%98%EB%8A%94%20%EC%88%9C%EA%B0%84%28%EB%93%9C%EB%A5%B4%EB%A5%B5%29.mp3"
+  },
+  {
+    "name": "주전자 끓는 소리(고음)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%A3%BC%EC%A0%84%EC%9E%90%20%EB%81%93%EB%8A%94%20%EC%86%8C%EB%A6%AC%28%EA%B3%A0%EC%9D%8C%29.mp3"
+  },
+  {
+    "name": "지직지직 전자음 오류 소리",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%A7%80%EC%A7%81%EC%A7%80%EC%A7%81%20%EC%A0%84%EC%9E%90%EC%9D%8C%20%EC%98%A4%EB%A5%98%20%EC%86%8C%EB%A6%AC.mp3"
+  },
+  {
+    "name": "집중용 띵 2",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%A7%91%EC%A4%91%EC%9A%A9%20%EB%9D%B5%202.mp3"
+  },
+  {
+    "name": "짜잔 (금관악기)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%A7%9C%EC%9E%94%20%28%EA%B8%88%EA%B4%80%EC%95%85%EA%B8%B0%29.mp3"
+  },
+  {
+    "name": "짧은 알림음(고음 띠링)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%A7%A7%EC%9D%80%20%EC%95%8C%EB%A6%BC%EC%9D%8C%28%EA%B3%A0%EC%9D%8C%20%EB%9D%A0%EB%A7%81%29.mp3"
+  },
+  {
+    "name": "차락 종이 넘기는 소리",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%B0%A8%EB%9D%BD%20%EC%A2%85%EC%9D%B4%20%EB%84%98%EA%B8%B0%EB%8A%94%20%EC%86%8C%EB%A6%AC.mp3"
+  },
+  {
+    "name": "천사의 강림",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%B2%9C%EC%82%AC%EC%9D%98%20%EA%B0%95%EB%A6%BC.mp3"
+  },
+  {
+    "name": "카툰 효과음 2 (달달 떨리는)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%B9%B4%ED%88%B0%20%ED%9A%A8%EA%B3%BC%EC%9D%8C%202%20%28%EB%8B%AC%EB%8B%AC%20%EB%96%A8%EB%A6%AC%EB%8A%94%29.mp3"
+  },
+  {
+    "name": "카툰 효과음 3 (마법이 걸리는 소리)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%B9%B4%ED%88%B0%20%ED%9A%A8%EA%B3%BC%EC%9D%8C%203%20%28%EB%A7%88%EB%B2%95%EC%9D%B4%20%EA%B1%B8%EB%A6%AC%EB%8A%94%20%EC%86%8C%EB%A6%AC%29.mp3"
+  },
+  {
+    "name": "카툰 효과음 5 (휘잉 날아가는)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%B9%B4%ED%88%B0%20%ED%9A%A8%EA%B3%BC%EC%9D%8C%205%20%28%ED%9C%98%EC%9E%89%20%EB%82%A0%EC%95%84%EA%B0%80%EB%8A%94%29.mp3"
+  },
+  {
+    "name": "카툰 효과음 6 (아기 신발 소리 삐뽀)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%B9%B4%ED%88%B0%20%ED%9A%A8%EA%B3%BC%EC%9D%8C%206%20%28%EC%95%84%EA%B8%B0%20%EC%8B%A0%EB%B0%9C%20%EC%86%8C%EB%A6%AC%20%EC%82%90%EB%BD%80%29.mp3"
+  },
+  {
+    "name": "카툰 효과음 7 (뚝딱거리는 소리)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%B9%B4%ED%88%B0%20%ED%9A%A8%EA%B3%BC%EC%9D%8C%207%20%28%EB%9A%9D%EB%94%B1%EA%B1%B0%EB%A6%AC%EB%8A%94%20%EC%86%8C%EB%A6%AC%29.mp3"
+  },
+  {
+    "name": "카툰 효과음 8 (띠요옹)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%B9%B4%ED%88%B0%20%ED%9A%A8%EA%B3%BC%EC%9D%8C%208%20%28%EB%9D%A0%EC%9A%94%EC%98%B9%29.mp3"
+  },
+  {
+    "name": "캔디팝(뽀옥)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%EC%BA%94%EB%94%94%ED%8C%9D%28%EB%BD%80%EC%98%A5%29.mp3"
+  },
+  {
+    "name": "큰 종이 뒤집기",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%ED%81%B0%20%EC%A2%85%EC%9D%B4%20%EB%92%A4%EC%A7%91%EA%B8%B0.mp3"
+  },
+  {
+    "name": "큰 충격을 받았을 때 쓰는 땡~ 소리",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%ED%81%B0%20%EC%B6%A9%EA%B2%A9%EC%9D%84%20%EB%B0%9B%EC%95%98%EC%9D%84%20%EB%95%8C%20%EC%93%B0%EB%8A%94%20%EB%95%A1~%20%EC%86%8C%EB%A6%AC.mp3"
+  },
+  {
+    "name": "키보드 자판 빠르게 치는 소리2(타닥타닥)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%ED%82%A4%EB%B3%B4%EB%93%9C%20%EC%9E%90%ED%8C%90%20%EB%B9%A0%EB%A5%B4%EA%B2%8C%20%EC%B9%98%EB%8A%94%20%EC%86%8C%EB%A6%AC2%28%ED%83%80%EB%8B%A5%ED%83%80%EB%8B%A5%29.mp3"
+  },
+  {
+    "name": "타이머 재는 시계음(째깍째깍)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%ED%83%80%EC%9D%B4%EB%A8%B8%20%EC%9E%AC%EB%8A%94%20%EC%8B%9C%EA%B3%84%EC%9D%8C%28%EC%A7%B8%EA%B9%8D%EC%A7%B8%EA%B9%8D%29.mp3"
+  },
+  {
+    "name": "터치 알림음 -4(touch)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%ED%84%B0%EC%B9%98%20%EC%95%8C%EB%A6%BC%EC%9D%8C%20-4%28touch%29.mp3"
+  },
+  {
+    "name": "테이프 엉키는 소리 (지지직)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%ED%85%8C%EC%9D%B4%ED%94%84%20%EC%97%89%ED%82%A4%EB%8A%94%20%EC%86%8C%EB%A6%AC%20%28%EC%A7%80%EC%A7%80%EC%A7%81%29.mp3"
+  },
+  {
+    "name": "팝업(뽁)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%ED%8C%9D%EC%97%85%28%EB%BD%81%29.mp3"
+  },
+  {
+    "name": "팡파레 1 (빠밤~)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%ED%8C%A1%ED%8C%8C%EB%A0%88%201%20%28%EB%B9%A0%EB%B0%A4~%29.mp3"
+  },
+  {
+    "name": "팡파레 2 (낮은 빠밤~)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%ED%8C%A1%ED%8C%8C%EB%A0%88%202%20%28%EB%82%AE%EC%9D%80%20%EB%B9%A0%EB%B0%A4~%29.mp3"
+  },
+  {
+    "name": "팡파레 3 (높은 빠밤~)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%ED%8C%A1%ED%8C%8C%EB%A0%88%203%20%28%EB%86%92%EC%9D%80%20%EB%B9%A0%EB%B0%A4~%29.mp3"
+  },
+  {
+    "name": "팡파레 4 (더 높은 빠밤~)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%ED%8C%A1%ED%8C%8C%EB%A0%88%204%20%28%EB%8D%94%20%EB%86%92%EC%9D%80%20%EB%B9%A0%EB%B0%A4~%29.mp3"
+  },
+  {
+    "name": "팡파레 소리 2 (짜잔~)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%ED%8C%A1%ED%8C%8C%EB%A0%88%20%EC%86%8C%EB%A6%AC%202%20%28%EC%A7%9C%EC%9E%94~%29.mp3"
+  },
+  {
+    "name": "퍼커션 소리 10 (전통적인 통~)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%ED%8D%BC%EC%BB%A4%EC%85%98%20%EC%86%8C%EB%A6%AC%2010%20%28%EC%A0%84%ED%86%B5%EC%A0%81%EC%9D%B8%20%ED%86%B5~%29.mp3"
+  },
+  {
+    "name": "퍼커션 소리 21 (띠용~)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%ED%8D%BC%EC%BB%A4%EC%85%98%20%EC%86%8C%EB%A6%AC%2021%20%28%EB%9D%A0%EC%9A%A9~%29.mp3"
+  },
+  {
+    "name": "펍펍(뽀옹)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%ED%8E%8D%ED%8E%8D%28%EB%BD%80%EC%98%B9%29.mp3"
+  },
+  {
+    "name": "폭발 소리 (펑  펑!)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%ED%8F%AD%EB%B0%9C%20%EC%86%8C%EB%A6%AC%20%28%ED%8E%91_%20%ED%8E%91%21%29.mp3"
+  },
+  {
+    "name": "폭탄 폭발 (펑!)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%ED%8F%AD%ED%83%84%20%ED%8F%AD%EB%B0%9C%20%28%ED%8E%91%21%29.mp3"
+  },
+  {
+    "name": "핑거스냅 1",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%ED%95%91%EA%B1%B0%EC%8A%A4%EB%83%85%201.mp3"
+  },
+  {
+    "name": "화면 조정음(삐이이)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%ED%99%94%EB%A9%B4%20%EC%A1%B0%EC%A0%95%EC%9D%8C%28%EC%82%90%EC%9D%B4%EC%9D%B4%29.mp3"
+  },
+  {
+    "name": "황당1(빨래판 긁는 소리)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%ED%99%A9%EB%8B%B91%28%EB%B9%A8%EB%9E%98%ED%8C%90%20%EA%B8%81%EB%8A%94%20%EC%86%8C%EB%A6%AC%29.mp3"
+  },
+  {
+    "name": "휘파람 소리 (휘이익~)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%ED%9C%98%ED%8C%8C%EB%9E%8C%20%EC%86%8C%EB%A6%AC%20%28%ED%9C%98%EC%9D%B4%EC%9D%B5~%29.mp3"
+  },
+  {
+    "name": "휴지 뽑는 소리",
+    "url": "https://sunsaktool-final.netlify.app/sfx/MP_%ED%9C%B4%EC%A7%80%20%EB%BD%91%EB%8A%94%20%EC%86%8C%EB%A6%AC.mp3"
+  }
+]
