@@ -35,15 +35,19 @@
         .st-project-info .title { font-size: 22px; color: black; font-weight: bold; margin-bottom: 5px; }
         .st-script-display { flex-grow: 1; position: relative; }
         .interactive-target { position: absolute; text-align: center; cursor: move; transform: translate(-50%, 0); left: 50%; }
-        #st-preview-text-container-wrapper { top: 35%; z-index: 10; }
-        #st-preview-media-container-wrapper { top: 60%; height: 35%; z-index: 5; }
-        #st-preview-image, #st-preview-video { width: 100%; height: 100%; }
+        /* [수정] 기본 위치 조정 */
+        #st-preview-text-container-wrapper { top: 25%; z-index: 10; }
+        #st-preview-media-container-wrapper { margin-top: 8px; top: 50%; z-index: 5; }
+        #st-preview-image, #st-preview-video { width: 100%; height: 100%; object-fit: contain; }
         .interactive-target.interactive-active { outline: 2px dashed var(--st-interact-color); z-index: 100; }
         .resize-handle { position: absolute; width: 12px; height: 12px; background: white; border-radius: 50%; border: 2px solid var(--st-interact-color); z-index: 101; display: none; }
         .rotation-handle { position: absolute; bottom: -35px; left: 50%; transform: translateX(-50%); width: 24px; height: 24px; background-color: white; border-radius: 50%; border: 1px solid #ccc; cursor: grab; display: none; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 102; }
         .rotation-handle:active { cursor: grabbing; }
         .interactive-active .resize-handle, .interactive-active .rotation-handle { display: flex; }
         #st-preview-text { width: 100%; white-space: pre-wrap; }
+        .fit-cover { object-fit: cover; }
+        .fit-contain { object-fit: contain; }
+        .fit-fill { object-fit: fill; }
         .st-timeline-controls { width: 100%; max-width: 380px; display: flex; align-items: center; gap: 10px; margin-top: 15px;}
         .st-play-all-btn { background: none; font-size: 24px; padding: 0;}
         #st-timeline-slider { flex-grow: 1; }
@@ -53,6 +57,7 @@
         .st-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .st-card-drag-handle { cursor: grab; }
         .st-card-number { font-weight: bold; font-size: 18px; }
+        /* [수정] Tip 문구 수정 */
         .st-editor-tip { font-size: 13px; color: var(--st-subtext-color); background-color: #252525; padding: 8px; border-radius: 4px; text-align: center; }
         .st-script-editor { width: 100%; min-height: 60px; background-color: #333; border: 1px solid var(--st-border-color); color: var(--st-text-color); border-radius: 4px; padding: 8px; outline: none; white-space: pre-wrap; }
         .st-script-editor .script-segment { cursor: grab; padding: 2px 0; }
@@ -79,11 +84,14 @@
         .st-flex-group input[type="number"].value-input { width: 70px; text-align: right; padding: 4px 8px; }
         .st-modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.7); display: none; justify-content: center; align-items: center; z-index: 1000; }
         .st-modal-overlay.visible { display: flex; }
-        .st-modal-dialog { background-color: var(--st-panel-color); padding: 24px; border-radius: 8px; width: 90%; max-width: 600px; border: 1px solid var(--st-border-color); }
-        .st-modal-dialog textarea#st-gpts-textarea { width: 100%; min-height: 150px; background-color: #333; border-color: var(--st-border-color); color: var(--st-text-color); padding: 8px; border-radius: 4px; }
-        .st-modal-dialog .st-modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+        .st-modal-dialog { background-color: var(--st-panel-color); padding: 24px; border-radius: 8px; width: 90%; max-width: 600px; border: 1px solid var(--st-border-color); display: flex; flex-direction: column; max-height: 90vh; }
+        .st-modal-dialog .st-modal-content { overflow-y: auto; }
+        /* [수정] AI 대본 입력칸 스타일 수정 */
+        .st-modal-dialog textarea#st-gpts-textarea { width: 100%; min-height: 200px; background-color: #333; border-color: var(--st-border-color); color: var(--st-text-color); padding: 8px; border-radius: 4px; }
+        .st-modal-dialog .st-modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; flex-shrink: 0; }
         .waveform-container { width: 100%; height: 128px; background-color: #1e1e1e; }
-        #st-video-trim-preview { width: 100%; max-height: 200px; background-color: #000; margin-bottom: 15px; }
+        /* [수정] 비디오 트리머 UI 개선 */
+        #st-video-trim-preview { width: 100%; max-height: 300px; background-color: #000; margin-bottom: 15px; }
         #st-video-trim-preview video { width: 100%; height: 100%; object-fit: contain; }
         .waveform-loading { text-align: center; padding: 40px; color: var(--st-subtext-color); }
         .waveform-controls { display: flex; justify-content: space-around; align-items: center; margin-top: 10px; }
@@ -136,10 +144,12 @@
                     <h3>스크립트 & 타임라인</h3>
                     <div class="button-group">
                         <button id="st-btn-add-project" style="background-color: #555;">+ 새 프로젝트</button>
+                        <!-- [수정] 버튼 이름 변경 -->
                         <button id="st-btn-add-gpts" style="background-color: #3e3e3e;">✨ 자동 스크립트 생성 (AI 활용)</button>
                         <button id="st-btn-add-card">+ 수동 추가</button>
                     </div>
                 </div>
+                <!-- [수정] Tip 문구 수정 -->
                 <div class="st-editor-tip">💡 Tip: 스크립트의 글을 드래그하여 영상에 나오는 순서를 정할 수 있습니다!</div>
                 <div id="st-card-container"></div>
             </div>
@@ -148,9 +158,60 @@
     <div class="st-app-footer">Pro-Tip: 웹의 이미지를 복사(Ctrl+C)한 후, 카드를 클릭하고 붙여넣기(Ctrl+V) 해보세요!</div>
     
     <ul id="st-sequence-menu" style="display: none;"></ul>
-    <div id="st-modal-gpts" class="st-modal-overlay"> <div class="st-modal-dialog"> <h2>AI 대본 붙여넣기</h2> <p>AI 툴(ChatGPT, Claude 등)에서 생성된 스크립트를 입력하세요. 빈 줄로 구분하여 여러 스크립트를 한번에 추가할 수 있습니다.</p> <textarea id="st-gpts-textarea" placeholder="여기에 AI 스크립트를 입력하세요..."></textarea> <div class="st-modal-actions"> <button id="st-btn-gpts-cancel" class="cancel">취소</button> <button id="st-btn-gpts-confirm">확인</button> </div> </div> </div>
-    <div id="st-modal-bgm" class="st-modal-overlay"> <div class="st-modal-dialog"> <h2>BGM 구간 설정</h2> <p>오디오 파형 위에서 원하는 구간을 드래그하여 선택하세요.</p> <div id="st-waveform-container-bgm" class="waveform-container"> <div class="waveform-loading">BGM 로딩 중...</div> </div> <div class="waveform-controls"> <button id="st-btn-bgm-play-pause">재생/일시정지</button> <button id="st-btn-bgm-play-region">선택 구간 미리듣기</button> <span id="st-bgm-time-display">0.00s - 0.00s</span> </div> <div class="st-modal-actions"> <button id="st-btn-bgm-cancel" class="cancel">취소</button> <button id="st-btn-bgm-confirm">확인</button> </div> </div> </div>
-    <div id="st-modal-video-trim" class="st-modal-overlay"> <div class="st-modal-dialog"> <h2>비디오 구간 선택</h2> <div id="st-video-trim-preview"><video controls></video></div> <p>오디오 파형 위에서 사용할 구간을 드래그하여 선택하세요.</p> <div id="st-waveform-container-video" class="waveform-container"> <div class="waveform-loading">비디오 로딩 중...</div> </div> <div class="waveform-controls"> <button id="st-btn-video-play-region">선택 구간 미리보기</button> <span id="st-video-time-display">0.00s - 0.00s</span> </div> <div class="st-modal-actions"> <button id="st-btn-video-cancel" class="cancel">취소</button> <button id="st-btn-video-confirm">확인</button> </div> </div> </div>
+    <div id="st-modal-gpts" class="st-modal-overlay">
+        <div class="st-modal-dialog">
+            <div class="st-modal-content">
+                <!-- [수정] 버튼 이름 변경 -->
+                <h2>AI 대본 붙여넣기</h2>
+                <p>AI 툴(ChatGPT, Claude 등)에서 생성된 스크립트를 입력하세요. 빈 줄로 구분하여 여러 스크립트를 한번에 추가할 수 있습니다.</p>
+                <textarea id="st-gpts-textarea" placeholder="여기에 AI 스크립트를 입력하세요..."></textarea>
+            </div>
+            <div class="st-modal-actions">
+                <button id="st-btn-gpts-cancel" class="cancel">취소</button>
+                <button id="st-btn-gpts-confirm">확인</button>
+            </div>
+        </div>
+    </div>
+    <div id="st-modal-bgm" class="st-modal-overlay">
+        <div class="st-modal-dialog">
+            <div class="st-modal-content">
+                <h2>BGM 구간 설정</h2>
+                <p>오디오 파형 위에서 원하는 구간을 드래그하여 선택하세요.</p>
+                <div id="st-waveform-container-bgm" class="waveform-container">
+                    <div class="waveform-loading">BGM 로딩 중...</div>
+                </div>
+            </div>
+            <div class="waveform-controls">
+                <button id="st-btn-bgm-play-pause">재생/일시정지</button>
+                <button id="st-btn-bgm-play-region">선택 구간 미리듣기</button>
+                <span id="st-bgm-time-display">0.00s - 0.00s</span>
+            </div>
+            <div class="st-modal-actions">
+                <button id="st-btn-bgm-cancel" class="cancel">취소</button>
+                <button id="st-btn-bgm-confirm">확인</button>
+            </div>
+        </div>
+    </div>
+    <div id="st-modal-video-trim" class="st-modal-overlay">
+        <div class="st-modal-dialog">
+            <div class="st-modal-content">
+                <h2>비디오 구간 선택</h2>
+                <div id="st-video-trim-preview"><video controls></video></div>
+                <p>오디오 파형 위에서 사용할 구간을 드래그하여 선택하세요.</p>
+                <div id="st-waveform-container-video" class="waveform-container">
+                    <div class="waveform-loading">비디오 로딩 중...</div>
+                </div>
+            </div>
+            <div class="waveform-controls">
+                <button id="st-btn-video-play-region">선택 구간 미리보기</button>
+                <span id="st-video-time-display">0.00s - 0.00s</span>
+            </div>
+            <div class="st-modal-actions">
+                <button id="st-btn-video-cancel" class="cancel">취소</button>
+                <button id="st-btn-video-confirm">확인</button>
+            </div>
+        </div>
+    </div>
     <div id="st-export-progress-overlay">
         <div id="st-export-progress-text">영상 생성 중...</div>
         <div id="st-export-progress-subtext"></div>
@@ -165,7 +226,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/6.4.0/wavesurfer.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/6.4.0/plugin/wavesurfer.regions.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <!-- [중요] html2canvas 제거: 직접 렌더링 방식으로 변경하여 성능 및 안정성 향상 -->
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script> -->
+    
     <script>
     (function SunsakTool() {
         'use strict';
@@ -183,12 +247,14 @@
             globalBGM: { url: null, volume: 0.3, startTime: 0, endTime: null },
             projectSettings: { 
                 header: { text: '채널 이름', backgroundColor: '#e82c43', color: '#ffffff', fontFamily: 'GmarketSans', fontSize: 24, icon: 'none', logo: { url: null, size: 40 } }, 
+                // [추가] 프로젝트 제목 폰트/크기 설정 추가
                 project: { title: '제목을 입력해주세요', author: 'ㅇㅇ', views: 0, titleColor: '#000000', metaColor: '#555555', titleFontFamily: "'Noto Sans KR', sans-serif", titleFontSize: 22 },
                 defaultStyle: { color: '#000000', fontFamily: "'Noto Sans KR', sans-serif", fontSize: '24', lineHeight: '1.5', letterSpacing: '0' }
             },
             scriptCards: [],
             isPlaying: false,
             ttsCache: new Map(),
+            imageCache: new Map(), // [추가] 이미지 캐시 for Export
             playbackCurrentIndex: 0,
             selectedCardId: null,
             activeInteractiveElement: null,
@@ -300,9 +366,9 @@
             },
             
             globalControls() {
-                const createSelectWithOptions = (id, selectedValue) => {
+                const createSelectWithOptions = (id, selectedValue, fontList = C.FONT_LIST) => { // [수정] fontList를 인자로 받도록 변경
                     let select = `<select id="${id}">`;
-                    C.FONT_LIST.forEach(font => {
+                    fontList.forEach(font => {
                         select += `<option value="${font.value}" ${selectedValue === font.value ? 'selected' : ''}>${font.name}</option>`;
                     });
                     select += `</select>`;
@@ -314,7 +380,10 @@
                         <div class="st-accordion-header">영상 설정</div>
                         <div class="st-accordion-content">
                             <div class="st-control-group"><h4>상단 헤더</h4><label>헤더 텍스트</label><input type="text" id="st-setting-header-text" value="${state.projectSettings.header.text}"><div class="st-flex-group" style="margin-top: 8px;"><div><label>배경 색상</label><input type="color" id="st-setting-header-bg" value="${state.projectSettings.header.backgroundColor}"></div><div><label>글자 색상</label><input type="color" id="st-setting-header-color" value="${state.projectSettings.header.color}"></div></div><div class="st-flex-group" style="margin-top: 8px;"><div><label>폰트</label>${createSelectWithOptions('st-setting-header-font', state.projectSettings.header.fontFamily)}</div><div><label>크기</label><input type="number" id="st-setting-header-size" value="${state.projectSettings.header.fontSize}"></div></div><div style="margin-top: 8px;"><label>왼쪽 아이콘</label><select id="st-setting-header-icon"><option value="none">없음</option><option value="back">뒤로가기</option><option value="menu">메뉴</option></select></div><div style="margin-top: 8px;"><label>오른쪽 로고</label><div class="st-flex-group"><button id="st-btn-header-logo" style="width: auto; flex-grow: 1;">로고 추가/변경</button><input type="file" id="st-header-logo-file" accept="image/*" style="display:none;"></div><div class="st-flex-group" style="margin-top: 4px;"><label>로고 크기:</label><input type="range" id="st-setting-header-logo-size" min="20" max="60" value="${state.projectSettings.header.logo.size}"><input type="number" class="value-input" data-target="st-setting-header-logo-size" value="${state.projectSettings.header.logo.size}" style="width: 70px;"></div></div></div>
-                            <div class="st-control-group"><h4>콘텐츠 정보</h4><label>프로젝트 제목</label><input type="text" id="st-setting-project-title" value="${state.projectSettings.project.title}"><div class="st-flex-group" style="margin-top: 8px;"><div><label>폰트</label>${createSelectWithOptions('st-setting-project-font', state.projectSettings.project.titleFontFamily)}</div><div><label>크기</label><input type="number" id="st-setting-project-size" value="${state.projectSettings.project.titleFontSize}"></div></div><div style="margin-top: 8px;"><label>작성자</label><input type="text" id="st-setting-project-author" value="${state.projectSettings.project.author}"></div><div style="margin-top: 8px;"><label>조회수</label><input type="number" id="st-setting-project-views" value="${state.projectSettings.project.views}"></div><div class="st-flex-group" style="margin-top: 8px;"><div><label>제목 색상</label><input type="color" id="st-setting-title-color" value="${state.projectSettings.project.titleColor}"></div><div><label>정보 색상</label><input type="color" id="st-setting-meta-color" value="${state.projectSettings.project.metaColor}"></div></div><hr style="border-color: var(--st-border-color); margin: 15px 0;"><label>기본 스크립트 스타일</label><div class="st-flex-group" style="margin-top: 8px;"><div><label>폰트</label>${createSelectWithOptions('st-setting-script-font', state.projectSettings.defaultStyle.fontFamily)}</div><div><label>크기</label><input type="number" id="st-setting-script-size" value="${state.projectSettings.defaultStyle.fontSize}"></div></div><div style="margin-top: 8px;"><label>색상</label><input type="color" id="st-setting-script-color" value="${state.projectSettings.defaultStyle.color}"></div><div class="st-flex-group" style="margin-top: 8px;"><label>줄 간격</label><input type="range" id="st-setting-line-height" min="1" max="2.5" step="0.1" value="${state.projectSettings.defaultStyle.lineHeight}"><input type="number" class="value-input" data-target="st-setting-line-height" value="${state.projectSettings.defaultStyle.lineHeight}" step="0.1"></div><div class="st-flex-group" style="margin-top: 8px;"><label>자간</label><input type="range" id="st-setting-letter-spacing" min="-2" max="5" step="0.1" value="${state.projectSettings.defaultStyle.letterSpacing}"><input type="number" class="value-input" data-target="st-setting-letter-spacing" value="${state.projectSettings.defaultStyle.letterSpacing}" step="0.1"></div></div>
+                            <!-- [수정] 프로젝트 제목 폰트/크기 설정 UI 추가 -->
+                            <div class="st-control-group"><h4>콘텐츠 정보</h4><label>프로젝트 제목</label><input type="text" id="st-setting-project-title" value="${state.projectSettings.project.title}"><div class="st-flex-group" style="margin-top: 8px;"><div><label>폰트</label>${createSelectWithOptions('st-setting-project-font', state.projectSettings.project.titleFontFamily)}</div><div><label>크기</label><input type="number" id="st-setting-project-size" value="${state.projectSettings.project.titleFontSize}"></div></div><div style="margin-top: 8px;"><label>작성자</label><input type="text" id="st-setting-project-author" value="${state.projectSettings.project.author}"></div><div style="margin-top: 8px;"><label>조회수</label><input type="number" id="st-setting-project-views" value="${state.projectSettings.project.views}"></div><div class="st-flex-group" style="margin-top: 8px;"><div><label>제목 색상</label><input type="color" id="st-setting-title-color" value="${state.projectSettings.project.titleColor}"></div><div><label>정보 색상</label><input type="color" id="st-setting-meta-color" value="${state.projectSettings.project.metaColor}"></div></div><hr style="border-color: var(--st-border-color); margin: 15px 0;"><label>기본 스크립트 스타일</label><div class="st-flex-group" style="margin-top: 8px;"><div><label>폰트</label>${createSelectWithOptions('st-setting-script-font', state.projectSettings.defaultStyle.fontFamily)}</div><div><label>크기</label><input type="number" id="st-setting-script-size" value="${state.projectSettings.defaultStyle.fontSize}"></div></div><div style="margin-top: 8px;"><label>색상</label><input type="color" id="st-setting-script-color" value="${state.projectSettings.defaultStyle.color}"></div>
+                            <!-- [수정] 줄간격/자간 슬라이더-숫자입력 연동 UI -->
+                            <div class="st-flex-group" style="margin-top: 8px;"><label>줄 간격</label><input type="range" id="st-setting-line-height" min="1" max="2.5" step="0.1" value="${state.projectSettings.defaultStyle.lineHeight}"><input type="number" class="value-input" data-target="st-setting-line-height" value="${state.projectSettings.defaultStyle.lineHeight}" step="0.1"></div><div class="st-flex-group" style="margin-top: 8px;"><label>자간</label><input type="range" id="st-setting-letter-spacing" min="-2" max="5" step="0.1" value="${state.projectSettings.defaultStyle.letterSpacing}"><input type="number" class="value-input" data-target="st-setting-letter-spacing" value="${state.projectSettings.defaultStyle.letterSpacing}" step="0.1"></div></div>
                             <div class="st-control-group"><h4>배경음악</h4><label>전체 BGM 선택</label><select id="st-setting-global-bgm">${bgmOptions}</select><button id="st-btn-upload-bgm" style="width:100%; margin-top: 8px; background-color: #3e3e3e;">내 BGM 업로드</button><div class="st-flex-group" style="margin-top: 8px;"><label>BGM 볼륨</label><input type="range" id="st-setting-global-bgm-volume" min="0" max="1" step="0.01" value="${state.globalBGM.volume}"><input type="number" class="value-input" data-target="st-setting-global-bgm-volume" value="${Math.round(state.globalBGM.volume * 100)}"></div></div>
                         </div>
                     </div>`;
@@ -375,10 +444,12 @@
                         <div class="footer-row"><button class="st-play-clip-btn" title="미리듣기" disabled>▶️</button><span class="st-duration-label" title="클릭하여 자동/수동 전환">길이(자동)</span><input type="number" class="st-duration-input" min="0.1" step="0.1" value="${cardData.duration}" title="길이(초)" style="display: none;"><label class="st-action-btn" for="${cardData.id}-file">미디어 추가</label><input type="file" id="${cardData.id}-file" accept="image/*,video/*"></div>
                         <div class="footer-row media-controls" style="display: none;"><span>미디어 표시:</span><select class="media-timing-select"></select><span>지속 시간:</span><select class="media-persist-select"></select></div>
                         <div class="footer-row media-controls" style="display: none;"><span>미디어 맞춤:</span><label class="media-fit-label"><input type="radio" name="media-fit-${cardData.id}" value="cover">꽉 채우기</label><label class="media-fit-label"><input type="radio" name="media-fit-${cardData.id}" value="contain" checked>안에 맞추기</label><label class="media-fit-label"><input type="radio" name="media-fit-${cardData.id}" value="fill">늘리기</label></div>
-                        <div class="footer-row"><label>TTS</label><div class="st-flex-group"><input type="range" class="st-volume-slider tts-volume" min="0" max="1" step="0.01" value="${cardData.ttsVolume}"><input type="number" class="value-input" data-target-id="${cardData.id}" data-type="tts-volume" value="${Math.round(cardData.ttsVolume * 100)}"></div></div>
-                        <div class="footer-row"><label>효과음</label><div class="st-flex-group"><input type="range" class="st-volume-slider sfx-volume" min="0" max="1" step="0.01" value="${cardData.sfxVolume}"><input type="number" class="value-input" data-target-id="${cardData.id}" data-type="sfx-volume" value="${Math.round(cardData.sfxVolume * 100)}"></div></div>
+                        <!-- [수정] 볼륨 조절 슬라이더-숫자입력 연동 UI -->
+                        <div class="footer-row"><label>TTS</label><div class="st-flex-group"><input type="range" class="st-volume-slider tts-volume" data-type="tts-volume" data-target-id="${cardData.id}" min="0" max="1" step="0.01" value="${cardData.ttsVolume}"><input type="number" class="value-input" data-type="tts-volume" data-target-id="${cardData.id}" value="${Math.round(cardData.ttsVolume * 100)}"></div></div>
+                        <div class="footer-row"><label>효과음</label><div class="st-flex-group"><input type="range" class="st-volume-slider sfx-volume" data-type="sfx-volume" data-target-id="${cardData.id}" min="0" max="1" step="0.01" value="${cardData.sfxVolume}"><input type="number" class="value-input" data-type="sfx-volume" data-target-id="${cardData.id}" value="${Math.round(cardData.sfxVolume * 100)}"></div></div>
                         <div class="footer-row"><select class="st-sfx-select" style="flex-grow: 1;">${sfxOptions}</select></div>
-                    </div>`;
+                    </div>
+                    <div class="st-card-loading" style="display: none;"></div>`;
                 cardEl.querySelector('.st-sfx-select').value = cardData.sfxUrl || '';
                 return cardEl;
             },
@@ -386,7 +457,7 @@
             segmentsInEditor: (editorEl, text) => {
                 editorEl.innerHTML = ''; const lines = text.split('\n');
                 if (lines.length === 1 && lines[0] === '') { editorEl.innerHTML = '<p class="script-segment"><br></p>'; } 
-                else { lines.forEach(line => { const p = document.createElement('p'); p.className = 'script-segment'; p.textContent = line; editorEl.appendChild(p); }); }
+                else { lines.forEach(line => { const p = document.createElement('p'); p.className = 'script-segment'; p.textContent = line || ' '; editorEl.appendChild(p); }); }
             },
             
             updateCardUI: (cardId) => {
@@ -422,7 +493,8 @@
                     persistSelect.innerHTML = `<option value="">이 클립에서만</option>`;
                     if (currentIndex < state.scriptCards.length - 1) { state.scriptCards.slice(currentIndex).forEach((c, i) => { if(i > 0) persistSelect.innerHTML += `<option value="${c.id}">카드 ${currentIndex + i + 1}까지</option>`; }); }
                     persistSelect.value = cardData.media.persistUntilCardId || '';
-                    cardEl.querySelector(`input[name="media-fit-${cardId}"][value="${cardData.media.fit}"]`).checked = true;
+                    const fitRadio = cardEl.querySelector(`input[name="media-fit-${cardId}"][value="${cardData.media.fit}"]`);
+                    if (fitRadio) fitRadio.checked = true;
                 } else {
                     mediaControls.forEach(el => el.style.display = 'none');
                 }
@@ -437,13 +509,20 @@
                 state.scriptCards.forEach(card => render.updateMediaControls(card.id));
             },
             
-            showLoadingOnCard: (cardId, show, message) => {
+            showLoadingOnCard: (cardId, show, message = '') => {
                 const cardEl = document.querySelector(`.st-card[data-id="${cardId}"]`);
                 if (!cardEl) return; let overlay = cardEl.querySelector('.st-card-loading');
                 if (show) {
-                    if (!overlay) { overlay = document.createElement('div'); overlay.className = 'st-card-loading'; cardEl.appendChild(overlay); }
+                    if (!overlay) { 
+                        overlay = document.createElement('div'); 
+                        overlay.className = 'st-card-loading'; 
+                        cardEl.appendChild(overlay); 
+                    }
+                    overlay.style.display = 'flex';
                     overlay.textContent = message;
-                } else { if (overlay) overlay.remove(); }
+                } else { 
+                    if (overlay) overlay.style.display = 'none'; 
+                }
             },
 
             applyTransform: (el, layout) => {
@@ -478,6 +557,7 @@
                 const titleEl = document.querySelector('.st-project-info .title');
                 titleEl.textContent = state.projectSettings.project.title;
                 titleEl.style.color = state.projectSettings.project.titleColor;
+                // [수정] 프로젝트 제목 폰트/크기 적용
                 titleEl.style.fontFamily = state.projectSettings.project.titleFontFamily;
                 titleEl.style.fontSize = state.projectSettings.project.titleFontSize + 'px';
                 const metaEl = document.querySelector('.st-project-info span');
@@ -497,7 +577,7 @@
                 }
 
                 textWrapper.style.display = 'block';
-                mediaWrapper.style.display = card.media.url ? 'flex' : 'none';
+                mediaWrapper.style.display = card.media.url ? 'block' : 'none'; // [수정] flex -> block
 
                 render.applyTransform(textWrapper, card.layout.text);
                 Object.assign(textWrapper.style, { width: card.layout.text.width + 'px', height: 'auto' });
@@ -538,7 +618,8 @@
                 playback.playBGM(); playback.playCardByIndex(0);
             },
             stop: () => {
-                state.isPlaying = false; clearTimeout(state.playbackTimeoutId);
+                clearTimeout(state.playbackTimeoutId);
+                state.isPlaying = false; 
                 UI.playAllBtn.textContent = '▶';
                 UI.ttsPlayer.pause(); UI.bgmPlayer.pause(); UI.sfxPlayer.pause();
                 document.getElementById('st-preview-video').pause();
@@ -548,8 +629,20 @@
             playBGM: (bgmData = state.globalBGM) => {
                 if (bgmData && bgmData.url) {
                     if (UI.bgmPlayer.src !== bgmData.url) UI.bgmPlayer.src = bgmData.url;
-                    UI.bgmPlayer.volume = state.globalBGM.volume; UI.bgmPlayer.currentTime = bgmData.startTime || 0;
+                    UI.bgmPlayer.volume = state.globalBGM.volume; 
+                    UI.bgmPlayer.currentTime = bgmData.startTime || 0;
                     UI.bgmPlayer.play().catch(e => console.error("BGM Playback Error:", e));
+                    // [추가] BGM 종료 시간 로직
+                    if (bgmData.endTime) {
+                       UI.bgmPlayer.ontimeupdate = () => {
+                           if (UI.bgmPlayer.currentTime >= bgmData.endTime) {
+                               UI.bgmPlayer.currentTime = bgmData.startTime || 0;
+                           }
+                       };
+                    } else {
+                        UI.bgmPlayer.ontimeupdate = null;
+                    }
+
                 } else { UI.bgmPlayer.pause(); }
             },
             playCardByIndex: (index) => {
@@ -622,9 +715,12 @@
                 state.projectSettings.header.fontSize = document.getElementById('st-setting-header-size').value;
                 state.projectSettings.header.icon = document.getElementById('st-setting-header-icon').value;
                 state.projectSettings.header.logo.size = document.getElementById('st-setting-header-logo-size').value;
+                
+                // [수정] 프로젝트 제목 관련 설정값 업데이트
                 state.projectSettings.project.title = document.getElementById('st-setting-project-title').value;
                 state.projectSettings.project.titleFontFamily = document.getElementById('st-setting-project-font').value;
                 state.projectSettings.project.titleFontSize = document.getElementById('st-setting-project-size').value;
+                
                 state.projectSettings.project.author = document.getElementById('st-setting-project-author').value;
                 state.projectSettings.project.views = document.getElementById('st-setting-project-views').value;
                 state.projectSettings.project.titleColor = document.getElementById('st-setting-title-color').value;
@@ -643,22 +739,20 @@
             
             updateScriptStyleControls() {
                 const card = state.scriptCards.find(c => c.id === state.selectedCardId); if (!card) return;
-                document.getElementById('st-setting-script-color').value = card.style?.color || '#000000';
-                document.getElementById('st-setting-script-font').value = card.style?.fontFamily || "'Noto Sans KR', sans-serif";
-                document.getElementById('st-setting-script-size').value = (card.style?.fontSize || '24px').replace('px','');
-                document.getElementById('st-setting-line-height').value = card.style?.lineHeight || '1.5';
-                document.getElementById('st-setting-letter-spacing').value = (card.style?.letterSpacing || '0px').replace('px','');
+                document.getElementById('st-setting-script-color').value = card.style?.color || state.projectSettings.defaultStyle.color;
+                document.getElementById('st-setting-script-font').value = card.style?.fontFamily || state.projectSettings.defaultStyle.fontFamily;
+                document.getElementById('st-setting-script-size').value = (card.style?.fontSize || state.projectSettings.defaultStyle.fontSize).replace('px','');
+                document.getElementById('st-setting-line-height').value = card.style?.lineHeight || state.projectSettings.defaultStyle.lineHeight;
+                document.getElementById('st-setting-letter-spacing').value = (card.style?.letterSpacing || state.projectSettings.defaultStyle.letterSpacing).replace('px','');
             },
 
             applyScriptStylesToSelectedCard() {
                 const card = state.scriptCards.find(c => c.id === state.selectedCardId); if (!card) return;
-                card.style = {
-                    color: document.getElementById('st-setting-script-color').value,
-                    fontFamily: document.getElementById('st-setting-script-font').value,
-                    fontSize: document.getElementById('st-setting-script-size').value + 'px',
-                    lineHeight: document.getElementById('st-setting-line-height').value,
-                    letterSpacing: document.getElementById('st-setting-letter-spacing').value + 'px'
-                };
+                card.style.color = document.getElementById('st-setting-script-color').value;
+                card.style.fontFamily = document.getElementById('st-setting-script-font').value;
+                card.style.fontSize = document.getElementById('st-setting-script-size').value + 'px';
+                card.style.lineHeight = document.getElementById('st-setting-line-height').value;
+                card.style.letterSpacing = document.getElementById('st-setting-letter-spacing').value + 'px';
                 render.updatePreviewDisplay();
             },
 
@@ -670,8 +764,9 @@
                     style: { ...state.projectSettings.defaultStyle, fontSize: state.projectSettings.defaultStyle.fontSize + 'px', letterSpacing: state.projectSettings.defaultStyle.letterSpacing + 'px' },
                     audioUrl: null, ttsReady: false, ttsVolume: 0.8, sfxUrl: null, sfxVolume: 0.8,
                     layout: { 
-                        text: { x: 0, y: -110, width: 340, angle: 0 },
-                        media: { x: 0, y: 88, width: 320, height: 180, angle: 0 } 
+                        // [수정] 기본 위치값 조정
+                        text: { x: 0, y: -150, width: 340, angle: 0 },
+                        media: { x: 0, y: 50, width: 320, height: 180, angle: 0 } 
                     },
                     animations: { 
                         text: { in: { name: 'none', duration: 0.3 }, out: { name: 'none', duration: 0.3 } }, 
@@ -684,7 +779,9 @@
                 handlers.bindCardEvents(cardId);
                 const editor = cardEl.querySelector('.st-script-editor');
                 render.segmentsInEditor(editor, cardData.text);
-                debouncedTTSRequest(cardId);
+                if (text.trim()) debouncedTTSRequest(cardId);
+                else cardData.ttsReady = true; // 텍스트가 없으면 바로 준비 완료 처리
+
                 if (!state.selectedCardId) handlers.selectCard(cardId);
                 render.updateCardNumbers();
                 render.updateCardUI(cardId);
@@ -711,7 +808,7 @@
                         const url = URL.createObjectURL(file);
                         if (file.type.startsWith('video/')) {
                             modals.openVideoTrimmer(url, cardId);
-                        } else {
+                        } else { // 이미지 또는 GIF
                             cardData.media.url = url;
                             cardData.media.type = 'image';
                             render.updateCardUI(cardId);
@@ -747,23 +844,27 @@
                         }
                     }
                 });
-                cardEl.querySelector('.tts-volume').addEventListener('input', e => { 
-                    cardData.ttsVolume = parseFloat(e.target.value);
-                    cardEl.querySelector('.value-input[data-type="tts-volume"]').value = Math.round(e.target.value * 100);
-                });
-                cardEl.querySelector('.sfx-volume').addEventListener('input', e => {
-                    cardData.sfxVolume = parseFloat(e.target.value);
-                    cardEl.querySelector('.value-input[data-type="sfx-volume"]').value = Math.round(e.target.value * 100);
+                // [수정] 볼륨 슬라이더-숫자 입력 연동 로직 개선
+                cardEl.querySelectorAll('.st-volume-slider').forEach(slider => {
+                    slider.addEventListener('input', e => {
+                        const targetCard = state.scriptCards.find(c => c.id === e.target.dataset.targetId);
+                        const volumeType = e.target.dataset.type === 'tts-volume' ? 'ttsVolume' : 'sfxVolume';
+                        const newValue = parseFloat(e.target.value);
+                        if(targetCard) targetCard[volumeType] = newValue;
+                        
+                        const numberInput = cardEl.querySelector(`.value-input[data-type="${e.target.dataset.type}"]`);
+                        if(numberInput) numberInput.value = Math.round(newValue * 100);
+                    });
                 });
                  cardEl.querySelectorAll('.value-input').forEach(input => {
                     input.addEventListener('input', e => {
-                        const targetSlider = cardEl.querySelector(`.${e.target.dataset.type}`);
-                        if (targetSlider) {
-                            const newValue = parseFloat(e.target.value) / 100;
-                            targetSlider.value = newValue;
-                            if(e.target.dataset.type === 'tts-volume') cardData.ttsVolume = newValue;
-                            if(e.target.dataset.type === 'sfx-volume') cardData.sfxVolume = newValue;
-                        }
+                        const targetCard = state.scriptCards.find(c => c.id === e.target.dataset.targetId);
+                        const volumeType = e.target.dataset.type === 'tts-volume' ? 'ttsVolume' : 'sfxVolume';
+                        const newValue = parseFloat(e.target.value) / 100;
+                        if(targetCard) targetCard[volumeType] = newValue;
+                        
+                        const slider = cardEl.querySelector(`.st-volume-slider[data-type="${e.target.dataset.type}"]`);
+                        if (slider) slider.value = newValue;
                     });
                 });
                 cardEl.querySelector('.st-duration-label').addEventListener('click', () => {
@@ -780,6 +881,11 @@
 
             deleteCard(cardId) {
                 const cardIndex = state.scriptCards.findIndex(c => c.id === cardId); if (cardIndex === -1) return;
+                const cardData = state.scriptCards[cardIndex];
+                // [추가] 미디어 URL 해제
+                if (cardData.media.url && cardData.media.url.startsWith('blob:')) {
+                    URL.revokeObjectURL(cardData.media.url);
+                }
                 state.scriptCards.splice(cardIndex, 1);
                 document.querySelector(`.st-card[data-id="${cardId}"]`).remove();
                 if (state.selectedCardId === cardId) {
@@ -801,6 +907,8 @@
             
             selectCard(cardId, fromPlayback = false) {
                 if (state.isPlaying && !fromPlayback) playback.stop();
+                if (state.selectedCardId === cardId) return; // 이미 선택된 카드는 다시 처리하지 않음
+
                 state.selectedCardId = cardId;
                 interaction.deactivateAllInteractive();
                 document.querySelectorAll('.st-card').forEach(c => c.classList.remove('active'));
@@ -888,10 +996,10 @@
                     },
                     end(event) { document.body.classList.remove('interaction-active'); }
                 };
-                interact('.interactive-target').draggable({ listeners: dragListeners });
+                interact('.interactive-target').draggable({ listeners: dragListeners, modifiers: [ interact.modifiers.restrictRect({ restriction: 'parent' }) ] });
                 interact('.interactive-target').resizable({
                     edges: { top: true, left: true, bottom: true, right: true },
-                    modifiers: [ interact.modifiers.aspectRatio({ ratio: 'preserve', equalDelta: true }) ],
+                    modifiers: [ interact.modifiers.aspectRatio({ ratio: 'preserve' }) ],
                     listeners: {
                         start: dragListeners.start,
                         move(event) {
@@ -906,7 +1014,6 @@
                         },
                         end: dragListeners.end
                     },
-                    inertia: true
                 });
                 UI.previewContent.addEventListener('click', (e) => { if (!e.target.closest('.interactive-target')) interaction.deactivateAllInteractive(); });
                 document.addEventListener('selectionchange', helpers.debounce(interaction.sequence.onSelectionChange, 200));
@@ -916,8 +1023,9 @@
         };
 
         const modals = {
-            openBgmEditor(url, currentBgm, callback) {
-                state.bgmEditorContext = { onConfirm: callback, onCancel: () => {} };
+            // [수정] BGM 에디터 로직 안정화
+            openBgmEditor(url, onConfirm) {
+                state.bgmEditorContext = { onConfirm };
                 UI.bgmModal.classList.add('visible');
                 const loadingEl = UI.bgmModal.querySelector('.waveform-loading');
                 loadingEl.style.display = 'block';
@@ -943,11 +1051,17 @@
                     state.activeBgmRegion = region;
                     document.getElementById('st-bgm-time-display').textContent = `${region.start.toFixed(2)}s - ${region.end.toFixed(2)}s`;
                 });
+                state.bgmWavesurfer.on('error', (e) => {
+                    console.error("Wavesurfer error:", e);
+                    alert("BGM 파일을 로드하는 중 오류가 발생했습니다.");
+                    modals.closeBgmEditor();
+                })
             },
             closeBgmEditor: () => {
                 UI.bgmModal.classList.remove('visible');
                 if (state.bgmWavesurfer) { state.bgmWavesurfer.destroy(); state.bgmWavesurfer = null; }
             },
+            // [수정] 비디오 트리머 로직 안정화
             openVideoTrimmer(url, cardId) {
                 state.videoTrimmerContext = { cardId, url };
                 UI.videoTrimModal.classList.add('visible');
@@ -965,8 +1079,6 @@
                     plugins: [ WaveSurfer.regions.create({ dragSelection: { slop: 5 } }) ]
                 });
 
-                state.videoWavesurfer.load(url);
-
                 state.videoWavesurfer.on('ready', () => {
                     loadingEl.style.display = 'none';
                     state.videoWavesurfer.clearRegions();
@@ -979,20 +1091,32 @@
                 state.videoWavesurfer.on('region-updated', (region) => {
                     state.activeVideoRegion = region;
                     document.getElementById('st-video-time-display').textContent = `${region.start.toFixed(2)}s - ${region.end.toFixed(2)}s`;
+                    if(!previewVideo.paused) previewVideo.pause();
                     previewVideo.currentTime = region.start;
                 });
+                
+                state.videoWavesurfer.on('error', (e) => {
+                    console.error("Wavesurfer error:", e);
+                    alert("비디오 파일을 로드하는 중 오류가 발생했습니다. 다른 파일을 시도해보세요.");
+                    modals.closeVideoTrimmer();
+                })
             },
             closeVideoTrimmer: () => {
                 UI.videoTrimModal.classList.remove('visible');
+                const previewVideo = UI.videoTrimModal.querySelector('video');
                 if (state.videoWavesurfer) {
                     state.videoWavesurfer.destroy();
                     state.videoWavesurfer = null;
                 }
-                const previewVideo = UI.videoTrimModal.querySelector('video');
                 if (previewVideo) {
                     previewVideo.pause();
-                    previewVideo.src = "";
+                    previewVideo.removeAttribute('src'); // src를 제거하여 메모리 누수 방지
+                    previewVideo.load();
                 }
+                if (state.videoTrimmerContext.url.startsWith('blob:')) {
+                    URL.revokeObjectURL(state.videoTrimmerContext.url);
+                }
+                state.videoTrimmerContext = { cardId: null, url: null };
             },
             initialize() {
                 // BGM Modal Events
@@ -1012,7 +1136,8 @@
                         const previewVideo = UI.videoTrimModal.querySelector('video');
                         previewVideo.currentTime = state.activeVideoRegion.start;
                         previewVideo.play();
-                        setTimeout(() => { if (!previewVideo.paused) previewVideo.pause(); }, (state.activeVideoRegion.end - state.activeVideoRegion.start) * 1000);
+                        const playbackDuration = (state.activeVideoRegion.end - state.activeVideoRegion.start) * 1000;
+                        setTimeout(() => { if (!previewVideo.paused) previewVideo.pause(); }, playbackDuration);
                     }
                 });
                 document.getElementById('st-btn-video-confirm').addEventListener('click', () => {
@@ -1026,7 +1151,9 @@
                         render.updateCardUI(cardId);
                         if (state.selectedCardId === cardId) render.updatePreviewDisplay();
                     }
-                    modals.closeVideoTrimmer();
+                    // 확인 시에는 URL을 해제하지 않고, 취소 시에만 해제
+                    UI.videoTrimModal.classList.remove('visible');
+                    if (state.videoWavesurfer) { state.videoWavesurfer.destroy(); state.videoWavesurfer = null; }
                 });
                 document.getElementById('st-btn-video-cancel').addEventListener('click', modals.closeVideoTrimmer);
             }
@@ -1048,22 +1175,22 @@
             UI.addCardBtn.addEventListener('click', () => handlers.addScriptCard(''));
             UI.newProjectBtn.addEventListener('click', () => { if(confirm('정말로 새 프로젝트를 시작하시겠습니까? 모든 작업 내용이 사라집니다.')) { location.reload(); } });
             UI.playAllBtn.addEventListener('click', playback.togglePlay);
-            UI.globalSettingsPanel.addEventListener('input', (e) => { 
-                if (e.target.id.startsWith('st-setting-')) {
-                    handlers.updateProjectSettings();
-                    if (e.target.type === 'range') {
-                        const numberInput = e.target.nextElementSibling;
-                        if (numberInput && numberInput.classList.contains('value-input')) {
-                            numberInput.value = e.target.id.includes('volume') ? Math.round(e.target.value * 100) : e.target.value;
+            
+            // [수정] 설정 패널 이벤트 리스너 통합 및 개선
+            UI.globalSettingsPanel.addEventListener('input', (e) => {
+                const target = e.target;
+                if (target.id.startsWith('st-setting-')) {
+                    if (target.type === 'range') {
+                        const numberInput = document.querySelector(`.value-input[data-target="${target.id}"]`);
+                        if (numberInput) {
+                             numberInput.value = target.id.includes('volume') ? Math.round(target.value * 100) : target.value;
                         }
                     }
-                }
-             });
-             UI.globalSettingsPanel.addEventListener('input', (e) => {
-                if (e.target.classList.contains('value-input')) {
-                    const slider = document.getElementById(e.target.dataset.target);
+                    handlers.updateProjectSettings();
+                } else if (target.classList.contains('value-input')) {
+                    const slider = document.getElementById(target.dataset.target);
                     if (slider) {
-                        slider.value = slider.id.includes('volume') ? parseFloat(e.target.value) / 100 : e.target.value;
+                        slider.value = slider.id.includes('volume') ? parseFloat(target.value) / 100 : target.value;
                         handlers.updateProjectSettings();
                     }
                 }
@@ -1083,8 +1210,9 @@
             document.getElementById('st-setting-global-bgm').addEventListener('change', (e) => {
                 const url = e.target.value;
                 if (url) {
-                    modals.openBgmEditor(url, state.globalBGM, ({ startTime, endTime }) => {
+                    modals.openBgmEditor(url, ({ startTime, endTime }) => {
                         state.globalBGM = { ...state.globalBGM, url, startTime, endTime };
+                        document.getElementById('st-setting-global-bgm').value = url; // [수정] 사용자가 선택한 BGM이 select에 유지되도록
                         if (state.isPlaying) playback.playBGM();
                     });
                 } else {
@@ -1117,7 +1245,7 @@
                  if (e.target.files && e.target.files[0]) {
                     const file = e.target.files[0];
                     const url = URL.createObjectURL(file);
-                    modals.openBgmEditor(url, state.globalBGM, ({ startTime, endTime }) => {
+                    modals.openBgmEditor(url, ({ startTime, endTime }) => {
                         state.globalBGM = { ...state.globalBGM, url, startTime, endTime };
                         if (state.isPlaying) playback.playBGM();
                     });
@@ -1130,7 +1258,11 @@
                 for (const item of items) {
                     if (item.type.indexOf('image') === 0) {
                         event.preventDefault();
-                        const file = item.getAsFile(); card.media.url = URL.createObjectURL(file);
+                        const file = item.getAsFile(); 
+                        if (card.media.url && card.media.url.startsWith('blob:')) {
+                            URL.revokeObjectURL(card.media.url);
+                        }
+                        card.media.url = URL.createObjectURL(file);
                         card.media.type = 'image'; render.updateCardUI(card.id); render.updatePreviewDisplay(); break;
                     }
                 }
@@ -1154,29 +1286,50 @@
             handlers.addScriptCard('순삭툴에 오신 것을 환영합니다!\n텍스트를 선택해서 재생 순서를 정해보세요.');
         }
         
-        // --- 8. 영상 출력 (html2canvas Exporter) ---
+        // --- 8. 영상 출력 (Exporter) ---
+        // [수정] html2canvas 방식에서 직접 Canvas에 그리는 방식으로 전면 교체 (참고 코드 기반)
+        // 성능, 안정성, 예측 가능성 대폭 향상. 비디오는 첫 프레임만 이미지로 렌더링.
         const exporter = {
             startExport: async () => {
                 if (state.scriptCards.some(c => !c.ttsReady && c.text.trim())) return alert('아직 음성 생성이 완료되지 않은 스크립트가 있습니다.');
                 if (state.scriptCards.length === 0) return alert('출력할 영상이 없습니다.');
+
                 UI.exportBtn.disabled = true;
                 UI.progressOverlay.style.display = 'flex';
-                UI.progressText.textContent = '영상 생성 준비 중...';
                 
                 const RENDER_WIDTH = 1080;
                 const RENDER_HEIGHT = 1920;
                 const FPS = 30;
+                const PREVIEW_WIDTH = 380; // 미리보기 패널의 너비
+                const SCALE = RENDER_WIDTH / PREVIEW_WIDTH;
 
-                const canvas = UI.renderCanvas;
-                canvas.width = RENDER_WIDTH; canvas.height = RENDER_HEIGHT;
-                const ctx = canvas.getContext('2d');
-                const totalDuration = state.scriptCards.reduce((sum, card) => sum + (card.duration || 0.5), 0);
+                // 1. 자원 사전 로딩 (폰트, 이미지)
+                UI.progressText.textContent = '자원 로딩 중...';
+                UI.progressSubText.textContent = '폰트 및 이미지 로딩';
+                UI.progressBarInner.style.width = `5%`;
+                await document.fonts.ready;
                 
+                const imagePromises = state.scriptCards
+                    .filter(card => card.media.url && card.media.type === 'image')
+                    .map(card => new Promise((resolve) => {
+                        if (state.imageCache.has(card.media.url)) return resolve();
+                        const img = new Image();
+                        img.crossOrigin = 'anonymous';
+                        img.src = card.media.url;
+                        img.onload = () => { state.imageCache.set(card.media.url, img); resolve(); };
+                        img.onerror = () => { console.error(`이미지 로드 실패: ${card.media.url}`); resolve(); }; // 실패해도 계속 진행
+                    }));
+                await Promise.all(imagePromises);
+                
+                // 2. 오디오 트랙 생성
+                UI.progressText.textContent = '오디오 트랙 생성 중...';
+                UI.progressBarInner.style.width = `15%`;
+
                 const audioContext = new AudioContext();
                 const destination = audioContext.createMediaStreamDestination();
-                
                 const audioPromises = [];
                 let timeOffset = 0;
+
                 if(state.globalBGM.url) {
                    const gainNode = audioContext.createGain();
                    gainNode.gain.value = state.globalBGM.volume;
@@ -1186,8 +1339,8 @@
                        source.buffer = decoded;
                        source.loop = true;
                        source.connect(gainNode);
-                       source.start(0, state.globalBGM.startTime);
-                   });
+                       source.start(0, state.globalBGM.startTime || 0);
+                   }).catch(e => console.error('BGM 로딩 에러', e));
                    audioPromises.push(bgmPromise);
                 }
 
@@ -1201,7 +1354,7 @@
                             source.buffer = decoded;
                             source.connect(gainNode);
                             source.start(timeOffset);
-                        });
+                        }).catch(e => console.error('TTS 로딩 에러', e));
                         audioPromises.push(ttsPromise);
                     }
                     if (card.sfxUrl) {
@@ -1213,19 +1366,21 @@
                            source.buffer = decoded;
                            source.connect(gainNode);
                            source.start(timeOffset);
-                        });
+                        }).catch(e => console.error('SFX 로딩 에러', e));
                         audioPromises.push(sfxPromise);
                     }
                     timeOffset += card.duration;
                 }
                 await Promise.all(audioPromises);
-
-                const canvasStream = canvas.captureStream(FPS);
+                
+                // 3. MediaRecorder 설정
+                const canvasStream = UI.renderCanvas.captureStream(FPS);
                 const combinedStream = new MediaStream([...canvasStream.getVideoTracks(), ...destination.stream.getAudioTracks()]);
                 const recorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm;codecs=vp9,opus' });
                 const chunks = [];
                 recorder.ondataavailable = e => chunks.push(e.data);
                 recorder.onstop = () => {
+                    audioContext.close();
                     const blob = new Blob(chunks, { type: 'video/webm' });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
@@ -1236,13 +1391,18 @@
                     if (state.scriptCards.length > 0) handlers.selectCard(state.scriptCards[0].id);
                 };
                 
+                // 4. 프레임별 렌더링 루프
                 recorder.start();
                 
-                const originalSelectedId = state.selectedCardId;
-                let currentFrame = 0;
+                const totalDuration = state.scriptCards.reduce((sum, card) => sum + (card.duration || 0.5), 0);
                 const totalFrames = Math.floor(totalDuration * FPS);
+                let currentFrame = 0;
                 let currentTimeTally = 0;
                 let currentCardIndex = 0;
+                
+                const ctx = UI.renderCanvas.getContext('2d');
+                UI.renderCanvas.width = RENDER_WIDTH;
+                UI.renderCanvas.height = RENDER_HEIGHT;
 
                 UI.progressText.textContent = '프레임 렌더링 중...';
 
@@ -1253,57 +1413,141 @@
                     }
 
                     const elapsedTime = currentFrame / FPS;
-                    if (currentCardIndex < state.scriptCards.length -1 && elapsedTime >= currentTimeTally + state.scriptCards[currentCardIndex].duration) {
+                    // 현재 시간에 맞는 카드 찾기
+                    if (currentCardIndex < state.scriptCards.length - 1 && elapsedTime >= currentTimeTally + state.scriptCards[currentCardIndex].duration) {
                         currentTimeTally += state.scriptCards[currentCardIndex].duration;
                         currentCardIndex++;
                     }
-
                     const card = state.scriptCards[currentCardIndex];
-                    if (card.id !== state.selectedCardId) {
-                       handlers.selectCard(card.id, true);
-                       await new Promise(r => setTimeout(r, 20)); // Allow DOM to update
-                    }
-                    
-                    const previewTextEl = document.getElementById('st-preview-text');
-                    previewTextEl.innerHTML = '';
-                    const timeInCard = elapsedTime - currentTimeTally;
-                    
-                    if (card.segments && card.segments.length > 0) {
-                        card.segments.forEach(segment => {
-                            if (timeInCard >= segment.startTime) {
-                                const p = document.createElement('p');
-                                p.className = 'preview-text-segment highlight';
-                                p.textContent = segment.text || ' ';
-                                p.style.margin = 0;
-                                previewTextEl.appendChild(p);
-                            }
-                        });
-                    } else {
-                        const p = document.createElement('p');
-                        p.className = 'preview-text-segment highlight';
-                        p.textContent = card.text || ' ';
-                        p.style.margin = 0;
-                        previewTextEl.appendChild(p);
-                    }
-                    
-                    const previewPanelEl = document.getElementById('st-preview-panel');
-                    const snapshotCanvas = await html2canvas(previewPanelEl, {
-                        scale: RENDER_WIDTH / previewPanelEl.offsetWidth,
-                        useCORS: true, allowTaint: true, backgroundColor: '#ffffff'
-                    });
-                    
-                    ctx.clearRect(0, 0, RENDER_WIDTH, RENDER_HEIGHT);
-                    ctx.drawImage(snapshotCanvas, 0, 0, RENDER_WIDTH, RENDER_HEIGHT);
 
+                    // Canvas에 직접 그리기
+                    this.renderFrameToCanvas(ctx, card, SCALE);
+                    
                     const progress = Math.min(100, (currentFrame / totalFrames) * 100);
                     UI.progressSubText.textContent = `프레임 ${currentFrame} / ${totalFrames}`;
-                    UI.progressBarInner.style.width = `${progress}%`;
+                    UI.progressBarInner.style.width = `${progress + 20}%`; // 20%부터 시작
 
                     currentFrame++;
                     requestAnimationFrame(renderNextFrame);
                 };
                 
                 requestAnimationFrame(renderNextFrame);
+            },
+
+            // 텍스트 줄바꿈 헬퍼 함수
+            wrapText: (context, text, x, y, maxWidth, lineHeight, textAlign) => {
+                const lines = text.split('\n');
+                let currentY = y;
+                context.textBaseline = 'middle';
+
+                for (const line of lines) {
+                    let words = line.split(' ');
+                    let currentLine = words[0] || '';
+                    for (let i = 1; i < words.length; i++) {
+                        let testLine = currentLine + ' ' + words[i];
+                        if (context.measureText(testLine).width > maxWidth && i > 0) {
+                            context.fillText(currentLine, x, currentY);
+                            currentLine = words[i];
+                            currentY += lineHeight;
+                        } else {
+                            currentLine = testLine;
+                        }
+                    }
+                    context.fillText(currentLine, x, currentY);
+                    currentY += lineHeight;
+                }
+            },
+
+            // 단일 프레임을 Canvas에 그리는 함수
+            renderFrameToCanvas: (ctx, card, scale) => {
+                const RENDER_WIDTH = ctx.canvas.width;
+                const RENDER_HEIGHT = ctx.canvas.height;
+                
+                // 1. 배경 채우기
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0, 0, RENDER_WIDTH, RENDER_HEIGHT);
+
+                // 2. 헤더 그리기
+                const headerHeight = state.projectSettings.header.fontSize * 2.7 * scale; // 높이를 폰트 크기에 비례하게
+                ctx.fillStyle = state.projectSettings.header.backgroundColor;
+                ctx.fillRect(0, 0, RENDER_WIDTH, headerHeight);
+                ctx.font = `bold ${state.projectSettings.header.fontSize * scale}px ${state.projectSettings.header.fontFamily}`;
+                ctx.fillStyle = state.projectSettings.header.color;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(state.projectSettings.header.text, RENDER_WIDTH / 2, headerHeight / 2);
+
+                // 3. 프로젝트 정보 그리기
+                const infoPadding = 10 * scale;
+                let currentY = headerHeight + infoPadding * 2;
+                
+                ctx.font = `bold ${state.projectSettings.project.titleFontSize * scale}px ${state.projectSettings.project.titleFontFamily}`;
+                ctx.fillStyle = state.projectSettings.project.titleColor;
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'top';
+                ctx.fillText(state.projectSettings.project.title, infoPadding, currentY);
+                currentY += state.projectSettings.project.titleFontSize * scale * 1.2;
+
+                ctx.font = `${13 * scale}px 'Noto Sans KR'`; // 메타 정보 폰트는 고정
+                ctx.fillStyle = state.projectSettings.project.metaColor;
+                const metaText = `${state.projectSettings.project.author} | 조회수 ${Number(state.projectSettings.project.views).toLocaleString()}`;
+                ctx.fillText(metaText, infoPadding, currentY);
+                currentY += 13 * scale * 1.5;
+                
+                ctx.strokeStyle = '#eeeeee';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(infoPadding, currentY);
+                ctx.lineTo(RENDER_WIDTH - infoPadding, currentY);
+                ctx.stroke();
+
+                const contentStartY = currentY;
+
+                // 4. 미디어 그리기
+                if (card.media.url) {
+                    ctx.save();
+                    const layout = card.layout.media;
+                    let mediaToDraw = null;
+                    if (card.media.type === 'image' && state.imageCache.has(card.media.url)) {
+                        mediaToDraw = state.imageCache.get(card.media.url);
+                    } else if (card.media.type === 'video') {
+                        // 비디오는 첫 프레임을 그리기 위해 미리보기 요소를 사용
+                        const videoEl = document.getElementById('st-preview-video');
+                        if (videoEl.readyState >= 2) { // HAVE_CURRENT_DATA
+                           mediaToDraw = videoEl;
+                        }
+                    }
+                    
+                    if (mediaToDraw) {
+                        const centerX = RENDER_WIDTH / 2;
+                        const defaultY = contentStartY + (layout.height * scale / 2) + 50 * scale; // 기본 위치 조정
+                        ctx.translate(centerX + layout.x * scale, defaultY + layout.y * scale);
+                        ctx.rotate(layout.angle * Math.PI / 180);
+
+                        const w = layout.width * scale;
+                        const h = layout.height * scale;
+                        ctx.drawImage(mediaToDraw, -w / 2, -h / 2, w, h);
+                    }
+                    ctx.restore();
+                }
+
+                // 5. 텍스트 그리기
+                ctx.save();
+                const layout = card.layout.text;
+                const style = card.style;
+                const centerX = RENDER_WIDTH / 2;
+                const defaultY = contentStartY + 100 * scale; // 기본 위치 조정
+
+                ctx.translate(centerX + layout.x * scale, defaultY + layout.y * scale);
+                ctx.rotate(layout.angle * Math.PI / 180);
+
+                ctx.font = `${parseInt(style.fontSize) * scale}px ${style.fontFamily}`;
+                ctx.fillStyle = style.color;
+                ctx.textAlign = 'center';
+                
+                const lineHeight = parseInt(style.fontSize) * scale * parseFloat(style.lineHeight);
+                this.wrapText(ctx, card.text, 0, 0, layout.width * scale, lineHeight, 'center');
+                ctx.restore();
             },
         };
 
