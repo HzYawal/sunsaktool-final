@@ -34,9 +34,9 @@
         .st-project-info { font-size: 13px; color: #555; margin: 0 0 16px 0; border-bottom: 1px solid #eee; padding-bottom: 16px; flex-shrink: 0; }
         .st-project-info .title { font-size: 22px; color: black; font-weight: bold; margin-bottom: 5px; }
         .st-script-display { flex-grow: 1; position: relative; }
-        .interactive-target { position: relative; width: 100%; text-align: center; cursor: move; }
-        #st-preview-text-container-wrapper { z-index: 10; }
-        #st-preview-media-container-wrapper { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; z-index: 5; margin-top: 0; }
+        .interactive-target { position: absolute; width: 100%; text-align: center; cursor: move; }
+        #st-preview-text-container-wrapper { z-index: 10; top: 50%; } /* 기본 위치 조정 */
+        #st-preview-media-container-wrapper { z-index: 5; top: 8%; height: 40%;} /* 기본 위치 조정 */
         #st-preview-image, #st-preview-video { max-width: 100%; max-height: 100%; width: 100%; height: 100%; }
         #st-preview-video.fit-contain, #st-preview-image.fit-contain { object-fit: contain; }
         #st-preview-video.fit-cover, #st-preview-image.fit-cover { object-fit: cover; }
@@ -62,8 +62,8 @@
         .st-script-editor .script-segment { cursor: grab; padding: 2px 0; }
         .st-script-editor .script-segment:active { cursor: grabbing; }
         .st-script-editor .script-segment.sortable-ghost { opacity: 0.4; background: #444; }
-        .preview-text-segment { visibility: hidden; }
-        .preview-text-segment.highlight { visibility: visible; }
+        .preview-text-segment { visibility: hidden; } /* 기본 숨김 처리 */
+        .preview-text-segment.highlight { visibility: visible; } /* highlight 클래스로 보이기 */
         .st-card-footer { margin-top: 10px; display: flex; flex-direction: column; gap: 10px; }
         .st-card-footer .footer-row { display: flex; align-items: center; gap: 10px; font-size: 13px; flex-wrap: wrap; }
         .st-card-footer .st-duration-label { cursor: pointer; text-decoration: underline; }
@@ -207,8 +207,8 @@
             selectedCardId: null,
             activeInteractiveElement: null,
             playbackTimeoutId: null,
-            currentSelectionContext: null,
-            currentPersistentMedia: null, // 지속성 비디오를 위한 상태
+            currentSelectionContext: null, // 시퀀스 지정을 위한 컨텍스트
+            currentPersistentMedia: null,
             wavesurfer: null,
             activeRegion: null,
             bgmEditorContext: { onConfirm: null, onCancel: null }
@@ -298,9 +298,9 @@
             if (!cardData) return;
             
             const allLines = cardData.text.split('\n').filter(line => line.trim());
-            let segmentsForTiming = (cardData.animationSequence && cardData.animationSequence.length > 0)
-                ? [...cardData.animationSequence, ...allLines.filter(line => line && !cardData.animationSequence.includes(line))]
-                : allLines;
+            const sequencedLines = cardData.animationSequence || [];
+            const remainingLines = allLines.filter(line => line && !sequencedLines.includes(line));
+            const segmentsForTiming = [...sequencedLines, ...remainingLines];
             
             const textForTTS = segmentsForTiming.join(' ');
             
@@ -495,7 +495,6 @@
                 if (cardData.media.url) {
                     mediaControls.forEach(el => el.style.display = 'flex');
 
-                    // 미디어 타이밍 (등장 시점)
                     const timingSelect = cardEl.querySelector('.media-timing-select');
                     timingSelect.innerHTML = `<option value="1">스크립트 시작 시</option>`;
                     if (cardData.segments.length > 1) {
@@ -505,7 +504,6 @@
                     }
                     timingSelect.value = cardData.media.showOnSegment;
 
-                    // 미디어 지속 시간
                     const persistSelect = cardEl.querySelector('.media-persist-select');
                     const currentIndex = state.scriptCards.findIndex(c => c.id === cardId);
                     persistSelect.innerHTML = `<option value="">이 클립에서만</option>`;
@@ -516,7 +514,6 @@
                     }
                     persistSelect.value = cardData.media.persistUntilCardId || '';
 
-                    // 비디오 맞춤
                     cardEl.querySelector(`input[name="media-fit-${cardId}"][value="${cardData.media.fit}"]`).checked = true;
 
                 } else {
@@ -532,7 +529,6 @@
                         cardEl.querySelector('.st-card-number').textContent = index + 1;
                     }
                 });
-                // 모든 카드의 미디어 지속시간 옵션 업데이트
                 state.scriptCards.forEach(card => render.updateMediaControls(card.id));
             },
             
@@ -596,8 +592,7 @@
                 const previewVideo = document.getElementById('st-preview-video');
                 
                 if (!card) {
-                    textWrapper.style.display = 'none';
-                    mediaWrapper.style.display = 'none';
+                    textWrapper.style.display = 'none'; mediaWrapper.style.display = 'none';
                     return;
                 }
                 
@@ -613,42 +608,24 @@
                 Object.assign(previewText.style, card.style);
                 
                 previewText.innerHTML = '';
+                // 일반 미리보기에서는 모든 텍스트를 한 번에 보여줌
                 card.text.split('\n').forEach(line => {
                     const p = document.createElement('p');
-                    p.className = 'preview-text-segment';
+                    p.className = 'preview-text-segment highlight'; // 항상 보이도록 highlight
                     p.textContent = line || ' '; 
                     p.style.margin = 0;
-                    if (!forPlayback) { p.classList.add('highlight'); }
                     previewText.appendChild(p);
                 });
                 
                 render.applyTransform(textWrapper, card.layout.text);
                 
-                previewImage.style.display = 'none';
-                previewVideo.style.display = 'none';
-                
-                let mediaToShow = card.media;
-                // 지속성 미디어 확인
-                if (!forPlayback && state.currentPersistentMedia) {
-                    const startIndex = state.scriptCards.findIndex(c => c.id === state.currentPersistentMedia.startCardId);
-                    const endIndex = state.scriptCards.findIndex(c => c.id === state.currentPersistentMedia.persistUntilCardId);
-                    const selectedIndex = state.scriptCards.findIndex(c => c.id === state.selectedCardId);
-                    if(selectedIndex >= startIndex && selectedIndex <= endIndex) {
-                        mediaToShow = state.currentPersistentMedia;
-                    }
-                }
-
-                if (mediaToShow && mediaToShow.url) {
+                if (card.media.url) {
                     mediaWrapper.style.display = 'flex';
-                    const targetEl = mediaToShow.type === 'video' ? previewVideo : previewImage;
-                    const otherEl = mediaToShow.type === 'video' ? previewImage : previewVideo;
-                    
-                    targetEl.style.display = 'block';
-                    otherEl.style.display = 'none';
-                    
-                    if (targetEl.src !== mediaToShow.url) targetEl.src = mediaToShow.url;
-                    
-                    targetEl.className = `fit-${mediaToShow.fit}`;
+                    const targetEl = card.media.type === 'video' ? previewVideo : previewImage;
+                    const otherEl = card.media.type === 'video' ? previewImage : previewVideo;
+                    targetEl.style.display = 'block'; otherEl.style.display = 'none';
+                    if (targetEl.src !== card.media.url) targetEl.src = card.media.url;
+                    targetEl.className = `fit-${card.media.fit}`;
                     render.applyTransform(mediaWrapper, card.layout.media);
                 } else {
                     mediaWrapper.style.display = 'none';
@@ -668,8 +645,7 @@
                 if (unready) return alert('아직 음성 생성이 완료되지 않은 스크립트가 있습니다.');
                 if (state.scriptCards.length === 0) return;
                 
-                state.isPlaying = true;
-                UI.playAllBtn.textContent = '❚❚';
+                state.isPlaying = true; UI.playAllBtn.textContent = '❚❚';
                 playback.playBGM();
                 playback.playCardByIndex(0);
             },
@@ -678,9 +654,7 @@
                 state.isPlaying = false;
                 clearTimeout(state.playbackTimeoutId);
                 UI.playAllBtn.textContent = '▶';
-                UI.ttsPlayer.pause();
-                UI.bgmPlayer.pause();
-                UI.sfxPlayer.pause();
+                UI.ttsPlayer.pause(); UI.bgmPlayer.pause(); UI.sfxPlayer.pause();
                 document.getElementById('st-preview-video').pause();
                 state.currentPersistentMedia = null;
                 render.updatePreviewDisplay();
@@ -706,92 +680,71 @@
                 state.playbackCurrentIndex = index;
                 const card = state.scriptCards[index];
                 handlers.selectCard(card.id, true);
+                render.updatePreviewDisplay(true); // 재생용 렌더링 모드
                 
                 const previewTextEl = document.getElementById('st-preview-text');
                 const previewVideo = document.getElementById('st-preview-video');
                 const previewImage = document.getElementById('st-preview-image');
                 const mediaWrapper = document.getElementById('st-preview-media-container-wrapper');
                 
-                // 새로운 지속성 미디어 시작 확인
-                if (card.media.url && card.media.persistUntilCardId) {
-                    state.currentPersistentMedia = { ...card.media, startCardId: card.id };
-                }
-
-                // 미디어 표시 로직
-                mediaWrapper.style.visibility = 'hidden';
-                let activeMedia = state.currentPersistentMedia || (card.media.url ? card.media : null);
-
-                if(activeMedia) {
-                    mediaWrapper.style.visibility = 'visible';
-                    const targetEl = activeMedia.type === 'video' ? previewVideo : previewImage;
-                    const otherEl = activeMedia.type === 'video' ? previewImage : videoImage;
-                    if (targetEl.src !== activeMedia.url) targetEl.src = activeMedia.url;
-                    targetEl.className = `fit-${activeMedia.fit}`;
-                    targetEl.style.display = 'block';
-                    if (otherEl) otherEl.style.display = 'none';
-
-                    if (activeMedia.type === 'video') {
-                        if (state.currentPersistentMedia) { // 지속성 비디오
-                           if (UI.previewVideo.paused) {
-                                UI.previewVideo.currentTime = 0;
-                                UI.previewVideo.play().catch(()=>{});
-                           }
-                        } else { // 단일 클립 비디오
-                            UI.previewVideo.currentTime = 0;
-                        }
-                    }
-                }
-                
-                // 텍스트 렌더링 및 애니메이션
-                previewTextEl.innerHTML = '';
+                // --- 텍스트 재생 로직 (누적 표시) ---
+                previewTextEl.innerHTML = ''; // 일단 비움
+                const segmentElements = [];
+                // 모든 세그먼트 p 태그를 미리 만들고 숨김
                 if (card.segments && card.segments.length > 0) {
-                    const segmentElements = card.segments.map(segment => {
+                    card.segments.forEach(segment => {
                         const p = document.createElement('p');
-                        p.className = 'preview-text-segment';
+                        p.className = 'preview-text-segment'; // highlight 없음
                         p.textContent = segment.text || ' ';
                         p.style.margin = 0;
                         previewTextEl.appendChild(p);
-                        return p;
+                        segmentElements.push(p);
                     });
-                    
+                     // 시간차를 두고 highlight 클래스 추가
                     card.segments.forEach((segment, segIndex) => {
                         setTimeout(() => {
-                            if (state.isPlaying && state.playbackCurrentIndex === index) {
-                                if (segmentElements[segIndex]) segmentElements[segIndex].classList.add('highlight');
+                            if (state.isPlaying && state.playbackCurrentIndex === index && segmentElements[segIndex]) {
+                                segmentElements[segIndex].classList.add('highlight');
                             }
                         }, segment.startTime * 1000);
-
-                        // 단일 미디어 등장 타이밍
-                        if (card.media.url && !state.currentPersistentMedia && card.media.showOnSegment === (segIndex + 2)) {
-                             setTimeout(() => {
-                                if (state.isPlaying && state.playbackCurrentIndex === index) {
-                                    if (card.media.type === 'video') {
-                                        previewVideo.play().catch(() => {});
-                                    }
-                                }
-                            }, segment.startTime * 1000);
-                        }
                     });
+                } else { // 세그먼트 없는 경우
+                     const p = document.createElement('p');
+                     p.className = 'preview-text-segment highlight';
+                     p.textContent = card.text || ' ';
+                     p.style.margin = 0;
+                     previewTextEl.appendChild(p);
+                }
 
-                    // 스크립트 시작시 등장
-                    if (card.media.url && !state.currentPersistentMedia && card.media.showOnSegment === 1) {
-                        if (card.media.type === 'video') {
-                            previewVideo.play().catch(() => {});
-                        }
+                // --- 미디어 재생 로직 (지속성 포함) ---
+                if (card.media.url && card.media.persistUntilCardId) {
+                    state.currentPersistentMedia = { ...card.media, startCardId: card.id };
+                }
+                
+                let activeMedia = state.currentPersistentMedia || (card.media.url ? card.media : null);
+                mediaWrapper.style.visibility = activeMedia ? 'visible' : 'hidden';
+
+                if(activeMedia) {
+                    const targetEl = activeMedia.type === 'video' ? previewVideo : previewImage;
+                    if (targetEl.src !== activeMedia.url) targetEl.src = activeMedia.url;
+                    targetEl.className = `fit-${activeMedia.fit}`;
+
+                    if (activeMedia.type === 'video') {
+                       if (state.currentPersistentMedia && previewVideo.paused) {
+                            previewVideo.currentTime = 0;
+                            previewVideo.play().catch(()=>{});
+                       } else if (!state.currentPersistentMedia) {
+                           previewVideo.currentTime = 0;
+                           previewVideo.play().catch(()=>{});
+                       }
                     }
-                } else {
-                    const p = document.createElement('p');
-                    p.className = 'preview-text-segment highlight';
-                    p.textContent = card.text || ' ';
-                    p.style.margin = 0;
-                    previewTextEl.appendChild(p);
                 }
                 
                 // 오디오 재생
                 if (card.audioUrl) { UI.ttsPlayer.volume = card.ttsVolume; UI.ttsPlayer.src = card.audioUrl; UI.ttsPlayer.play(); }
                 if (card.sfxUrl) { UI.sfxPlayer.volume = card.sfxVolume; UI.sfxPlayer.src = card.sfxUrl; UI.sfxPlayer.play(); }
                 
-                // 지속성 미디어 종료 확인
+                // 지속성 미디어 종료
                 if (state.currentPersistentMedia && state.currentPersistentMedia.persistUntilCardId === card.id) {
                     state.currentPersistentMedia = null;
                 }
@@ -855,7 +808,8 @@
                     media: { url: null, type: null, fit: 'contain', showOnSegment: 1, persistUntilCardId: null },
                     style: { ...state.projectSettings.defaultStyle, fontSize: state.projectSettings.defaultStyle.fontSize + 'px', letterSpacing: state.projectSettings.defaultStyle.letterSpacing + 'px' },
                     audioUrl: null, ttsReady: false, ttsVolume: 0.8, sfxUrl: null, sfxVolume: 0.8,
-                    layout: { text: { x: 0, y: 0, scale: 1, angle: 0 }, media: { x: 0, y: 0, scale: 1, angle: 0 } },
+                    // 기본 레이아웃 위치 조정 (미디어 위, 텍스트 아래)
+                    layout: { text: { x: 0, y: 150, scale: 1, angle: 0 }, media: { x: 0, y: -80, scale: 1, angle: 0 } },
                     animations: { text: { in: { name: 'none', duration: 0.3 }, out: { name: 'none', duration: 0.3 } }, media: { in: { name: 'none', duration: 0.3 }, out: { name: 'none', duration: 0.3 } } }
                 };
                 state.scriptCards.push(cardData);
@@ -892,25 +846,18 @@
                     debouncedTTSRequest(cardId);
                 }});
 
-                const fileInput = cardEl.querySelector(`#${cardId}-file`);
-                fileInput.addEventListener('change', (e) => {
+                cardEl.querySelector(`#${cardId}-file`).addEventListener('change', (e) => {
                     if (e.target.files && e.target.files[0]) {
                         const file = e.target.files[0];
                         cardData.media.url = URL.createObjectURL(file);
                         cardData.media.type = file.type.startsWith('video/') ? 'video' : 'image';
                         render.updateMediaControls(cardId);
-                        if (state.selectedCardId === cardId) {
-                            render.updatePreviewDisplay();
-                        }
+                        if (state.selectedCardId === cardId) render.updatePreviewDisplay();
                     }
                 });
                 
-                cardEl.querySelector('.media-timing-select').addEventListener('change', e => {
-                    cardData.media.showOnSegment = parseInt(e.target.value, 10);
-                });
-                cardEl.querySelector('.media-persist-select').addEventListener('change', e => {
-                    cardData.media.persistUntilCardId = e.target.value || null;
-                });
+                cardEl.querySelector('.media-timing-select').addEventListener('change', e => cardData.media.showOnSegment = parseInt(e.target.value, 10));
+                cardEl.querySelector('.media-persist-select').addEventListener('change', e => cardData.media.persistUntilCardId = e.target.value || null);
                 cardEl.querySelectorAll(`input[name="media-fit-${cardId}"]`).forEach(radio => {
                     radio.addEventListener('change', e => {
                         cardData.media.fit = e.target.value;
@@ -918,8 +865,7 @@
                     });
                 });
                 cardEl.querySelector('.st-play-clip-btn').addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    playback.stop();
+                    e.stopPropagation(); playback.stop();
                     if (cardData.ttsReady && cardData.audioUrl) { UI.ttsPlayer.volume = cardData.ttsVolume; UI.ttsPlayer.src = cardData.audioUrl; UI.ttsPlayer.play(); }
                     if (cardData.sfxUrl) { UI.sfxPlayer.src = cardData.sfxUrl; UI.sfxPlayer.volume = cardData.sfxVolume; UI.sfxPlayer.play(); }
                 });
@@ -927,16 +873,13 @@
                     const url = e.target.value;
                     if (url === 'upload-my-own') {
                         state.sfxUploadTargetCardId = cardId;
-                        UI.sfxFileInput.value = null;
-                        UI.sfxFileInput.click();
+                        UI.sfxFileInput.value = null; UI.sfxFileInput.click();
                         e.target.value = cardData.sfxUrl || '';
                         return;
                     }
                     cardData.sfxUrl = url || null;
                     if (url) {
-                        UI.sfxPlayer.src = url;
-                        UI.sfxPlayer.volume = cardData.sfxVolume;
-                        UI.sfxPlayer.play();
+                        UI.sfxPlayer.src = url; UI.sfxPlayer.volume = cardData.sfxVolume; UI.sfxPlayer.play();
                         const sfxItem = state.sfxList.find(item => item.url === url);
                         if (sfxItem) {
                             state.recentlyUsedSfx = [sfxItem, ...state.recentlyUsedSfx.filter(item => item.url !== url)].slice(0, 5);
@@ -970,9 +913,7 @@
                     state.selectedCardId = null;
                     if (state.scriptCards.length > 0) {
                         const nextIndex = Math.max(0, cardIndex - 1);
-                        if (state.scriptCards[nextIndex]) {
-                            handlers.selectCard(state.scriptCards[nextIndex].id);
-                        }
+                        if (state.scriptCards[nextIndex]) handlers.selectCard(state.scriptCards[nextIndex].id);
                     } else {
                         render.updatePreviewDisplay();
                     }
@@ -989,27 +930,21 @@
             
             selectCard(cardId, fromPlayback = false) {
                 if (state.isPlaying && !fromPlayback) playback.stop();
-                
                 state.selectedCardId = cardId;
                 interaction.deactivateAllInteractive();
                 
                 document.querySelectorAll('.st-card').forEach(c => c.classList.remove('active'));
                 const cardEl = document.querySelector(`.st-card[data-id="${cardId}"]`);
-                
                 if (cardEl) {
                     cardEl.classList.add('active');
-                    if (!fromPlayback) {
-                        cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }
+                    if (!fromPlayback) cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     handlers.updateScriptStyleControls();
-                    render.updatePreviewDisplay();
-                } else {
-                     render.updatePreviewDisplay();
                 }
+                render.updatePreviewDisplay();
             },
         };
         
-        // --- 9. 인터랙션 (Interaction) ---
+        // --- 9. 인터랙션 (Interaction) & 시퀀스(Sequence) ---
         const interaction = {
             deactivateAllInteractive() {
                 document.querySelectorAll('.interactive-target.interactive-active').forEach(el => {
@@ -1022,7 +957,6 @@
 
             activateInteractive(target) {
                 if (state.activeInteractiveElement === target) return;
-                
                 interaction.deactivateAllInteractive();
                 state.activeInteractiveElement = target;
                 target.classList.add('interactive-active');
@@ -1036,12 +970,74 @@
                     target.appendChild(handle);
                 });
                 
-                const rotHandle = document.createElement('div');
-                rotHandle.className = 'rotation-handle';
+                const rotHandle = document.createElement('div'); rotHandle.className = 'rotation-handle';
                 rotHandle.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14.7594 20.0001C11.5894 20.5301 8.20942 19.5601 5.86942 17.2201C2.59942 13.9501 2.59942 8.55006 5.86942 5.28006C9.13942 2.01006 14.5394 2.01006 17.8094 5.28006C19.7994 7.27006 20.6594 9.87006 20.4794 12.4401" stroke="#333" stroke-width="2" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M15.4297 12.4401L20.4797 12.4401L18.4297 10.3901" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
                 target.appendChild(rotHandle);
                 
                 render.animationControls(target);
+            },
+
+            sequence: {
+                showMenu: (x, y) => {
+                    const { cardId } = state.currentSelectionContext;
+                    const cardData = state.scriptCards.find(c => c.id === cardId);
+                    if(!cardData) return;
+                    const sequence = cardData.animationSequence || [];
+                    let menuItems = '';
+                    for(let i=0; i <= sequence.length; i++) {
+                        menuItems += `<li data-action="set" data-index="${i}">${i + 1}번째로 재생</li>`;
+                    }
+                    menuItems += '<hr><li data-action="clear">순서 초기화</li>';
+                    UI.sequenceMenu.innerHTML = menuItems;
+                    UI.sequenceMenu.style.left = `${x + 10}px`;
+                    UI.sequenceMenu.style.top = `${y}px`;
+                    UI.sequenceMenu.style.display = 'block';
+                },
+                hideMenu: () => {
+                    UI.sequenceMenu.style.display = 'none';
+                    state.currentSelectionContext = null;
+                },
+                handleMenuClick: (e) => {
+                    if (e.target.tagName !== 'LI' || !state.currentSelectionContext) return;
+                    const { cardId, text } = state.currentSelectionContext;
+                    const cardData = state.scriptCards.find(c => c.id === cardId);
+                    if (!cardData) return;
+                    
+                    const action = e.target.dataset.action;
+                    if (action === 'set') {
+                        const index = parseInt(e.target.dataset.index, 10);
+                        cardData.animationSequence = cardData.animationSequence.filter(seqText => seqText !== text);
+                        cardData.animationSequence.splice(index, 0, text);
+                    } else if (action === 'clear') {
+                        cardData.animationSequence = [];
+                    }
+                    debouncedTTSRequest(cardId);
+                    interaction.sequence.hideMenu();
+                },
+                onSelectionChange: () => {
+                    const selection = window.getSelection();
+                    if (!selection || selection.isCollapsed) {
+                        interaction.sequence.hideMenu();
+                        return;
+                    }
+                    const editor = selection.anchorNode?.parentElement?.closest('.st-script-editor');
+                    if(editor) {
+                        const range = selection.getRangeAt(0);
+                        const segmentEl = range.startContainer.parentElement.closest('.script-segment');
+                        if (!segmentEl || !segmentEl.textContent.trim()) {
+                            interaction.sequence.hideMenu();
+                            return;
+                        }
+                        const cardEl = editor.closest('.st-card');
+                        state.currentSelectionContext = { cardId: cardEl.dataset.id, text: selection.toString().trim() };
+                        if(state.currentSelectionContext.text) {
+                            const rect = range.getBoundingClientRect();
+                            interaction.sequence.showMenu(rect.right, rect.top);
+                        }
+                    } else {
+                        interaction.sequence.hideMenu();
+                    }
+                }
             },
 
             initialize() {
@@ -1073,7 +1069,7 @@
                             layout.x += event.deltaRect.left; layout.y += event.deltaRect.top;
                             // scale is now managed by css object-fit, so we don't change scale on resize
                             Object.assign(event.target.style, { width: `${event.rect.width}px`, height: `${event.rect.height}px` });
-                            render.applyTransform(event.target, layout);
+                            // render.applyTransform(event.target, layout); // a transform would be redundant
                         },
                         end: interactionListeners.end
                     },
@@ -1086,6 +1082,15 @@
                         interaction.deactivateAllInteractive();
                     }
                 });
+
+                // 시퀀스 메뉴 이벤트
+                document.addEventListener('selectionchange', helpers.debounce(interaction.sequence.onSelectionChange, 200));
+                document.addEventListener('mousedown', (e) => {
+                    if (!UI.sequenceMenu.contains(e.target) && !e.target.closest('.st-script-editor')) {
+                        interaction.sequence.hideMenu();
+                    }
+                });
+                UI.sequenceMenu.addEventListener('click', interaction.sequence.handleMenuClick);
             }
         };
 
@@ -1109,13 +1114,11 @@
             UI.globalSettingsPanel.addEventListener('input', (e) => { if (e.target.id.startsWith('st-setting-')) handlers.updateProjectSettings(); });
             document.getElementById('st-btn-upload-bgm').addEventListener('click', () => UI.bgmFileInput.click());
             document.getElementById('st-btn-header-logo').addEventListener('click', () => document.getElementById('st-header-logo-file').click());
-            // ... 기타 모달, 파일 업로드 등 이벤트...
             
             interaction.initialize();
             
             new Sortable(UI.cardContainer, { 
-                animation: 150, 
-                handle: '.st-card-drag-handle',
+                animation: 150, handle: '.st-card-drag-handle',
                 onEnd: function(evt) {
                     const { oldIndex, newIndex } = evt;
                     const [movedItem] = state.scriptCards.splice(oldIndex, 1);
@@ -1124,12 +1127,9 @@
                 }
             });
 
-            // 초기 카드 추가
-            handlers.addScriptCard('순삭툴에 오신 것을 환영합니다!');
-            render.updatePreviewDisplay();
+            handlers.addScriptCard('순삭툴에 오신 것을 환영합니다!\n텍스트를 선택해서 재생 순서를 정해보세요.');
         }
 
-        // DOM 로드 후 애플리케이션 시작
         document.addEventListener('DOMContentLoaded', initialize);
 
     })(); // 즉시 실행 함수 종료
