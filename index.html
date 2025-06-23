@@ -976,7 +976,7 @@
             handlers.addScriptCard('순삭툴에 오신 것을 환영합니다!\n텍스트를 선택해서 재생 순서를 정해보세요.');
         }
 
-                                                    const exporter = {
+                                                            const exporter = {
             async startExport() {
                 if (state.scriptCards.some(c => c.text.trim() && !c.ttsReady)) return alert('아직 음성 생성이 완료되지 않은 스크립트가 있습니다.');
                 if (state.scriptCards.length === 0) return alert('출력할 영상이 없습니다.');
@@ -987,6 +987,7 @@
                 const RENDER_WIDTH = 1080;
                 const RENDER_HEIGHT = 1920;
                 const FPS = 30;
+                const activeCardIdBeforeExport = state.selectedCardId; // [수정] 현재 카드 ID 저장
 
                 try {
                     UI.progressText.textContent = '자원 로딩 중...';
@@ -1009,7 +1010,12 @@
                         URL.revokeObjectURL(url);
                         UI.exportBtn.disabled = false;
                         UI.progressOverlay.style.display = 'none';
-                        if (state.scriptCards.length > 0) handlers.selectCard(state.scriptCards[0].id);
+                        // [수정] 렌더링 후 미리보기 상태를 원래대로 완벽하게 복원
+                        if (activeCardIdBeforeExport) {
+                            handlers.selectCard(activeCardIdBeforeExport);
+                        } else if (state.scriptCards.length > 0) {
+                            handlers.selectCard(state.scriptCards[0].id);
+                        }
                     };
 
                     recorder.start();
@@ -1080,7 +1086,10 @@
                          audioPromises.push(
                              fetch(card.audioUrl).then(r=>r.arrayBuffer()).then(b=>audioContext.decodeAudioData(b)).then(decoded => {
                                 const gainNode = audioContext.createGain(); gainNode.gain.value = card.ttsVolume; gainNode.connect(destination);
-                                const source = audioContext.createBufferSource(); source.buffer = decoded; source.playbackRate.value = card.ttsSettings.speed; source.connect(gainNode);
+                                const source = audioContext.createBufferSource(); source.buffer = decoded; 
+                                // TTS 속도 조절 적용
+                                source.playbackRate.value = card.ttsSettings.speed; 
+                                source.connect(gainNode);
                                 source.start(cardStartTime);
                             }).catch(e => console.error('TTS Error', e))
                          );
@@ -1187,10 +1196,15 @@
                 textWrapper.style.transform = `translate(${card.layout.text.x}px, ${card.layout.text.y + textAnim.y}px) scale(${card.layout.text.scale * textAnim.scale}) rotate(${card.layout.text.angle}deg)`;
                 mediaWrapper.style.transform = `translate(${card.layout.media.x}px, ${card.layout.media.y + mediaAnim.y}px) scale(${card.layout.media.scale * mediaAnim.scale}) rotate(${card.layout.media.angle}deg)`;
                 
-                // 3. 캡처 및 그리기 (핵심 수정 부분)
+                // 3. 캡처 및 그리기
                 previewVideo.style.visibility = 'hidden';
                 
+                const panelRect = previewPanel.getBoundingClientRect();
+                // [수정 1] 화질 문제 해결을 위한 scale 옵션!
+                const captureScale = renderWidth / panelRect.width;
+
                 const canvasSnapshot = await html2canvas(previewPanel, {
+                    scale: captureScale, // 이 옵션이 고화질의 핵심입니다.
                     useCORS: true,
                     allowTaint: true,
                     backgroundColor: null,
@@ -1199,22 +1213,20 @@
                 previewVideo.style.visibility = 'visible';
                 
                 ctx.clearRect(0, 0, renderWidth, renderHeight);
-                // 캡처한 이미지를 renderWidth, renderHeight로 꽉 채워서 그립니다.
-                ctx.drawImage(canvasSnapshot, 0, 0, renderWidth, renderHeight);
+                // 이제 캡처본 자체가 고화질이므로, 늘릴 필요 없이 그대로 그립니다.
+                ctx.drawImage(canvasSnapshot, 0, 0);
 
                 // 비디오를 그 위에 덧그립니다.
                 if (card.media.url && card.media.type === 'video' && mediaWrapper.style.display !== 'none') {
                     const videoRect = previewVideo.getBoundingClientRect();
-                    const panelRect = previewPanel.getBoundingClientRect();
-                    const scale = renderWidth / panelRect.width;
                     
-                    const x = (videoRect.left - panelRect.left) * scale;
-                    const y = (videoRect.top - panelRect.top) * scale;
-                    const w = videoRect.width * scale;
-                    const h = videoRect.height * scale;
+                    const x = (videoRect.left - panelRect.left) * captureScale;
+                    const y = (videoRect.top - panelRect.top) * captureScale;
+                    const w = videoRect.width * captureScale;
+                    const h = videoRect.height * captureScale;
                     
                     ctx.save();
-                    ctx.globalAlpha = mediaAnim.opacity; // 비디오 투명도는 별도로 적용
+                    ctx.globalAlpha = mediaAnim.opacity;
                     ctx.drawImage(previewVideo, x, y, w, h);
                     ctx.restore();
                 }
