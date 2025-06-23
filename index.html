@@ -180,7 +180,7 @@
             scriptCards: [],
             isPlaying: false,
             ttsCache: new Map(),
-            mediaElementCache: new Map(), // ***FIX***: Unified cache for images and videos
+            mediaElementCache: new Map(),
             playbackCurrentIndex: 0,
             selectedCardId: null,
             activeInteractiveElement: null,
@@ -418,7 +418,7 @@
                 
                 if (card.media.url) {
                     const targetEl = card.media.type === 'video' ? previewVideo : previewImage;
-                    const otherEl = card.media.type === 'video' ? previewImage : previewVideo;
+                    const otherEl = card.media.type === 'video' ? previewImage : video;
                     targetEl.style.display = 'block'; otherEl.style.display = 'none';
                     if (targetEl.src !== card.media.url) targetEl.src = card.media.url;
                     targetEl.style.objectFit = card.media.fit;
@@ -452,8 +452,13 @@
                     UI.bgmPlayer.volume = state.globalBGM.volume; 
                     UI.bgmPlayer.currentTime = bgmData.startTime || 0;
                     UI.bgmPlayer.play().catch(e => console.error("BGM Playback Error:", e));
-                    if (bgmData.endTime) { UI.bgmPlayer.ontimeupdate = () => { if (UI.bgmPlayer.currentTime >= bgmData.endTime) { UI.bgmPlayer.currentTime = bgmData.startTime || 0; } }; } 
-                    else { UI.bgmPlayer.ontimeupdate = null; UI.bgmPlayer.loop = true; }
+                    if (bgmData.endTime) { 
+                        UI.bgmPlayer.loop = false;
+                        UI.bgmPlayer.ontimeupdate = () => { if (UI.bgmPlayer.currentTime >= bgmData.endTime) { UI.bgmPlayer.currentTime = bgmData.startTime || 0; } }; 
+                    } else { 
+                        UI.bgmPlayer.ontimeupdate = null; 
+                        UI.bgmPlayer.loop = true; 
+                    }
                 } else { UI.bgmPlayer.pause(); }
             },
             playCardByIndex(index) {
@@ -466,7 +471,6 @@
                 const mediaWrapper = document.getElementById('st-preview-media-container-wrapper');
                 const previewTextEl = document.getElementById('st-preview-text');
                 
-                // ***FIX***: Clear previous animations before starting new ones
                 [textWrapper, mediaWrapper].forEach(el => {
                     el.classList.remove('is-animating', ...C.ANIMATIONS.map(a => a.value));
                     el.style.animationDuration = '';
@@ -478,22 +482,16 @@
                     el.style.animationDuration = `${anim.duration}s`;
                 };
                 
-                // Apply In-Animations
                 applyAnimation(textWrapper, card.animations.text.in);
                 applyAnimation(mediaWrapper, card.animations.media.in);
                 
-                // Schedule Out-Animations
                 const outDelay = (card.duration - Math.max(card.animations.text.out.duration, card.animations.media.out.duration, 0.1)) * 1000;
                 setTimeout(() => {
                     if (!state.isPlaying || state.playbackCurrentIndex !== index) return;
-                    
-                    // ***FIX***: Correctly remove In-animation and apply Out-animation
                     textWrapper.classList.remove(card.animations.text.in.name);
                     mediaWrapper.classList.remove(card.animations.media.in.name);
-                    
                     applyAnimation(textWrapper, card.animations.text.out);
                     applyAnimation(mediaWrapper, card.animations.media.out);
-
                 }, outDelay);
 
                 previewTextEl.innerHTML = '';
@@ -574,7 +572,7 @@
                 state.scriptCards.push(cardData);
                 const cardEl = render.cardElement(cardData);
                 UI.cardContainer.appendChild(cardEl);
-                handlers.bindCardEvents(cardId);
+                handlers.bindCardEvents(cardEl);
                 const editor = cardEl.querySelector('.st-script-editor');
                 render.segmentsInEditor(editor, cardData.text);
                 if (text.trim()) debouncedTTSRequest(cardId);
@@ -583,12 +581,39 @@
                 render.updateCardNumbers();
                 render.updateCardUI(cardId);
             },
-            bindCardEvents(cardId) {
-                const cardEl = document.querySelector(`.st-card[data-id="${cardId}"]`);
-                const cardData = state.scriptCards.find(c => c.id === cardId);
+            // ================== KEY BUG FIX AREA ==================
+            bindCardEvents(cardEl) {
                 const editor = cardEl.querySelector('.st-script-editor');
-                editor.addEventListener('input', () => { cardData.text = Array.from(editor.children).map(child => child.textContent).join('\n'); render.updatePreviewDisplay(); debouncedTTSRequest(cardId); });
-                new Sortable(editor, { animation: 150, ghostClass: 'sortable-ghost', onEnd: () => { cardData.text = Array.from(editor.children).map(child => child.textContent).join('\n'); render.updatePreviewDisplay(); debouncedTTSRequest(cardId); }});
+
+                // ***FIX***: The most critical fix is here.
+                // We now get the card's ID from the DOM element inside the event listener,
+                // instead of relying on a potentially incorrect closure variable.
+                editor.addEventListener('input', () => {
+                    const parentCardEl = editor.closest('.st-card');
+                    if (!parentCardEl) return;
+                    
+                    const currentCardId = parentCardEl.dataset.id;
+                    const currentCardData = state.scriptCards.find(c => c.id === currentCardId);
+                    if (!currentCardData) return;
+
+                    currentCardData.text = Array.from(editor.children).map(child => child.textContent).join('\n');
+                    render.updatePreviewDisplay();
+                    debouncedTTSRequest(currentCardId);
+                });
+
+                const cardId = cardEl.dataset.id;
+                const cardData = state.scriptCards.find(c => c.id === cardId);
+
+                new Sortable(editor, { 
+                    animation: 150, 
+                    ghostClass: 'sortable-ghost', 
+                    onEnd: () => { 
+                        cardData.text = Array.from(editor.children).map(child => child.textContent).join('\n'); 
+                        render.updatePreviewDisplay(); 
+                        debouncedTTSRequest(cardId); 
+                    }
+                });
+                
                 cardEl.querySelector(`#${cardId}-file`).addEventListener('change', (e) => {
                     if (e.target.files && e.target.files[0]) {
                         const file = e.target.files[0];
@@ -623,9 +648,9 @@
                         const targetCard = state.scriptCards.find(c => c.id === e.target.dataset.targetId);
                         const volumeType = e.target.dataset.type === 'tts-volume' ? 'ttsVolume' : 'sfxVolume';
                         const newValue = parseFloat(e.target.value) / 100;
-                        if(targetCard) targetCard[volumeType] = newValue;
+                        if(targetCard && !isNaN(newValue)) targetCard[volumeType] = newValue; // Prevent NaN
                         const slider = cardEl.querySelector(`.st-volume-slider[data-type="${e.target.dataset.type}"]`);
-                        if (slider) slider.value = newValue;
+                        if (slider && !isNaN(newValue)) slider.value = newValue;
                     });
                 });
                 cardEl.querySelector('.st-duration-label').addEventListener('click', () => { cardData.isDurationManual = !cardData.isDurationManual; if (!cardData.isDurationManual) { cardData.duration = cardData.ttsDuration; } render.updateCardUI(cardId); handlers.updateTotalDuration(); });
@@ -633,6 +658,7 @@
                 cardEl.querySelector('.st-btn-delete-card').addEventListener('click', (e) => { e.stopPropagation(); handlers.deleteCard(cardId); });
                 cardEl.addEventListener('click', () => handlers.selectCard(cardId));
             },
+            // ======================================================
             deleteCard(cardId) {
                 const cardIndex = state.scriptCards.findIndex(c => c.id === cardId); if (cardIndex === -1) return;
                 const cardData = state.scriptCards[cardIndex];
@@ -649,7 +675,7 @@
             updateTotalDuration() { const total = state.scriptCards.reduce((sum, card) => sum + (card.duration || 0.5), 0); if (UI.timelineSlider) UI.timelineSlider.max = total; },
             selectCard(cardId, fromPlayback = false) {
                 if (state.isPlaying && !fromPlayback) playback.stop();
-                if (state.selectedCardId === cardId) return;
+                if (state.selectedCardId === cardId && !fromPlayback) return;
                 state.selectedCardId = cardId;
                 interaction.deactivateAllInteractive();
                 document.querySelectorAll('.st-card').forEach(c => c.classList.remove('active'));
@@ -815,7 +841,6 @@
                     const { cardId, url } = state.videoTrimmerContext;
                     const cardData = state.scriptCards.find(c => c.id === cardId);
                     if (cardData && state.activeVideoRegion) { cardData.media.url = url; cardData.media.type = 'video'; cardData.media.startTime = state.activeVideoRegion.start; cardData.media.endTime = state.activeVideoRegion.end; render.updateCardUI(cardId); if (state.selectedCardId === cardId) render.updatePreviewDisplay(); }
-                    // ***FIX***: Call the centralized close function to prevent memory leaks
                     modals.closeVideoTrimmer();
                 });
                 document.getElementById('st-btn-video-cancel').addEventListener('click', modals.closeVideoTrimmer);
@@ -881,9 +906,6 @@
             handlers.addScriptCard('순삭툴에 오신 것을 환영합니다!\n텍스트를 선택해서 재생 순서를 정해보세요.');
         }
 
-        // ===================================================================================
-        // ***FIXED & ENHANCED EXPORTER OBJECT***
-        // ===================================================================================
         const exporter = {
             async startExport() {
                 if (state.scriptCards.some(c => !c.ttsReady && c.text.trim())) return alert('아직 음성 생성이 완료되지 않은 스크립트가 있습니다.');
@@ -894,10 +916,8 @@
                 try {
                     UI.progressText.textContent = '자원 로딩 중...';
                     await this.preloadResources();
-
                     UI.progressText.textContent = '오디오 트랙 생성 중...';
                     const { audioContext, destination, totalDuration } = await this.setupAudio();
-
                     const canvasStream = UI.renderCanvas.captureStream(FPS);
                     const combinedStream = new MediaStream([...canvasStream.getVideoTracks(), ...destination.stream.getAudioTracks()]);
                     const recorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm;codecs=vp9,opus' });
@@ -912,79 +932,53 @@
                         UI.exportBtn.disabled = false; UI.progressOverlay.style.display = 'none';
                         if (state.scriptCards.length > 0) handlers.selectCard(state.scriptCards[0].id);
                     };
-                    
                     recorder.start();
-                    
                     UI.progressText.textContent = '프레임 렌더링 중...';
                     await this.renderVideoFrames(recorder, totalDuration, FPS, SCALE);
-
                 } catch (error) {
                     console.error("영상 생성 오류:", error);
                     alert(`영상 생성 중 치명적인 오류가 발생했습니다: ${error.message}`);
                     UI.exportBtn.disabled = false; UI.progressOverlay.style.display = 'none';
                 }
             },
-
             async preloadResources() {
                 UI.progressSubText.textContent = '폰트 로딩...';
                 await document.fonts.ready;
-                
                 const mediaPromises = [];
                 UI.progressSubText.textContent = '미디어 파일 로딩...';
-                
                 const urlsToLoad = new Set();
-                if (state.projectSettings.header.logo.url) {
-                    urlsToLoad.add(state.projectSettings.header.logo.url);
-                }
-                for (const card of state.scriptCards) {
-                    if (card.media.url) urlsToLoad.add(card.media.url);
-                }
-
+                if (state.projectSettings.header.logo.url) { urlsToLoad.add(state.projectSettings.header.logo.url); }
+                for (const card of state.scriptCards) { if (card.media.url) urlsToLoad.add(card.media.url); }
                 urlsToLoad.forEach(url => {
                     if (state.mediaElementCache.has(url)) return;
-                    
-                    // Determine if it's a video or image based on card data, fallback to sniffing
                     const cardUsingUrl = state.scriptCards.find(c => c.media.url === url);
                     const isVideo = cardUsingUrl ? cardUsingUrl.media.type === 'video' : url.match(/\.(mp4|webm|mov)$/i);
-
                     if (isVideo) {
                         mediaPromises.push(new Promise(resolve => {
                             const video = document.createElement('video');
-                            video.crossOrigin = 'anonymous';
-                            video.src = url;
+                            video.crossOrigin = 'anonymous'; video.muted = true; video.src = url;
                             video.onloadeddata = () => { state.mediaElementCache.set(url, video); resolve(); };
-                            video.onerror = () => { console.error(`비디오 로드 실패: ${url}`); resolve(); };
+                            video.onerror = (e) => { console.error(`비디오 로드 실패: ${url}`, e); resolve(); };
                         }));
-                    } else { // Assume image
+                    } else {
                         mediaPromises.push(new Promise(resolve => {
-                            const img = new Image();
-                            img.crossOrigin = 'anonymous';
-                            img.src = url;
+                            const img = new Image(); img.crossOrigin = 'anonymous'; img.src = url;
                             img.onload = () => { state.mediaElementCache.set(url, img); resolve(); };
                             img.onerror = () => { console.error(`이미지 로드 실패: ${url}`); resolve(); };
                         }));
                     }
                 });
-
                 await Promise.all(mediaPromises);
             },
-
             async setupAudio() {
                 const audioContext = new AudioContext();
                 const destination = audioContext.createMediaStreamDestination();
                 const audioPromises = [];
                 let timeOffset = 0;
-                
                 if (state.globalBGM.url) {
                     const gainNode = audioContext.createGain(); gainNode.gain.value = state.globalBGM.volume; gainNode.connect(destination);
-                    audioPromises.push(fetch(state.globalBGM.url).then(res => res.arrayBuffer()).then(buffer => audioContext.decodeAudioData(buffer)).then(decoded => { 
-                        const source = audioContext.createBufferSource(); source.buffer = decoded; 
-                        if (state.globalBGM.endTime) { source.loop = false; } else { source.loop = true; } // Loop only if no end time
-                        source.connect(gainNode); 
-                        source.start(0, state.globalBGM.startTime || 0); 
-                    }).catch(e => console.error('BGM 로딩 에러', e)));
+                    audioPromises.push(fetch(state.globalBGM.url).then(res => res.arrayBuffer()).then(buffer => audioContext.decodeAudioData(buffer)).then(decoded => { const source = audioContext.createBufferSource(); source.buffer = decoded; source.loop = !state.globalBGM.endTime; source.connect(gainNode); source.start(0, state.globalBGM.startTime || 0); }).catch(e => console.error('BGM 로딩 에러', e)));
                 }
-
                 for (const card of state.scriptCards) {
                     if (card.audioUrl) {
                         const sourceNode = audioContext.createBufferSource();
@@ -1003,42 +997,29 @@
                 await Promise.all(audioPromises);
                 return { audioContext, destination, totalDuration: timeOffset };
             },
-
             renderVideoFrames(recorder, totalDuration, fps, scale) {
-                return new Promise(async resolve => {
-                    let currentFrame = 0;
-                    const totalFrames = Math.floor(totalDuration * fps);
-                    let currentTimeTally = 0;
-                    let currentCardIndex = 0;
+                return new Promise(resolve => {
+                    let currentFrame = 0; const totalFrames = Math.floor(totalDuration * fps);
+                    let currentTimeTally = 0; let currentCardIndex = 0;
                     const ctx = UI.renderCanvas.getContext('2d');
                     UI.renderCanvas.width = 1080; UI.renderCanvas.height = 1920;
-
+                    
                     const renderLoop = async () => {
-                        if (currentFrame > totalFrames) {
-                             if (recorder.state === 'recording') recorder.stop();
-                             resolve();
-                             return;
-                        }
+                        if (currentFrame > totalFrames) { if (recorder.state === 'recording') recorder.stop(); resolve(); return; }
                         const elapsedTime = currentFrame / fps;
-                        
-                        // Find the current card
-                        if (currentCardIndex < state.scriptCards.length - 1 && elapsedTime >= currentTimeTally + state.scriptCards[currentCardIndex].duration) {
-                            currentTimeTally += state.scriptCards[currentCardIndex].duration;
-                            currentCardIndex++;
-                        }
+                        if (currentCardIndex < state.scriptCards.length - 1 && elapsedTime >= currentTimeTally + state.scriptCards[currentCardIndex].duration) { currentTimeTally += state.scriptCards[currentCardIndex].duration; currentCardIndex++; }
                         const card = state.scriptCards[currentCardIndex];
                         const timeInCard = elapsedTime - currentTimeTally;
                         
-                        // For video, we need to seek to the correct time before drawing
                         if (card.media.type === 'video') {
                             const videoEl = state.mediaElementCache.get(card.media.url);
                             if (videoEl) {
-                                const targetTime = (card.media.startTime || 0) + timeInCard;
-                                // Only seek if the time difference is significant
-                                if (Math.abs(videoEl.currentTime - targetTime) > 1 / fps) {
-                                    videoEl.currentTime = targetTime;
-                                    // Wait for the seek to complete
-                                    await new Promise(res => { videoEl.onseeked = res; });
+                                const videoTime = (card.media.startTime || 0) + timeInCard;
+                                if (videoTime < videoEl.duration) {
+                                    if (Math.abs(videoEl.currentTime - videoTime) > (1 / fps) * 2) {
+                                       videoEl.currentTime = videoTime;
+                                       await new Promise(res => { videoEl.onseeked = () => res(); });
+                                    }
                                 }
                             }
                         }
@@ -1048,81 +1029,57 @@
                         const progress = Math.min(100, (currentFrame / totalFrames) * 100);
                         UI.progressSubText.textContent = `프레임 ${currentFrame} / ${totalFrames}`;
                         UI.progressBarInner.style.width = `${progress}%`;
-                        
                         currentFrame++;
                         requestAnimationFrame(renderLoop);
                     };
                     requestAnimationFrame(renderLoop);
                 });
             },
-
-            calculateAnimationValues(animation, totalDuration, timeInCard) {
-                let progress = 0;
-                let isActive = false;
-                if (timeInCard < animation.in.duration) {
-                    progress = timeInCard / animation.in.duration;
-                    isActive = true;
-                    animation = animation.in;
-                } else if (timeInCard > totalDuration - animation.out.duration) {
-                    progress = (totalDuration - timeInCard) / animation.out.duration;
-                    isActive = true;
-                    animation = animation.out;
-                } else {
-                    return { opacity: 1, scale: 1, x: 0, y: 0 };
-                }
-
-                if (!isActive || animation.name === 'none') {
-                    return { opacity: 1, scale: 1, x: 0, y: 0 };
-                }
+            calculateAnimationValues(animationSet, cardDuration, timeInCard) {
+                const animIn = animationSet.in; const animOut = animationSet.out;
+                let progress = 1; let animName = 'none'; let opacity = 1, scale = 1, x = 0, y = 0;
                 
-                const easeOutQuad = t => t * (2 - t);
-                progress = easeOutQuad(progress);
-
-                let opacity = 1, scale = 1, x = 0, y = 0;
-
-                switch(animation.name) {
+                if (timeInCard < animIn.duration) {
+                    progress = timeInCard / animIn.duration;
+                    animName = animIn.name;
+                } else if (timeInCard > cardDuration - animOut.duration) {
+                    progress = (cardDuration - timeInCard) / animOut.duration;
+                    animName = animOut.name;
+                } else { return { opacity: 1, scale: 1, x: 0, y: 0, transform: '' }; }
+                
+                const easeOutQuad = t => t * (2 - t); progress = easeOutQuad(progress);
+                
+                switch(animName) {
                     case 'fadeIn': opacity = progress; break;
                     case 'fadeOut': opacity = progress; break;
                     case 'slideInUp': opacity = progress; y = 50 * (1 - progress); break;
                     case 'slideOutDown': opacity = progress; y = 50 * (1 - progress); break;
                     case 'zoomIn': opacity = progress; scale = 0.8 + 0.2 * progress; break;
                     case 'zoomOut': opacity = progress; scale = 0.8 + 0.2 * progress; break;
+                    default: return { opacity: 1, scale: 1, x: 0, y: 0, transform: '' };
                 }
                 return { opacity, scale, x, y };
             },
-            
             wrapText(context, text, x, y, maxWidth, lineHeight) {
-                const lines = text.split('\n');
-                let totalHeight = 0;
-                context.textBaseline = 'top';
-                let startY = y - (lines.length * lineHeight) / 2; // Center vertically
-                
-                for (const line of lines) {
-                    context.fillText(line, x, startY);
-                    startY += lineHeight;
-                    totalHeight += lineHeight;
-                }
-                return totalHeight;
+                const lines = text.split('\n'); let currentY = y;
+                context.textBaseline = 'middle';
+                const totalTextHeight = lines.length * lineHeight;
+                let startY = y - totalTextHeight / 2 + lineHeight / 2;
+                for (const line of lines) { context.fillText(line, x, startY); startY += lineHeight; }
+                return totalTextHeight;
             },
-
             renderFrameToCanvas(ctx, card, scale, timeInCard) {
                 const RENDER_WIDTH = ctx.canvas.width; const RENDER_HEIGHT = ctx.canvas.height;
                 ctx.clearRect(0, 0, RENDER_WIDTH, RENDER_HEIGHT);
-
-                // 1. Draw solid white background for content
                 ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, RENDER_WIDTH, RENDER_HEIGHT);
 
-                // 2. Draw Header
                 const headerHeight = 65 * scale;
-                ctx.fillStyle = state.projectSettings.header.backgroundColor;
-                ctx.fillRect(0, 0, RENDER_WIDTH, headerHeight);
+                ctx.fillStyle = state.projectSettings.header.backgroundColor; ctx.fillRect(0, 0, RENDER_WIDTH, headerHeight);
                 ctx.font = `bold ${state.projectSettings.header.fontSize * scale}px ${state.projectSettings.header.fontFamily}`;
                 ctx.fillStyle = state.projectSettings.header.color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
                 ctx.fillText(state.projectSettings.header.text, RENDER_WIDTH / 2, headerHeight / 2);
-
-                // 3. Draw Project Info
-                const infoPadding = 10 * scale;
-                let currentY = headerHeight + infoPadding * 2;
+                
+                const infoPadding = 10 * scale; let currentY = headerHeight + infoPadding * 2;
                 ctx.font = `bold ${state.projectSettings.project.titleFontSize * scale}px ${state.projectSettings.project.titleFontFamily}`;
                 ctx.fillStyle = state.projectSettings.project.titleColor; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
                 ctx.fillText(state.projectSettings.project.title, infoPadding, currentY);
@@ -1134,24 +1091,14 @@
                 ctx.strokeStyle = '#eeeeee'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, currentY); ctx.lineTo(RENDER_WIDTH, currentY); ctx.stroke();
                 const contentStartY = currentY;
 
-                // 4. Draw Content (Text and Media)
-                ctx.save();
-                ctx.rect(0, contentStartY, RENDER_WIDTH, RENDER_HEIGHT - contentStartY); ctx.clip();
-
-                // Determine text to render based on sequence timing
-                let textToRender = '';
-                if (card.animationSequence.length > 0 && card.segments.length > 0) {
-                    card.segments.forEach(segment => { if(timeInCard >= segment.startTime) { textToRender += segment.text + '\n'; } });
-                    textToRender = textToRender.trim();
-                } else {
-                    textToRender = card.text;
-                }
-
-                // Calculate animation values
-                const textAnim = this.calculateAnimationValues({ in: card.animations.text.in, out: card.animations.text.out }, card.duration, timeInCard);
-                const mediaAnim = this.calculateAnimationValues({ in: card.animations.media.in, out: card.animations.media.out }, card.duration, timeInCard);
+                ctx.save(); ctx.rect(0, contentStartY, RENDER_WIDTH, RENDER_HEIGHT - contentStartY); ctx.clip();
+                const textAnim = this.calculateAnimationValues(card.animations.text, card.duration, timeInCard);
+                const mediaAnim = this.calculateAnimationValues(card.animations.media, card.duration, timeInCard);
                 
-                // Draw Text
+                let textToRender = '';
+                if(card.animationSequence.length > 0 && card.segments.length > 0) { card.segments.forEach(segment => { if(timeInCard >= segment.startTime) { textToRender += segment.text + '\n'; } }); textToRender = textToRender.trim(); } 
+                else { textToRender = card.text; }
+                
                 if (textToRender) {
                     ctx.save();
                     ctx.globalAlpha = textAnim.opacity;
@@ -1163,11 +1110,10 @@
                     ctx.font = `${parseInt(textStyle.fontSize) * scale}px ${textStyle.fontFamily}`;
                     ctx.fillStyle = textStyle.color; ctx.textAlign = 'center';
                     const lineHeight = parseInt(textStyle.fontSize) * scale * parseFloat(textStyle.lineHeight);
-                    this.wrapText(ctx, textToRender, 0, 0, (380 - 20) * scale, lineHeight);
+                    this.wrapText(ctx, textToRender, 0, 0, (380 - 40) * scale, lineHeight);
                     ctx.restore();
                 }
-
-                // Draw Media
+                
                 if (card.media.url) {
                     ctx.save();
                     ctx.globalAlpha = mediaAnim.opacity;
@@ -1179,32 +1125,29 @@
                         ctx.rotate(mediaLayout.angle * Math.PI / 180); 
                         ctx.scale(mediaLayout.scale * mediaAnim.scale, mediaLayout.scale * mediaAnim.scale);
                         
-                        const containerW = (380 - 20) * scale;
-                        const containerH = RENDER_HEIGHT - contentStartY - 20 * scale;
-                        const elW = mediaEl.videoWidth || mediaEl.width;
-                        const elH = mediaEl.videoHeight || mediaEl.height;
-
-                        let drawW, drawH;
-                        const containerAspect = containerW / containerH;
+                        const elW = mediaEl.videoWidth || mediaEl.width; const elH = mediaEl.videoHeight || mediaEl.height;
                         const mediaAspect = elW / elH;
                         
-                        if(card.media.fit === 'cover'){
-                           if(mediaAspect > containerAspect) { drawH = containerH; drawW = elW * (containerH / elH); } else { drawW = containerW; drawH = elH * (containerW / elW); }
-                        } else if(card.media.fit === 'fill'){
-                           drawW = containerW; drawH = containerH;
+                        let drawW, drawH;
+                        const containerW = (380 - 40) * scale;
+                        const availableHeight = RENDER_HEIGHT - contentStartY - 20 * scale;
+
+                        if (card.media.fit === 'cover') {
+                            drawW = containerW; drawH = containerW / mediaAspect;
+                            if (drawH < availableHeight) { drawH = availableHeight; drawW = availableHeight * mediaAspect; }
+                        } else if (card.media.fit === 'fill') {
+                            drawW = containerW; drawH = availableHeight;
                         } else { // contain
-                           if(mediaAspect > containerAspect) { drawW = containerW; drawH = elH * (containerW / elW); } else { drawH = containerH; drawW = elW * (containerH / elH); }
+                            drawW = containerW; drawH = containerW / mediaAspect;
+                            if (drawH > availableHeight) { drawH = availableHeight; drawW = availableHeight * mediaAspect; }
                         }
-                        
                         ctx.drawImage(mediaEl, -drawW / 2, -drawH / 2, drawW, drawH);
                     }
                     ctx.restore();
                 }
-
-                ctx.restore(); // Restore clipping
+                ctx.restore();
             },
         };
-
         document.addEventListener('DOMContentLoaded', initialize);
     })();
     </script>
