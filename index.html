@@ -156,7 +156,7 @@
     <ul id="st-sequence-menu" style="display: none;"></ul>
     <div id="st-modal-gpts" class="st-modal-overlay"> <div class="st-modal-dialog"> <h2>AI 대본 붙여넣기</h2> <p>AI 툴(ChatGPT, Claude 등)에서 생성된 스크립트를 입력하세요. 빈 줄로 구분하여 여러 스크립트를 한번에 추가할 수 있습니다.</p> <textarea id="st-gpts-textarea" placeholder="여기에 AI 스크립트를 입력하세요..."></textarea> <div class="st-modal-actions"> <button id="st-btn-gpts-cancel" class="cancel">취소</button> <button id="st-btn-gpts-confirm">확인</button> </div> </div> </div>
     <div id="st-modal-bgm" class="st-modal-overlay"> <div class="st-modal-dialog"> <h2>BGM 구간 설정</h2> <p>오디오 파형 위에서 원하는 구간을 드래그하여 선택하세요.</p> <div id="st-waveform-container-bgm" class="waveform-container"> <div class="waveform-loading">BGM 로딩 중...</div> </div> <div class="waveform-controls"> <button id="st-btn-bgm-play-pause">재생/일시정지</button> <button id="st-btn-bgm-play-region">선택 구간 미리듣기</button> <span id="st-bgm-time-display">0.00s - 0.00s</span> </div> <div class="st-modal-actions"> <button id="st-btn-bgm-cancel" class="cancel">취소</button> <button id="st-btn-bgm-confirm">확인</button> </div> </div> </div>
-    <div id="st-modal-video-trim" class="st-modal-overlay"> <div class="st-modal-dialog"> <h2>비디오 구간 설정</h2> <p>오디오 파형 위에서 사용할 구간을 드래그하여 선택하세요.</p> <div id="st-waveform-container-video" class="waveform-container"> <div class="waveform-loading">비디오 오디오 로딩 중...</div> </div> <div class="waveform-controls"> <button id="st-btn-video-play-pause">재생/일시정지</button> <button id="st-btn-video-play-region">선택 구간 미리듣기</button> <span id="st-video-time-display">0.00s - 0.00s</span> </div> <div class="st-modal-actions"> <button id="st-btn-video-cancel" class="cancel">취소</button> <button id="st-btn-video-confirm">확인</button> </div> </div> </div>
+    <div id="st-modal-video-trim" class="st-modal-overlay"> <div class="st-modal-dialog"> <h2>비디오 구간 선택</h2> <p>오디오 파형 위에서 사용할 구간을 드래그하여 선택하세요.</p> <div id="st-waveform-container-video" class="waveform-container"> <div class="waveform-loading">비디오 로딩 중...</div> </div> <div class="waveform-controls"> <button id="st-btn-video-play-pause">재생/일시정지</button> <button id="st-btn-video-play-region">선택 구간 미리듣기</button> <span id="st-video-time-display">0.00s - 0.00s</span> </div> <div class="st-modal-actions"> <button id="st-btn-video-cancel" class="cancel">취소</button> <button id="st-btn-video-confirm">확인</button> </div> </div> </div>
     <div id="st-export-progress-overlay">
         <div id="st-export-progress-text">영상 생성 중...</div>
         <div id="st-export-progress-subtext"></div>
@@ -497,6 +497,9 @@
                     targetEl.style.display = 'block'; otherEl.style.display = 'none';
                     if (targetEl.src !== card.media.url) targetEl.src = card.media.url;
                     targetEl.className = `fit-${card.media.fit}`;
+                    if (card.media.type === 'video') {
+                        previewVideo.currentTime = card.media.startTime || 0;
+                    }
                 }
             },
         };
@@ -877,6 +880,8 @@
                 state.videoWavesurfer = WaveSurfer.create({
                     container: '#st-waveform-container-video', waveColor: '#ddd', progressColor: '#e82c43',
                     cursorColor: '#fff', barWidth: 2, barRadius: 3,
+                    // 로딩 속도 최적화: 낮은 품질의 파형을 미리 렌더링
+                    backend: 'MediaElement', partialRender: true,
                     plugins: [ WaveSurfer.regions.create({ dragSelection: { slop: 5 } }) ]
                 });
 
@@ -886,7 +891,7 @@
                     loadingEl.style.display = 'none';
                     state.videoWavesurfer.clearRegions();
                     const duration = state.videoWavesurfer.getDuration();
-                    const initialEnd = Math.min(10, duration); // 기본 10초 또는 전체 길이
+                    const initialEnd = Math.min(10, duration);
                     state.activeVideoRegion = state.videoWavesurfer.addRegion({ start: 0, end: initialEnd, color: 'rgba(232, 44, 67, 0.3)' });
                     document.getElementById('st-video-time-display').textContent = `${state.activeVideoRegion.start.toFixed(2)}s - ${state.activeVideoRegion.end.toFixed(2)}s`;
                 });
@@ -901,7 +906,6 @@
                 if (state.videoWavesurfer) { state.videoWavesurfer.destroy(); state.videoWavesurfer = null; }
             },
             initialize() {
-                // Video Trimmer Modal Events
                 document.getElementById('st-btn-video-play-region').addEventListener('click', () => {
                     if (state.activeVideoRegion) {
                         UI.trimPlayer.src = state.videoTrimmerContext.url;
@@ -1003,7 +1007,6 @@
                 }
             });
 
-            // Video Export
             UI.exportBtn.addEventListener('click', () => exporter.startExport());
 
             handlers.addScriptCard('순삭툴에 오신 것을 환영합니다!\n텍스트를 선택해서 재생 순서를 정해보세요.');
@@ -1031,6 +1034,7 @@
                 // Audio processing
                 const audioContext = new AudioContext();
                 const destination = audioContext.createMediaStreamDestination();
+                // ... (Audio mixing logic would go here)
                 
                 // Video Stream
                 const canvasStream = canvas.captureStream(FPS);
@@ -1053,19 +1057,19 @@
                 let startTime = performance.now();
                 let currentCardIndex = -1;
                 let timeTally = 0;
+                let animationFrameId;
 
                 function renderLoop(now) {
                     const elapsedTime = (now - startTime) / 1000;
                     if (elapsedTime >= totalDuration) {
                         if (recorder.state === 'recording') recorder.stop();
+                        cancelAnimationFrame(animationFrameId);
                         return;
                     }
                     
                     if (elapsedTime >= timeTally) {
+                        if (currentCardIndex >= 0) timeTally += state.scriptCards[currentCardIndex].duration;
                         currentCardIndex++;
-                        if (currentCardIndex > 0) {
-                            timeTally += state.scriptCards[currentCardIndex - 1].duration;
-                        }
                     }
 
                     const card = state.scriptCards[currentCardIndex];
@@ -1077,32 +1081,32 @@
                     UI.progressSubText.textContent = `${elapsedTime.toFixed(1)}s / ${totalDuration.toFixed(1)}s`;
                     UI.progressBarInner.style.width = `${progress}%`;
 
-                    requestAnimationFrame(renderLoop);
+                    animationFrameId = requestAnimationFrame(renderLoop);
                 }
                 
-                requestAnimationFrame(renderLoop);
+                animationFrameId = requestAnimationFrame(renderLoop);
             },
             drawFrame: (ctx, card, timeInCard, width, height) => {
                 ctx.clearRect(0, 0, width, height);
                 ctx.fillStyle = 'white';
                 ctx.fillRect(0, 0, width, height);
-
-                // This is a simplified direct-to-canvas renderer.
-                // A full implementation would need to handle all CSS properties.
                 
+                // Note: A full implementation would need to handle all CSS properties, animations, etc.
+                // This is a simplified direct-to-canvas renderer for performance.
+
                 // Draw Media
                 if (card.media.url) {
                     const mediaEl = document.getElementById(card.media.type === 'video' ? 'st-preview-video' : 'st-preview-image');
-                    if (mediaEl && mediaEl.src === card.media.url && mediaEl.complete !== false) { // check if loaded
+                    if (mediaEl && mediaEl.src === card.media.url && (mediaEl.readyState > 2 || mediaEl.complete)) {
                         ctx.save();
                         const layout = card.layout.media;
-                        const scaleX = width / 380; // Assuming preview panel width is 380
-                        const scaleY = height / (380 * 16 / 9);
+                        const previewPanelWidth = 380; // The base width of the preview panel
+                        const scale = width / previewPanelWidth;
 
-                        const w = layout.width * scaleX;
-                        const h = layout.height * scaleY;
-                        const x = (width / 2) + (layout.x * scaleX);
-                        const y = (layout.y * scaleY) + (height * 0.6); // Based on CSS top %
+                        const w = layout.width * scale;
+                        const h = layout.height * scale;
+                        const x = (width / 2) + (layout.x * scale);
+                        const y = (height * 0.6) + (layout.y * scale);
                         
                         ctx.translate(x, y);
                         ctx.rotate(layout.angle * Math.PI / 180);
@@ -1114,19 +1118,18 @@
                 // Draw Text
                 ctx.save();
                 const textLayout = card.layout.text;
-                const textScaleX = width / 380;
-                const textScaleY = height / (380 * 16 / 9);
-                const textX = (width / 2) + (textLayout.x * textScaleX);
-                const textY = (height * 0.35) + (textLayout.y * textScaleY);
+                const textScale = width / 380;
+                const textX = (width / 2) + (textLayout.x * textScale);
+                const textY = (height * 0.35) + (textLayout.y * textScale);
                 ctx.translate(textX, textY);
                 
                 const style = card.style;
                 ctx.fillStyle = style.color;
-                ctx.font = `${parseInt(style.fontSize, 10) * textScaleX}px ${style.fontFamily}`;
+                ctx.font = `${parseInt(style.fontSize, 10) * textScale}px ${style.fontFamily}`;
                 ctx.textAlign = 'center';
                 
                 const lines = card.text.split('\n');
-                const lineHeight = parseInt(style.fontSize, 10) * parseFloat(style.lineHeight) * textScaleX;
+                const lineHeight = parseInt(style.fontSize, 10) * parseFloat(style.lineHeight) * textScale;
 
                 lines.forEach((line, i) => {
                     ctx.fillText(line, 0, i * lineHeight);
@@ -1134,7 +1137,6 @@
                 ctx.restore();
             }
         };
-
 
         document.addEventListener('DOMContentLoaded', initialize);
 
