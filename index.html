@@ -36,11 +36,11 @@
         .st-top-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background-color: var(--st-panel-color); border-bottom: 1px solid var(--st-border-color); flex-shrink: 0; height: 50px;}
         .st-logo { font-family: 'GmarketSans', sans-serif; font-weight: bold; }
         .st-main-content { display: flex; flex-grow: 1; overflow: hidden; }
-        .st-preview-area { flex-basis: 400px; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
+        .st-preview-area { flex-basis: 460px; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
         .st-editor-area { flex-grow: 1; border-left: 1px solid var(--st-border-color); overflow-y: auto; padding: 20px; }
         button { background-color: var(--st-accent-color); color: #fff; font-weight: bold; cursor: pointer; border: none; border-radius: 4px; padding: 8px 12px; }
         button:disabled { background-color: #555; cursor: not-allowed; }
-        .st-preview-panel { width: 100%; max-width: 380px; aspect-ratio: 9 / 16; background-color: #fff; box-shadow: 0 0 20px rgba(0,0,0,0.2); display: flex; flex-direction: column; overflow: hidden; position: relative; }
+        .st-preview-panel { width: 100%; max-width: 420px; aspect-ratio: 9 / 16; background-color: #fff; box-shadow: 0 0 20px rgba(0,0,0,0.2); display: flex; flex-direction: column; overflow: hidden; position: relative; }
         .st-preview-header { position:relative; display: flex; align-items: center; justify-content: center; font-family: 'GmarketSans', sans-serif; color: white; font-weight: bold; flex-shrink: 0; height: 65px; padding: 0 15px; overflow: hidden; }
         .header-icon { position: absolute; left: 15px; display: flex; align-items: center; }
         .header-title { flex-grow: 1; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 45px; }
@@ -56,7 +56,7 @@
         #st-preview-image, #st-preview-video { max-width: 100%; max-height: 100%; object-fit: contain; }
         .interactive-target.interactive-active { outline: 2px dashed var(--st-interact-color); z-index: 100; }
         #st-preview-text { width: 100%; font-size: 24px; color: #000; white-space: pre-wrap; flex-shrink: 0; }
-        .st-timeline-controls { width: 100%; max-width: 380px; display: flex; align-items: center; gap: 10px; margin-top: 15px;}
+        .st-timeline-controls { width: 100%; max-width: 420px; display: flex; align-items: center; gap: 10px; margin-top: 15px;}
         .st-play-all-btn { background: none; font-size: 24px; padding: 0;}
         #st-timeline-slider { flex-grow: 1; }
         .st-editor-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
@@ -976,7 +976,7 @@
             handlers.addScriptCard('순삭툴에 오신 것을 환영합니다!\n텍스트를 선택해서 재생 순서를 정해보세요.');
         }
 
-                                            const exporter = {
+                                                    const exporter = {
             async startExport() {
                 if (state.scriptCards.some(c => c.text.trim() && !c.ttsReady)) return alert('아직 음성 생성이 완료되지 않은 스크립트가 있습니다.');
                 if (state.scriptCards.length === 0) return alert('출력할 영상이 없습니다.');
@@ -1015,7 +1015,7 @@
                     recorder.start();
 
                     UI.progressText.textContent = '프레임 렌더링 중...';
-                    await this.renderVideoFrames(recorder, totalDuration, FPS);
+                    await this.renderVideoFrames(recorder, totalDuration, FPS, RENDER_WIDTH, RENDER_HEIGHT);
 
                 } catch (error) {
                     console.error("영상 생성 오류:", error);
@@ -1026,6 +1026,7 @@
             },
 
             async preloadResources() {
+                // 이 함수는 이전과 동일합니다. (수정 없음)
                 UI.progressSubText.textContent = '폰트 로딩...';
                 await document.fonts.ready;
                 UI.progressSubText.textContent = '미디어 파일 로딩...';
@@ -1057,6 +1058,7 @@
             },
             
             async setupAudio() {
+                // 이 함수는 이전과 동일합니다. (수정 없음)
                 const audioContext = new AudioContext();
                 const destination = audioContext.createMediaStreamDestination();
                 let timeOffset = 0;
@@ -1099,14 +1101,14 @@
                 return { audioContext, destination, totalDuration: timeOffset };
             },
 
-            renderVideoFrames(recorder, totalDuration, fps) {
+            renderVideoFrames(recorder, totalDuration, fps, renderWidth, renderHeight) {
                 return new Promise(resolve => {
                     let currentFrame = 0;
                     const totalFrames = Math.floor(totalDuration * fps);
                     
                     const ctx = UI.renderCanvas.getContext('2d');
-                    UI.renderCanvas.width = 1080;
-                    UI.renderCanvas.height = 1920;
+                    ctx.canvas.width = renderWidth;
+                    ctx.canvas.height = renderHeight;
 
                     const renderLoop = async () => {
                         if (currentFrame > totalFrames) {
@@ -1116,7 +1118,7 @@
                         }
                         const elapsedTime = currentFrame / fps;
                         
-                        await this.updateAndRenderFrame(ctx, elapsedTime);
+                        await this.updateAndRenderFrame(ctx, elapsedTime, renderWidth, renderHeight);
 
                         const progress = Math.min(100, (currentFrame / totalFrames) * 100);
                         UI.progressSubText.textContent = `프레임 ${currentFrame} / ${totalFrames}`;
@@ -1129,8 +1131,8 @@
                 });
             },
             
-            async updateAndRenderFrame(ctx, elapsedTime) {
-                // 1. Find current card and time within the card
+            async updateAndRenderFrame(ctx, elapsedTime, renderWidth, renderHeight) {
+                // 1. 현재 카드와 시간 계산 (수정 없음)
                 let timeTally = 0;
                 let cardIndex = 0;
                 while (cardIndex < state.scriptCards.length - 1 && elapsedTime >= timeTally + state.scriptCards[cardIndex].duration) {
@@ -1140,8 +1142,7 @@
                 const card = state.scriptCards[cardIndex];
                 const timeInCard = elapsedTime - timeTally;
 
-                // 2. Update the preview DOM to the state for this exact moment
-                // This is our "ground truth"
+                // 2. 미리보기 DOM 업데이트 (수정 없음)
                 const previewPanel = document.getElementById('st-preview-panel');
                 const textWrapper = document.getElementById('st-preview-text-container-wrapper');
                 const previewText = document.getElementById('st-preview-text');
@@ -1149,12 +1150,10 @@
                 const previewVideo = document.getElementById('st-preview-video');
                 const previewImage = document.getElementById('st-preview-image');
 
-                // Apply transforms and styles
                 render.applyTransform(textWrapper, card.layout.text);
                 render.applyTransform(mediaWrapper, card.layout.media);
                 Object.assign(previewText.style, card.style);
                 
-                // Show sequential text
                 let textToRender = '';
                 if (card.animationSequence.length > 0) {
                     card.segments.forEach(segment => {
@@ -1163,7 +1162,6 @@
                 } else { textToRender = card.text; }
                 previewText.innerText = textToRender;
 
-                // Handle media display and video seeking
                 mediaWrapper.style.display = card.media.url ? 'block' : 'none';
                 if (card.media.url) {
                     if (card.media.type === 'video') {
@@ -1182,42 +1180,33 @@
                     }
                 }
                 
-                // Animate DOM elements directly using calculated values
-                const textAnim = exporter.calculateAnimationValues(card.animations.text, card.duration, timeInCard);
-                const mediaAnim = exporter.calculateAnimationValues(card.animations.media, card.duration, timeInCard);
+                const textAnim = this.calculateAnimationValues(card.animations.text, card.duration, timeInCard);
+                const mediaAnim = this.calculateAnimationValues(card.animations.media, card.duration, timeInCard);
                 textWrapper.style.opacity = textAnim.opacity;
                 mediaWrapper.style.opacity = mediaAnim.opacity;
                 textWrapper.style.transform = `translate(${card.layout.text.x}px, ${card.layout.text.y + textAnim.y}px) scale(${card.layout.text.scale * textAnim.scale}) rotate(${card.layout.text.angle}deg)`;
                 mediaWrapper.style.transform = `translate(${card.layout.media.x}px, ${card.layout.media.y + mediaAnim.y}px) scale(${card.layout.media.scale * mediaAnim.scale}) rotate(${card.layout.media.angle}deg)`;
-
-                // 3. Capture the DOM
-                // Hide video before capture, as html2canvas can't capture it
+                
+                // 3. 캡처 및 그리기 (핵심 수정 부분)
                 previewVideo.style.visibility = 'hidden';
-
+                
                 const canvasSnapshot = await html2canvas(previewPanel, {
                     useCORS: true,
                     allowTaint: true,
-                    backgroundColor: null, // Keep transparency
-                    width: 1080,
-                    height: 1920,
-                    x: 0,
-                    y: 0,
-                    windowWidth: 1080,
-                    windowHeight: 1920,
+                    backgroundColor: null,
                 });
                 
-                // Show video again
                 previewVideo.style.visibility = 'visible';
                 
-                // 4. Draw the captured snapshot to our main canvas
-                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-                ctx.drawImage(canvasSnapshot, 0, 0);
+                ctx.clearRect(0, 0, renderWidth, renderHeight);
+                // 캡처한 이미지를 renderWidth, renderHeight로 꽉 채워서 그립니다.
+                ctx.drawImage(canvasSnapshot, 0, 0, renderWidth, renderHeight);
 
-                // 5. If there's a video, draw it on top of the snapshot
+                // 비디오를 그 위에 덧그립니다.
                 if (card.media.url && card.media.type === 'video' && mediaWrapper.style.display !== 'none') {
                     const videoRect = previewVideo.getBoundingClientRect();
                     const panelRect = previewPanel.getBoundingClientRect();
-                    const scale = ctx.canvas.width / panelRect.width;
+                    const scale = renderWidth / panelRect.width;
                     
                     const x = (videoRect.left - panelRect.left) * scale;
                     const y = (videoRect.top - panelRect.top) * scale;
@@ -1225,13 +1214,14 @@
                     const h = videoRect.height * scale;
                     
                     ctx.save();
-                    ctx.globalAlpha = mediaAnim.opacity;
+                    ctx.globalAlpha = mediaAnim.opacity; // 비디오 투명도는 별도로 적용
                     ctx.drawImage(previewVideo, x, y, w, h);
                     ctx.restore();
                 }
             },
 
             calculateAnimationValues(animationSet, cardDuration, timeInCard) {
+                // 이 함수는 이전과 동일합니다. (수정 없음)
                 const animIn = animationSet.in; const animOut = animationSet.out;
                 let opacity = 1, scaleValue = 1, y = 0;
 
