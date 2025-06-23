@@ -34,23 +34,10 @@
         .st-project-info { font-size: 13px; color: #555; margin: 0 0 16px 0; border-bottom: 1px solid #eee; padding-bottom: 16px; flex-shrink: 0; }
         .st-project-info .title { font-size: 22px; color: black; font-weight: bold; margin-bottom: 5px; }
         .st-script-display { flex-grow: 1; position: relative; }
-        .interactive-target {
-            position: absolute;
-            text-align: center;
-            cursor: move;
-            transform: translate(-50%, 0); /* 기본 X축 중앙 정렬 및 Y축 정렬 */
-            left: 50%;
-        }
-        #st-preview-text-container-wrapper {
-            top: 50%; /* 원래 위치로 복원 */
-            z-index: 10;
-        }
-        #st-preview-media-container-wrapper {
-            top: 10%; /* 원래 위치로 복원 */
-            height: 40%;
-            z-index: 5;
-        }
-        #st-preview-image, #st-preview-video { width: 100%; height: 100%; } /* 컨테이너 크기에 맞춤 */
+        .interactive-target { position: absolute; text-align: center; cursor: move; transform: translate(-50%, 0); left: 50%; }
+        #st-preview-text-container-wrapper { top: 35%; z-index: 10; }
+        #st-preview-media-container-wrapper { top: 60%; height: 35%; z-index: 5; }
+        #st-preview-image, #st-preview-video { width: 100%; height: 100%; }
         #st-preview-video.fit-contain, #st-preview-image.fit-contain { object-fit: contain; }
         #st-preview-video.fit-cover, #st-preview-image.fit-cover { object-fit: cover; }
         #st-preview-video.fit-fill, #st-preview-image.fit-fill { object-fit: fill; }
@@ -99,8 +86,9 @@
         .st-modal-overlay.visible { display: flex; }
         .st-modal-dialog { background-color: var(--st-panel-color); padding: 24px; border-radius: 8px; width: 90%; max-width: 600px; border: 1px solid var(--st-border-color); }
         .st-modal-dialog .st-modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
-        #st-waveform-container { width: 100%; height: 128px; background-color: #1e1e1e; }
-        #st-waveform-loading { text-align: center; padding: 40px; color: var(--st-subtext-color); }
+        .waveform-container { width: 100%; height: 128px; background-color: #1e1e1e; }
+        .waveform-loading { text-align: center; padding: 40px; color: var(--st-subtext-color); }
+        .waveform-controls { display: flex; justify-content: space-around; align-items: center; margin-top: 10px; }
         #st-export-progress-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; color: white; display: none; flex-direction: column; justify-content: center; align-items: center; font-size: 24px; }
         #st-export-progress-text { font-weight: bold; margin-bottom: 10px; }
         #st-export-progress-subtext { font-size: 16px; color: var(--st-subtext-color); }
@@ -112,14 +100,6 @@
         input[type="range"]::-moz-range-track { width: 100%; height: 6px; background: #555; border-radius: 5px; border: none; }
         input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; background: var(--st-accent-color); border-radius: 50%; border: 2px solid #fff; }
         .animated { animation-fill-mode: forwards !important; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } } .anim-fade-in { animation-name: fadeIn; }
-        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } } .anim-fade-out { animation-name: fadeOut; }
-        @keyframes zoomIn { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: scale(1); } } .anim-zoom-in { animation-name: zoomIn; }
-        @keyframes zoomOut { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.5); } } .anim-zoom-out { animation-name: zoomOut; }
-        @keyframes slideInLeft { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } } .anim-slide-in-left { animation-name: slideInLeft; }
-        @keyframes slideOutRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } } .anim-slide-out-right { animation-name: slideOutRight; }
-        @keyframes slideInUp { from { transform: translateY(100%); opacity: 0; } to { translateY(0); opacity: 1; } } .anim-slide-in-up { animation-name: slideInUp; }
-        @keyframes slideOutDown { from { transform: translateY(0); opacity: 1; } to { translateY(100%); opacity: 0; } } .anim-slide-out-down { animation-name: slideOutDown; }
         #st-sequence-menu { position: fixed; z-index: 1001; background-color: var(--st-panel-color); border: 1px solid var(--st-border-color); border-radius: 5px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); list-style: none; padding: 5px 0; margin: 0; font-size: 14px; }
         #st-sequence-menu li { padding: 8px 15px; cursor: pointer; }
         #st-sequence-menu li:hover { background-color: var(--st-accent-color); color: white; }
@@ -175,7 +155,8 @@
     
     <ul id="st-sequence-menu" style="display: none;"></ul>
     <div id="st-modal-gpts" class="st-modal-overlay"> <div class="st-modal-dialog"> <h2>AI 대본 붙여넣기</h2> <p>AI 툴(ChatGPT, Claude 등)에서 생성된 스크립트를 입력하세요. 빈 줄로 구분하여 여러 스크립트를 한번에 추가할 수 있습니다.</p> <textarea id="st-gpts-textarea" placeholder="여기에 AI 스크립트를 입력하세요..."></textarea> <div class="st-modal-actions"> <button id="st-btn-gpts-cancel" class="cancel">취소</button> <button id="st-btn-gpts-confirm">확인</button> </div> </div> </div>
-    <div id="st-modal-bgm" class="st-modal-overlay"> <div class="st-modal-dialog"> <h2>BGM 구간 설정</h2> <p>오디오 파형 위에서 원하는 구간을 드래그하여 선택하세요.</p> <div id="st-waveform-container"> <div id="st-waveform-loading">BGM 로딩 중...</div> </div> <div class="st-waveform-controls"> <button id="st-btn-bgm-play-pause">재생/일시정지</button> <button id="st-btn-bgm-play-region">선택 구간 미리듣기</button> <span id="st-bgm-time-display">0.00s - 0.00s</span> </div> <div class="st-modal-actions"> <button id="st-btn-bgm-cancel" class="cancel">취소</button> <button id="st-btn-bgm-confirm">확인</button> </div> </div> </div>
+    <div id="st-modal-bgm" class="st-modal-overlay"> <div class="st-modal-dialog"> <h2>BGM 구간 설정</h2> <p>오디오 파형 위에서 원하는 구간을 드래그하여 선택하세요.</p> <div id="st-waveform-container-bgm" class="waveform-container"> <div class="waveform-loading">BGM 로딩 중...</div> </div> <div class="waveform-controls"> <button id="st-btn-bgm-play-pause">재생/일시정지</button> <button id="st-btn-bgm-play-region">선택 구간 미리듣기</button> <span id="st-bgm-time-display">0.00s - 0.00s</span> </div> <div class="st-modal-actions"> <button id="st-btn-bgm-cancel" class="cancel">취소</button> <button id="st-btn-bgm-confirm">확인</button> </div> </div> </div>
+    <div id="st-modal-video-trim" class="st-modal-overlay"> <div class="st-modal-dialog"> <h2>비디오 구간 설정</h2> <p>오디오 파형 위에서 사용할 구간을 드래그하여 선택하세요.</p> <div id="st-waveform-container-video" class="waveform-container"> <div class="waveform-loading">비디오 오디오 로딩 중...</div> </div> <div class="waveform-controls"> <button id="st-btn-video-play-pause">재생/일시정지</button> <button id="st-btn-video-play-region">선택 구간 미리듣기</button> <span id="st-video-time-display">0.00s - 0.00s</span> </div> <div class="st-modal-actions"> <button id="st-btn-video-cancel" class="cancel">취소</button> <button id="st-btn-video-confirm">확인</button> </div> </div> </div>
     <div id="st-export-progress-overlay">
         <div id="st-export-progress-text">영상 생성 중...</div>
         <div id="st-export-progress-subtext"></div>
@@ -185,24 +166,22 @@
     <audio id="st-tts-player" style="display:none;"></audio>
     <audio id="st-bgm-player" style="display:none;" loop></audio>
     <audio id="st-sfx-player" style="display:none;"></audio>
+    <audio id="st-trim-player" style="display:none;"></audio>
     <input type="file" id="st-sfx-file-upload" accept="audio/*" style="display: none;">
     <input type="file" id="st-bgm-file-upload" accept="audio/*" style="display: none;">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/6.4.0/wavesurfer.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/6.4.0/plugin/wavesurfer.regions.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
     (function SunsakTool() {
         'use strict';
 
-        // --- 1. 상수 (Constants) ---
+        // --- 1. 상수 (Constants) & 상태 (State) ---
         const C = {
-            ANIMATION_LIST: [ { name: '없음', value: 'none' }, { name: '나타나기 (Fade In)', value: 'fade-in' }, { name: '사라지기 (Fade Out)', value: 'fade-out' }, { name: '확대하며 나타나기 (Zoom In)', value: 'zoom-in' }, { name: '축소하며 사라지기 (Zoom Out)', value: 'zoom-out' }, { name: '왼쪽에서 슬라이드 (Slide In Left)', value: 'slide-in-left' }, { name: '오른쪽으로 슬라이드 (Slide Out Right)', value: 'slide-out-right' }, { name: '위로 슬라이드 (Slide In Up)', value: 'slide-in-up' }, { name: '아래로 슬라이드 (Slide Out Down)', value: 'slide-out-down' }, ],
             FONT_LIST: [ { name: '프리텐다드 (본문용 추천)', value: 'Pretendard' }, { name: 'Noto Sans KR (기본 고딕)', value: "'Noto Sans KR', sans-serif" }, { name: 'G마켓 산스 (개성있는 제목)', value: 'GmarketSans' }, { name: 'IBM Plex Sans KR (모던한 고딕)', value: "'IBM Plex Sans KR', sans-serif" }, { name: 'Do Hyeon (레트로 제목)', value: "'Do Hyeon', sans-serif" }, { name: '나눔명조 (감성적인 본문)', value: "'Nanum Myeongjo', serif" }, { name: '고운 바탕 (부드러운 명조)', value: "'Gowun Batang', serif" }, { name: 'Black Han Sans (강력한 제목)', value: "'Black Han Sans', sans-serif" }, { name: '개구 (귀여운 손글씨)', value: "'Gaegu', cursive" }, { name: 'Hi Melody (아기자기 손글씨)', value: "'Hi Melody', cursive" }, { name: 'Noto Serif KR (정갈한 명조)', value: "'Noto Serif KR', serif" }, { name: '스포카 한 산스 네오 (깔끔한 본문)', value: "'Spoqa Han Sans Neo', sans-serif" }, { name: '독도 (거친 붓글씨)', value: "'Dokdo', cursive" }, ],
             BGM_LIST: [ { name: '선택 안함', url: '' }, { name: 'big-cafe', url: 'https://sunsaktool-final.netlify.app/big-cafe.mp3' }, { name: 'blue-jacket', url: 'https://sunsaktool-final.netlify.app/blue-jacket.mp3' }, { name: 'cute-puppy', url: 'https://sunsaktool-final.netlify.app/cute-puppy.mp3' }, { name: 'laughter-in-the-breeze', url: 'https://sunsaktool-final.netlify.app/laughter-in-the-breeze-_happy_.mp3' }, { name: 'murder-in-my-mind', url: 'https://sunsaktool-final.netlify.app/murder-in-my-mind.mp3' }, { name: 'smiley-composure', url: 'https://sunsaktool-final.netlify.app/smiley-composure.mp3' }, { name: 'spider', url: 'https://sunsaktool-final.netlify.app/spider.mp3' }, { name: 'white-color', url: 'https://sunsaktool-final.netlify.app/white-color.mp3' } ]
         };
 
-        // --- 2. 상태 (State) ---
         const state = {
             sfxList: [{ name: "효과음 목록 로딩 중...", url: "" }],
             recentlyUsedSfx: [],
@@ -222,12 +201,15 @@
             playbackTimeoutId: null,
             currentSelectionContext: null,
             currentPersistentMedia: null,
-            wavesurfer: null,
-            activeRegion: null,
-            bgmEditorContext: { onConfirm: null, onCancel: null }
+            bgmWavesurfer: null,
+            videoWavesurfer: null,
+            activeBgmRegion: null,
+            activeVideoRegion: null,
+            bgmEditorContext: { onConfirm: null, onCancel: null },
+            videoTrimmerContext: { cardId: null, url: null },
+            mediaElementCache: new Map()
         };
         
-        // --- 3. UI 요소 (DOM Elements) ---
         const UI = {
             cardContainer: document.getElementById('st-card-container'),
             playAllBtn: document.getElementById('st-btn-play-all'),
@@ -235,6 +217,7 @@
             ttsPlayer: document.getElementById('st-tts-player'),
             bgmPlayer: document.getElementById('st-bgm-player'),
             sfxPlayer: document.getElementById('st-sfx-player'),
+            trimPlayer: document.getElementById('st-trim-player'),
             globalSettingsPanel: document.getElementById('st-global-settings-panel'),
             animationSettingsPanel: document.getElementById('st-animation-settings-panel'),
             addCardBtn: document.getElementById('st-btn-add-card'),
@@ -244,112 +227,81 @@
             gptsCancelBtn: document.getElementById('st-btn-gpts-cancel'),
             gptsConfirmBtn: document.getElementById('st-btn-gpts-confirm'),
             gptsTextarea: document.getElementById('st-gpts-textarea'),
+            bgmModal: document.getElementById('st-modal-bgm'),
+            videoTrimModal: document.getElementById('st-modal-video-trim'),
             sfxFileInput: document.getElementById('st-sfx-file-upload'),
             bgmFileInput: document.getElementById('st-bgm-file-upload'),
             sequenceMenu: document.getElementById('st-sequence-menu'),
-            previewContent: document.getElementById('st-preview-content')
+            previewContent: document.getElementById('st-preview-content'),
+            exportBtn: document.getElementById('st-btn-export-video'),
+            progressOverlay: document.getElementById('st-export-progress-overlay'),
+            progressText: document.getElementById('st-export-progress-text'),
+            progressSubText: document.getElementById('st-export-progress-subtext'),
+            progressBarInner: document.getElementById('st-export-progress-bar-inner'),
+            renderCanvas: document.getElementById('st-render-canvas')
         };
         
-        // --- 4. 헬퍼 함수 (Helpers) ---
         const helpers = {
-            debounce: (callback, delay) => {
-                let timeout;
-                return (...args) => {
-                    clearTimeout(timeout);
-                    timeout = setTimeout(() => callback(...args), delay);
-                };
-            },
-            getAudioDuration: (url) => new Promise(resolve => {
-                const audio = new Audio();
-                audio.onloadedmetadata = () => resolve(audio.duration);
-                audio.onerror = () => resolve(0.5);
-                audio.src = url;
-            }),
+            debounce: (callback, delay) => { let timeout; return (...args) => { clearTimeout(timeout); timeout = setTimeout(() => callback(...args), delay); }; },
+            getAudioDuration: (url) => new Promise(resolve => { const audio = new Audio(); audio.onloadedmetadata = () => resolve(audio.duration); audio.onerror = () => resolve(0.5); audio.src = url; }),
             generateId: (prefix = 'id') => `${prefix}-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
             getGroupKey: (name) => {
                 const keywords = ['물방울','클릭','등장','알림','타격','게임','스윕','넘어가는','넘기는','종이','카툰','폭발','팡파레','스우','깜짝','전자음'];
-                for (const key of keywords) { if (name.includes(key)) return key; }
-                return '기타';
+                for (const key of keywords) { if (name.includes(key)) return key; } return '기타';
             }
         };
 
-        // --- 5. API 호출 & TTS 처리 ---
+        // --- 2. API 호출 & TTS 처리 ---
         async function fetchTTS(text, cardId) {
-            text = text.trim();
-            if (!text) return null;
+            text = text.trim(); if (!text) return null;
             const cacheKey = text;
             if (state.ttsCache.has(cacheKey)) return state.ttsCache.get(cacheKey);
             render.showLoadingOnCard(cardId, true, '서버에 요청 중...');
             try {
-                const response = await fetch('/.netlify/functions/create-tts', { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify({ text: text }) 
-                });
-                if (!response.ok) {
-                    const errorResult = await response.json();
-                    throw new Error(`[${response.status}] ${errorResult.error || '서버 요청 실패'}`);
-                }
-                const result = await response.json();
-                const audioUrl = result.audioUrl;
-                const duration = await helpers.getAudioDuration(audioUrl);
-                const ttsData = { audioUrl, duration };
-                state.ttsCache.set(cacheKey, ttsData);
-                return ttsData;
+                const response = await fetch('/.netlify/functions/create-tts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: text }) });
+                if (!response.ok) { const errorResult = await response.json(); throw new Error(`[${response.status}] ${errorResult.error || '서버 요청 실패'}`); }
+                const result = await response.json(); const audioUrl = result.audioUrl;
+                const duration = await helpers.getAudioDuration(audioUrl); const ttsData = { audioUrl, duration };
+                state.ttsCache.set(cacheKey, ttsData); return ttsData;
             } catch (error) {
-                console.error('TTS 생성 오류:', error);
-                alert(`음성 생성 중 오류가 발생했습니다: ${error.message}\n(백엔드 기능이 설정되지 않았을 수 있습니다.)`);
-                return null;
+                console.error('TTS 생성 오류:', error); alert(`음성 생성 중 오류가 발생했습니다: ${error.message}\n(백엔드 기능이 설정되지 않았을 수 있습니다.)`); return null;
             } finally {
                 render.showLoadingOnCard(cardId, false);
             }
         }
         
         const debouncedTTSRequest = helpers.debounce(async (cardId) => {
-            const cardData = state.scriptCards.find(c => c.id === cardId);
-            if (!cardData) return;
-            
+            const cardData = state.scriptCards.find(c => c.id === cardId); if (!cardData) return;
             const allLines = cardData.text.split('\n').filter(line => line.trim());
             const sequencedLines = cardData.animationSequence || [];
             const remainingLines = allLines.filter(line => line && !sequencedLines.includes(line));
             const segmentsForTiming = [...sequencedLines, ...remainingLines];
-            
             const textForTTS = segmentsForTiming.join(' ');
-            
             if (!textForTTS) {
                 cardData.ttsReady = false; cardData.duration = 0.5; cardData.ttsDuration = 0.5; cardData.segments = [];
-                render.updateCardUI(cardId); handlers.updateTotalDuration();
-                return;
+                render.updateCardUI(cardId); handlers.updateTotalDuration(); return;
             }
-            
             const ttsData = await fetchTTS(textForTTS, cardId);
             if (ttsData && cardData) {
                 cardData.ttsDuration = ttsData.duration;
                 if (!cardData.isDurationManual) { cardData.duration = ttsData.duration; }
-                cardData.audioUrl = ttsData.audioUrl;
-                cardData.ttsReady = true;
-                
+                cardData.audioUrl = ttsData.audioUrl; cardData.ttsReady = true;
                 const totalChars = segmentsForTiming.reduce((sum, s) => sum + s.length, 0);
                 let accumulatedTime = 0;
                 cardData.segments = segmentsForTiming.map(segmentText => {
                     const segmentDuration = totalChars > 0 ? (segmentText.length / totalChars) * ttsData.duration : 0;
                     const segmentTiming = { text: segmentText, startTime: accumulatedTime, duration: segmentDuration };
-                    accumulatedTime += segmentDuration;
-                    return segmentTiming;
+                    accumulatedTime += segmentDuration; return segmentTiming;
                 });
-                
-                if (state.selectedCardId === cardId) {
-                    render.updateCardUI(cardId);
-                }
+                if (state.selectedCardId === cardId) { render.updateCardUI(cardId); }
                 handlers.updateTotalDuration();
             }
         }, 800);
 
-        // --- 6. 렌더링 함수 (Render Functions) ---
+        // --- 3. 렌더링 함수 (Render Functions) ---
         const render = {
             showPanel(panelToShow) {
-                UI.globalSettingsPanel.style.display = 'none';
-                UI.animationSettingsPanel.style.display = 'none';
+                UI.globalSettingsPanel.style.display = 'none'; UI.animationSettingsPanel.style.display = 'none';
                 if (panelToShow === 'global') UI.globalSettingsPanel.style.display = 'block';
                 else if (panelToShow === 'animation') UI.animationSettingsPanel.style.display = 'block';
             },
@@ -367,7 +319,7 @@
                 const layoutKey = element.dataset.layoutKey; const anims = card.animations[layoutKey];
                 const animOptions = C.ANIMATION_LIST.map(a => `<option value="${a.value}" ${anims.in.name === a.value ? 'selected' : ''}>${a.name}</option>`).join('');
                 const animOptionsOut = C.ANIMATION_LIST.map(a => `<option value="${a.value}" ${anims.out.name === a.value ? 'selected' : ''}>${a.name}</option>`).join('');
-                const elementType = layoutKey === 'text' ? '텍스트' : (layoutKey === 'media' ? '미디어' : '출처');
+                const elementType = layoutKey === 'text' ? '텍스트' : '미디어';
                 UI.animationSettingsPanel.innerHTML = `<h3>${elementType} 애니메이션</h3><div class="st-control-group"><label>시작 애니메이션 (In)</label><select id="anim-in-type">${animOptions}</select><label>지속 시간 (초)</label><input type="number" id="anim-in-duration" min="0.1" max="5" step="0.1" value="${anims.in.duration}"></div><div class="st-control-group"><label>종료 애니메이션 (Out)</label><select id="anim-out-type">${animOptionsOut}</select><label>지속 시간 (초)</label><input type="number" id="anim-out-duration" min="0.1" max="5" step="0.1" value="${anims.out.duration}"></div>`;
                 document.getElementById('anim-in-type').addEventListener('input', e => { anims.in.name = e.target.value; });
                 document.getElementById('anim-in-duration').addEventListener('input', e => { anims.in.duration = parseFloat(e.target.value) || 0.3; });
@@ -399,19 +351,14 @@
             allSfxSelects: () => {
                 const newOptions = render.sfxOptions();
                 document.querySelectorAll('.st-card').forEach(cardEl => {
-                    const id = cardEl.dataset.id;
-                    const cardData = state.scriptCards.find(c => c.id === id);
+                    const id = cardEl.dataset.id; const cardData = state.scriptCards.find(c => c.id === id);
                     const selectEl = cardEl.querySelector('.st-sfx-select');
-                    if (selectEl && cardData) {
-                        selectEl.innerHTML = newOptions;
-                        selectEl.value = cardData.sfxUrl || '';
-                    }
+                    if (selectEl && cardData) { selectEl.innerHTML = newOptions; selectEl.value = cardData.sfxUrl || ''; }
                 });
             },
 
             cardElement: (cardData) => {
-                const cardEl = document.createElement('div');
-                cardEl.className = 'st-card'; cardEl.dataset.id = cardData.id;
+                const cardEl = document.createElement('div'); cardEl.className = 'st-card'; cardEl.dataset.id = cardData.id;
                 const sfxOptions = render.sfxOptions();
                 cardEl.innerHTML = `<div class="st-card-header st-card-drag-handle"><span class="st-card-number"></span><button class="st-btn-delete-card">🗑️</button></div><div class="st-script-editor" contenteditable="true" spellcheck="false"></div><div class="st-card-footer"><div class="footer-row"><button class="st-play-clip-btn" title="미리듣기" disabled>▶️</button><span class="st-duration-label" title="클릭하여 자동/수동 전환">길이(자동)</span><input type="number" class="st-duration-input" min="0.1" step="0.1" value="${cardData.duration}" title="길이(초)" style="display: none;"><label class="st-action-btn" for="${cardData.id}-file">미디어 추가</label><input type="file" id="${cardData.id}-file" accept="image/*,video/*"></div><div class="footer-row media-controls" style="display: none;"><span>미디어 표시:</span><select class="media-timing-select"></select><span>지속 시간:</span><select class="media-persist-select"></select></div><div class="footer-row media-controls" style="display: none;"><span>미디어 맞춤:</span><label class="media-fit-label"><input type="radio" name="media-fit-${cardData.id}" value="cover">꽉 채우기</label><label class="media-fit-label"><input type="radio" name="media-fit-${cardData.id}" value="contain" checked>안에 맞추기</label><label class="media-fit-label"><input type="radio" name="media-fit-${cardData.id}" value="fill">늘리기</label></div><div class="footer-row"><span>TTS 소리</span><input type="range" class="st-volume-slider tts-volume" min="0" max="1" step="0.05" value="${cardData.ttsVolume}"><span style="margin-left:10px;">효과음 소리</span><input type="range" class="st-volume-slider sfx-volume" min="0" max="1" step="0.05" value="${cardData.sfxVolume}"></div><div class="footer-row"><select class="st-sfx-select" style="flex-grow: 1;">${sfxOptions}</select></div></div>`;
                 cardEl.querySelector('.st-sfx-select').value = cardData.sfxUrl || '';
@@ -539,8 +486,7 @@
                 Object.assign(previewText.style, card.style);
                 previewText.innerHTML = '';
                 card.text.split('\n').forEach(line => {
-                    const p = document.createElement('p');
-                    p.className = 'preview-text-segment highlight';
+                    const p = document.createElement('p'); p.className = 'preview-text-segment highlight';
                     p.textContent = line || ' '; p.style.margin = 0;
                     previewText.appendChild(p);
                 });
@@ -555,7 +501,7 @@
             },
         };
         
-        // --- 7. 재생 관련 함수 (Playback) ---
+        // --- 4. 재생 관련 함수 (Playback) ---
         const playback = {
             togglePlay: () => { state.isPlaying ? playback.stop() : playback.start(); },
             start: () => {
@@ -589,16 +535,14 @@
                 
                 const previewTextEl = document.getElementById('st-preview-text');
                 const previewVideo = document.getElementById('st-preview-video');
-                const previewImage = document.getElementById('st-preview-image');
                 const mediaWrapper = document.getElementById('st-preview-media-container-wrapper');
                 
                 previewTextEl.innerHTML = '';
-                const segmentElements = [];
                 if (card.segments && card.segments.length > 0) {
-                    card.segments.forEach(segment => {
+                    const segmentElements = card.segments.map(segment => {
                         const p = document.createElement('p'); p.className = 'preview-text-segment';
                         p.textContent = segment.text || ' '; p.style.margin = 0;
-                        previewTextEl.appendChild(p); segmentElements.push(p);
+                        previewTextEl.appendChild(p); return p;
                     });
                     card.segments.forEach((segment, segIndex) => {
                         setTimeout(() => {
@@ -614,15 +558,23 @@
                 
                 if (card.media.url && card.media.persistUntilCardId) { state.currentPersistentMedia = { ...card.media, startCardId: card.id }; }
                 let activeMedia = state.currentPersistentMedia || (card.media.url ? card.media : null);
-                mediaWrapper.style.display = activeMedia ? 'flex' : 'none';
+                
+                mediaWrapper.style.visibility = 'hidden';
                 if(activeMedia) {
-                    const targetEl = activeMedia.type === 'video' ? previewVideo : previewImage;
-                    if (targetEl.src !== activeMedia.url) targetEl.src = activeMedia.url;
-                    targetEl.className = `fit-${activeMedia.fit}`;
-                    if (activeMedia.type === 'video') {
-                       if (state.currentPersistentMedia && previewVideo.paused) { previewVideo.currentTime = 0; previewVideo.play().catch(()=>{}); } 
-                       else if (!state.currentPersistentMedia) { previewVideo.currentTime = 0; previewVideo.play().catch(()=>{}); }
+                    const showMedia = () => {
+                        mediaWrapper.style.visibility = 'visible';
+                        if (activeMedia.type === 'video') {
+                            previewVideo.currentTime = activeMedia.startTime || 0;
+                            previewVideo.play().catch(()=>{});
+                            const clipDuration = (activeMedia.endTime || previewVideo.duration) - (activeMedia.startTime || 0);
+                            setTimeout(() => { if(state.isPlaying) previewVideo.pause(); }, clipDuration * 1000);
+                        }
+                    };
+                    let delay = 0;
+                    if (!state.currentPersistentMedia && card.media.showOnSegment > 1 && card.segments[card.media.showOnSegment - 2]) {
+                        delay = card.segments[card.media.showOnSegment - 2].startTime * 1000;
                     }
+                    setTimeout(showMedia, delay);
                 }
                 
                 if (card.audioUrl) { UI.ttsPlayer.volume = card.ttsVolume; UI.ttsPlayer.src = card.audioUrl; UI.ttsPlayer.play(); }
@@ -634,7 +586,7 @@
             }
         };
 
-        // --- 8. 이벤트 핸들러 (Event Handlers) ---
+        // --- 5. 이벤트 핸들러 (Event Handlers) ---
         const handlers = {
             updateProjectSettings() {
                 state.projectSettings.header.text = document.getElementById('st-setting-header-text').value;
@@ -658,8 +610,7 @@
             },
             
             updateScriptStyleControls() {
-                const card = state.scriptCards.find(c => c.id === state.selectedCardId);
-                if (!card) return;
+                const card = state.scriptCards.find(c => c.id === state.selectedCardId); if (!card) return;
                 document.getElementById('st-setting-script-color').value = card.style?.color || '#000000';
                 document.getElementById('st-setting-script-font').value = card.style?.fontFamily || "'Noto Sans KR', sans-serif";
                 document.getElementById('st-setting-script-size').value = (card.style?.fontSize || '24px').replace('px','');
@@ -668,8 +619,7 @@
             },
 
             applyScriptStylesToSelectedCard() {
-                const card = state.scriptCards.find(c => c.id === state.selectedCardId);
-                if (!card) return;
+                const card = state.scriptCards.find(c => c.id === state.selectedCardId); if (!card) return;
                 card.style = {
                     color: document.getElementById('st-setting-script-color').value,
                     fontFamily: document.getElementById('st-setting-script-font').value,
@@ -684,12 +634,12 @@
                 const cardId = helpers.generateId('card');
                 const cardData = {
                     id: cardId, text, segments: [], animationSequence: [], duration: 0.5, ttsDuration: 0.5, isDurationManual: false,
-                    media: { url: null, type: null, fit: 'contain', showOnSegment: 1, persistUntilCardId: null },
+                    media: { url: null, type: null, fit: 'contain', showOnSegment: 1, persistUntilCardId: null, startTime: 0, endTime: null },
                     style: { ...state.projectSettings.defaultStyle, fontSize: state.projectSettings.defaultStyle.fontSize + 'px', letterSpacing: state.projectSettings.defaultStyle.letterSpacing + 'px' },
                     audioUrl: null, ttsReady: false, ttsVolume: 0.8, sfxUrl: null, sfxVolume: 0.8,
                     layout: { 
-                        text: { x: 0, y: 0, width: 340, angle: 0 },
-                        media: { x: 0, y: 0, width: 340, height: 255, angle: 0 } 
+                        text: { x: 0, y: -110, width: 340, angle: 0 },
+                        media: { x: 0, y: 80, width: 320, height: 180, angle: 0 } 
                     },
                     animations: { 
                         text: { in: { name: 'none', duration: 0.3 }, out: { name: 'none', duration: 0.3 } }, 
@@ -726,10 +676,15 @@
                 cardEl.querySelector(`#${cardId}-file`).addEventListener('change', (e) => {
                     if (e.target.files && e.target.files[0]) {
                         const file = e.target.files[0];
-                        cardData.media.url = URL.createObjectURL(file);
-                        cardData.media.type = file.type.startsWith('video/') ? 'video' : 'image';
-                        render.updateCardUI(cardId);
-                        if (state.selectedCardId === cardId) render.updatePreviewDisplay();
+                        const url = URL.createObjectURL(file);
+                        if (file.type.startsWith('video/')) {
+                            modals.openVideoTrimmer(url, cardId);
+                        } else {
+                            cardData.media.url = url;
+                            cardData.media.type = 'image';
+                            render.updateCardUI(cardId);
+                            if (state.selectedCardId === cardId) render.updatePreviewDisplay();
+                        }
                     }
                 });
                 
@@ -748,8 +703,7 @@
                     if (url === 'upload-my-own') {
                         state.sfxUploadTargetCardId = cardId;
                         UI.sfxFileInput.value = null; UI.sfxFileInput.click();
-                        e.target.value = cardData.sfxUrl || '';
-                        return;
+                        e.target.value = cardData.sfxUrl || ''; return;
                     }
                     cardData.sfxUrl = url || null;
                     if (url) {
@@ -766,8 +720,7 @@
                 cardEl.querySelector('.st-duration-label').addEventListener('click', () => {
                     cardData.isDurationManual = !cardData.isDurationManual;
                     if (!cardData.isDurationManual) { cardData.duration = cardData.ttsDuration; }
-                    render.updateCardUI(cardId);
-                    handlers.updateTotalDuration();
+                    render.updateCardUI(cardId); handlers.updateTotalDuration();
                 });
                 cardEl.querySelector('.st-duration-input').addEventListener('input', (e) => {
                     if (cardData.isDurationManual) { cardData.duration = parseFloat(e.target.value) || 0.5; handlers.updateTotalDuration(); }
@@ -777,12 +730,9 @@
             },
 
             deleteCard(cardId) {
-                const cardIndex = state.scriptCards.findIndex(c => c.id === cardId);
-                if (cardIndex === -1) return;
-                
+                const cardIndex = state.scriptCards.findIndex(c => c.id === cardId); if (cardIndex === -1) return;
                 state.scriptCards.splice(cardIndex, 1);
                 document.querySelector(`.st-card[data-id="${cardId}"]`).remove();
-                
                 if (state.selectedCardId === cardId) {
                     state.selectedCardId = null;
                     if (state.scriptCards.length > 0) {
@@ -792,9 +742,7 @@
                         render.updatePreviewDisplay();
                     }
                 }
-                handlers.updateTotalDuration();
-                render.updateCardNumbers();
-                interaction.deactivateAllInteractive();
+                handlers.updateTotalDuration(); render.updateCardNumbers(); interaction.deactivateAllInteractive();
             },
             
             updateTotalDuration() {
@@ -817,7 +765,7 @@
             },
         };
         
-        // --- 9. 인터랙션 (Interaction) & 시퀀스(Sequence) ---
+        // --- 6. 인터랙션 & 모달 (Interaction & Modals) ---
         const interaction = {
             deactivateAllInteractive() {
                 document.querySelectorAll('.interactive-target.interactive-active').forEach(el => {
@@ -829,8 +777,7 @@
             activateInteractive(target) {
                 if (state.activeInteractiveElement === target) return;
                 interaction.deactivateAllInteractive();
-                state.activeInteractiveElement = target;
-                target.classList.add('interactive-active');
+                state.activeInteractiveElement = target; target.classList.add('interactive-active');
                 ['top-left', 'top-right', 'bottom-left', 'bottom-right'].forEach(pos => {
                     const handle = document.createElement('div'); handle.className = `resize-handle`;
                     handle.style.top = pos.includes('top') ? '-6px' : ''; handle.style.bottom = pos.includes('bottom') ? '-6px' : '';
@@ -846,63 +793,37 @@
             sequence: {
                 showMenu: (x, y) => {
                     const { cardId } = state.currentSelectionContext;
-                    const cardData = state.scriptCards.find(c => c.id === cardId);
-                    if(!cardData) return;
-                    const sequence = cardData.animationSequence || [];
-                    let menuItems = '';
-                    for(let i=0; i <= sequence.length; i++) {
-                        menuItems += `<li data-action="set" data-index="${i}">${i + 1}번째로 재생</li>`;
-                    }
+                    const cardData = state.scriptCards.find(c => c.id === cardId); if(!cardData) return;
+                    const sequence = cardData.animationSequence || []; let menuItems = '';
+                    for(let i=0; i <= sequence.length; i++) { menuItems += `<li data-action="set" data-index="${i}">${i + 1}번째로 재생</li>`; }
                     menuItems += '<hr><li data-action="clear">순서 초기화</li>';
-                    UI.sequenceMenu.innerHTML = menuItems;
-                    UI.sequenceMenu.style.left = `${x + 10}px`;
-                    UI.sequenceMenu.style.top = `${y}px`;
-                    UI.sequenceMenu.style.display = 'block';
+                    UI.sequenceMenu.innerHTML = menuItems; UI.sequenceMenu.style.left = `${x + 10}px`;
+                    UI.sequenceMenu.style.top = `${y}px`; UI.sequenceMenu.style.display = 'block';
                 },
-                hideMenu: () => {
-                    UI.sequenceMenu.style.display = 'none';
-                    state.currentSelectionContext = null;
-                },
+                hideMenu: () => { UI.sequenceMenu.style.display = 'none'; state.currentSelectionContext = null; },
                 handleMenuClick: (e) => {
                     if (e.target.tagName !== 'LI' || !state.currentSelectionContext) return;
                     const { cardId, text } = state.currentSelectionContext;
-                    const cardData = state.scriptCards.find(c => c.id === cardId);
-                    if (!cardData) return;
-                    
+                    const cardData = state.scriptCards.find(c => c.id === cardId); if (!cardData) return;
                     const action = e.target.dataset.action;
                     if (action === 'set') {
                         const index = parseInt(e.target.dataset.index, 10);
                         cardData.animationSequence = cardData.animationSequence.filter(seqText => seqText !== text);
                         cardData.animationSequence.splice(index, 0, text);
-                    } else if (action === 'clear') {
-                        cardData.animationSequence = [];
-                    }
-                    debouncedTTSRequest(cardId);
-                    interaction.sequence.hideMenu();
+                    } else if (action === 'clear') { cardData.animationSequence = []; }
+                    debouncedTTSRequest(cardId); interaction.sequence.hideMenu();
                 },
                 onSelectionChange: () => {
-                    const selection = window.getSelection();
-                    if (!selection || selection.isCollapsed) {
-                        interaction.sequence.hideMenu();
-                        return;
-                    }
+                    const selection = window.getSelection(); if (!selection || selection.isCollapsed) { interaction.sequence.hideMenu(); return; }
                     const editor = selection.anchorNode?.parentElement?.closest('.st-script-editor');
                     if(editor) {
                         const range = selection.getRangeAt(0);
                         const segmentEl = range.startContainer.parentElement.closest('.script-segment');
-                        if (!segmentEl || !segmentEl.textContent.trim()) {
-                            interaction.sequence.hideMenu();
-                            return;
-                        }
+                        if (!segmentEl || !segmentEl.textContent.trim()) { interaction.sequence.hideMenu(); return; }
                         const cardEl = editor.closest('.st-card');
                         state.currentSelectionContext = { cardId: cardEl.dataset.id, text: selection.toString().trim() };
-                        if(state.currentSelectionContext.text) {
-                            const rect = range.getBoundingClientRect();
-                            interaction.sequence.showMenu(rect.right, rect.top);
-                        }
-                    } else {
-                        interaction.sequence.hideMenu();
-                    }
+                        if(state.currentSelectionContext.text) { const rect = range.getBoundingClientRect(); interaction.sequence.showMenu(rect.right, rect.top); }
+                    } else { interaction.sequence.hideMenu(); }
                 }
             },
             initialize() {
@@ -944,7 +865,69 @@
             }
         };
 
-        // --- 10. 초기화 (Initialization) ---
+        const modals = {
+            openVideoTrimmer(url, cardId) {
+                state.videoTrimmerContext = { cardId, url };
+                UI.videoTrimModal.classList.add('visible');
+                const loadingEl = UI.videoTrimModal.querySelector('.waveform-loading');
+                loadingEl.style.display = 'block';
+
+                if (state.videoWavesurfer) state.videoWavesurfer.destroy();
+                
+                state.videoWavesurfer = WaveSurfer.create({
+                    container: '#st-waveform-container-video', waveColor: '#ddd', progressColor: '#e82c43',
+                    cursorColor: '#fff', barWidth: 2, barRadius: 3,
+                    plugins: [ WaveSurfer.regions.create({ dragSelection: { slop: 5 } }) ]
+                });
+
+                state.videoWavesurfer.load(url);
+
+                state.videoWavesurfer.on('ready', () => {
+                    loadingEl.style.display = 'none';
+                    state.videoWavesurfer.clearRegions();
+                    const duration = state.videoWavesurfer.getDuration();
+                    const initialEnd = Math.min(10, duration); // 기본 10초 또는 전체 길이
+                    state.activeVideoRegion = state.videoWavesurfer.addRegion({ start: 0, end: initialEnd, color: 'rgba(232, 44, 67, 0.3)' });
+                    document.getElementById('st-video-time-display').textContent = `${state.activeVideoRegion.start.toFixed(2)}s - ${state.activeVideoRegion.end.toFixed(2)}s`;
+                });
+
+                state.videoWavesurfer.on('region-updated', (region) => {
+                    state.activeVideoRegion = region;
+                    document.getElementById('st-video-time-display').textContent = `${region.start.toFixed(2)}s - ${region.end.toFixed(2)}s`;
+                });
+            },
+            closeVideoTrimmer: () => {
+                UI.videoTrimModal.classList.remove('visible');
+                if (state.videoWavesurfer) { state.videoWavesurfer.destroy(); state.videoWavesurfer = null; }
+            },
+            initialize() {
+                // Video Trimmer Modal Events
+                document.getElementById('st-btn-video-play-region').addEventListener('click', () => {
+                    if (state.activeVideoRegion) {
+                        UI.trimPlayer.src = state.videoTrimmerContext.url;
+                        UI.trimPlayer.currentTime = state.activeVideoRegion.start;
+                        UI.trimPlayer.play();
+                        setTimeout(() => UI.trimPlayer.pause(), (state.activeVideoRegion.end - state.activeVideoRegion.start) * 1000);
+                    }
+                });
+                document.getElementById('st-btn-video-confirm').addEventListener('click', () => {
+                    const { cardId, url } = state.videoTrimmerContext;
+                    const cardData = state.scriptCards.find(c => c.id === cardId);
+                    if (cardData && state.activeVideoRegion) {
+                        cardData.media.url = url;
+                        cardData.media.type = 'video';
+                        cardData.media.startTime = state.activeVideoRegion.start;
+                        cardData.media.endTime = state.activeVideoRegion.end;
+                        render.updateCardUI(cardId);
+                        if (state.selectedCardId === cardId) render.updatePreviewDisplay();
+                    }
+                    modals.closeVideoTrimmer();
+                });
+                document.getElementById('st-btn-video-cancel').addEventListener('click', modals.closeVideoTrimmer);
+            }
+        };
+
+        // --- 7. 초기화 (Initialization) ---
         async function initialize() {
             try {
                 const response = await fetch('https://sunsaktool-final.netlify.app/sfx-list.json');
@@ -970,9 +953,7 @@
                 const lines = UI.gptsTextarea.value.trim().split(/\n\s*\n/).filter(line => line.trim() !== '');
                 lines.forEach(line => handlers.addScriptCard(line.trim()));
                 closeGptsModal();
-                if(lines.length > 0 && state.scriptCards.length > 0) {
-                    handlers.selectCard(state.scriptCards[state.scriptCards.length - lines.length].id);
-                }
+                if(lines.length > 0 && state.scriptCards.length > 0) handlers.selectCard(state.scriptCards[state.scriptCards.length - lines.length].id);
             });
 
             document.getElementById('st-btn-upload-bgm').addEventListener('click', () => UI.bgmFileInput.click());
@@ -986,8 +967,7 @@
             });
             UI.sfxFileInput.addEventListener('change', (e) => {
                 if (!e.target.files || e.target.files.length === 0) return;
-                const file = e.target.files[0]; const url = URL.createObjectURL(file);
-                const newSfx = { name: file.name, url };
+                const file = e.target.files[0]; const url = URL.createObjectURL(file); const newSfx = { name: file.name, url };
                 if (!state.sfxList.find(item => item.url === url)) state.sfxList.push(newSfx);
                 const cardToUpdate = state.scriptCards.find(c => c.id === state.sfxUploadTargetCardId);
                 if (cardToUpdate) cardToUpdate.sfxUrl = url;
@@ -996,26 +976,22 @@
                 const cardEl = document.querySelector(`.st-card[data-id="${state.sfxUploadTargetCardId}"]`);
                 if(cardEl) cardEl.querySelector('.st-sfx-select').value = url;
             });
-            UI.bgmFileInput.addEventListener('change', (e) => { /* BGM Upload Logic... */ });
+            UI.bgmFileInput.addEventListener('change', (e) => { /* BGM Upload Logic */ });
             document.addEventListener('paste', (event) => {
                 if (!state.selectedCardId) return;
-                const card = state.scriptCards.find(c => c.id === state.selectedCardId);
-                if (!card) return;
+                const card = state.scriptCards.find(c => c.id === state.selectedCardId); if (!card) return;
                 const items = (event.clipboardData || window.clipboardData).items;
                 for (const item of items) {
                     if (item.type.indexOf('image') === 0) {
                         event.preventDefault();
-                        const file = item.getAsFile();
-                        card.media.url = URL.createObjectURL(file);
-                        card.media.type = 'image';
-                        render.updateCardUI(card.id);
-                        render.updatePreviewDisplay();
-                        break;
+                        const file = item.getAsFile(); card.media.url = URL.createObjectURL(file);
+                        card.media.type = 'image'; render.updateCardUI(card.id); render.updatePreviewDisplay(); break;
                     }
                 }
             });
             
             interaction.initialize();
+            modals.initialize();
             
             new Sortable(UI.cardContainer, { 
                 animation: 150, handle: '.st-card-drag-handle',
@@ -1027,8 +1003,138 @@
                 }
             });
 
+            // Video Export
+            UI.exportBtn.addEventListener('click', () => exporter.startExport());
+
             handlers.addScriptCard('순삭툴에 오신 것을 환영합니다!\n텍스트를 선택해서 재생 순서를 정해보세요.');
         }
+        
+        // --- 8. 영상 출력 (Optimized Exporter) ---
+        const exporter = {
+            startExport: async () => {
+                if (state.scriptCards.some(c => !c.ttsReady && c.text.trim())) return alert('아직 음성 생성이 완료되지 않은 스크립트가 있습니다.');
+                if (state.scriptCards.length === 0) return alert('출력할 영상이 없습니다.');
+                UI.exportBtn.disabled = true;
+                UI.progressOverlay.style.display = 'flex';
+                
+                const RENDER_WIDTH = 1080;
+                const RENDER_HEIGHT = 1920;
+                const FPS = 30;
+
+                const canvas = UI.renderCanvas;
+                canvas.width = RENDER_WIDTH;
+                canvas.height = RENDER_HEIGHT;
+                const ctx = canvas.getContext('2d');
+
+                const totalDuration = state.scriptCards.reduce((sum, card) => sum + (card.duration || 0.5), 0);
+                
+                // Audio processing
+                const audioContext = new AudioContext();
+                const destination = audioContext.createMediaStreamDestination();
+                
+                // Video Stream
+                const canvasStream = canvas.captureStream(FPS);
+                const combinedStream = new MediaStream([...canvasStream.getVideoTracks(), ...destination.stream.getAudioTracks()]);
+                const recorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm;codecs=vp9,opus' });
+                const chunks = [];
+                recorder.ondataavailable = e => chunks.push(e.data);
+                recorder.onstop = () => {
+                    const blob = new Blob(chunks, { type: 'video/webm' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url; a.download = 'sunsak-video.webm'; a.click();
+                    URL.revokeObjectURL(url);
+                    UI.exportBtn.disabled = false;
+                    UI.progressOverlay.style.display = 'none';
+                };
+                
+                recorder.start();
+                
+                let startTime = performance.now();
+                let currentCardIndex = -1;
+                let timeTally = 0;
+
+                function renderLoop(now) {
+                    const elapsedTime = (now - startTime) / 1000;
+                    if (elapsedTime >= totalDuration) {
+                        if (recorder.state === 'recording') recorder.stop();
+                        return;
+                    }
+                    
+                    if (elapsedTime >= timeTally) {
+                        currentCardIndex++;
+                        if (currentCardIndex > 0) {
+                            timeTally += state.scriptCards[currentCardIndex - 1].duration;
+                        }
+                    }
+
+                    const card = state.scriptCards[currentCardIndex];
+                    if (card) {
+                        exporter.drawFrame(ctx, card, elapsedTime - timeTally, RENDER_WIDTH, RENDER_HEIGHT);
+                    }
+                    
+                    const progress = Math.min(100, (elapsedTime / totalDuration) * 100);
+                    UI.progressSubText.textContent = `${elapsedTime.toFixed(1)}s / ${totalDuration.toFixed(1)}s`;
+                    UI.progressBarInner.style.width = `${progress}%`;
+
+                    requestAnimationFrame(renderLoop);
+                }
+                
+                requestAnimationFrame(renderLoop);
+            },
+            drawFrame: (ctx, card, timeInCard, width, height) => {
+                ctx.clearRect(0, 0, width, height);
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, width, height);
+
+                // This is a simplified direct-to-canvas renderer.
+                // A full implementation would need to handle all CSS properties.
+                
+                // Draw Media
+                if (card.media.url) {
+                    const mediaEl = document.getElementById(card.media.type === 'video' ? 'st-preview-video' : 'st-preview-image');
+                    if (mediaEl && mediaEl.src === card.media.url && mediaEl.complete !== false) { // check if loaded
+                        ctx.save();
+                        const layout = card.layout.media;
+                        const scaleX = width / 380; // Assuming preview panel width is 380
+                        const scaleY = height / (380 * 16 / 9);
+
+                        const w = layout.width * scaleX;
+                        const h = layout.height * scaleY;
+                        const x = (width / 2) + (layout.x * scaleX);
+                        const y = (layout.y * scaleY) + (height * 0.6); // Based on CSS top %
+                        
+                        ctx.translate(x, y);
+                        ctx.rotate(layout.angle * Math.PI / 180);
+                        ctx.drawImage(mediaEl, -w/2, -h/2, w, h);
+                        ctx.restore();
+                    }
+                }
+
+                // Draw Text
+                ctx.save();
+                const textLayout = card.layout.text;
+                const textScaleX = width / 380;
+                const textScaleY = height / (380 * 16 / 9);
+                const textX = (width / 2) + (textLayout.x * textScaleX);
+                const textY = (height * 0.35) + (textLayout.y * textScaleY);
+                ctx.translate(textX, textY);
+                
+                const style = card.style;
+                ctx.fillStyle = style.color;
+                ctx.font = `${parseInt(style.fontSize, 10) * textScaleX}px ${style.fontFamily}`;
+                ctx.textAlign = 'center';
+                
+                const lines = card.text.split('\n');
+                const lineHeight = parseInt(style.fontSize, 10) * parseFloat(style.lineHeight) * textScaleX;
+
+                lines.forEach((line, i) => {
+                    ctx.fillText(line, 0, i * lineHeight);
+                });
+                ctx.restore();
+            }
+        };
+
 
         document.addEventListener('DOMContentLoaded', initialize);
 
