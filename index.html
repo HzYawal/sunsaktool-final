@@ -49,8 +49,8 @@
         .st-preview-content { padding: 10px; color: black; flex-grow: 1; display: flex; flex-direction: column; background-color: white; overflow: hidden; position: relative; }
         .st-project-info { font-size: 13px; color: #555; margin: 0 0 16px 0; border-bottom: 1px solid #eee; padding-bottom: 16px; flex-shrink: 0; }
         .st-project-info .title { font-size: 22px; color: black; font-weight: bold; margin-bottom: 5px; }
-        .st-script-display { flex-grow: 1; display: flex; flex-direction: column; align-items: center; text-align: center; }
-        .interactive-target { position: relative; width: 100%; touch-action: none; transform-origin: center center; cursor: move; }
+        .st-script-display { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; position: relative; }
+        .interactive-target { position: absolute; width: auto; height: auto; max-width: calc(100% - 20px); max-height: calc(100% - 20px); touch-action: none; transform-origin: center center; cursor: move; display: flex; align-items: center; justify-content: center; }
         #st-preview-media-container-wrapper { margin-top: 8px; }
         #st-preview-image, #st-preview-video { max-width: 100%; max-height: 100%; }
         .interactive-target.interactive-active { outline: 2px dashed var(--st-interact-color); z-index: 100; }
@@ -255,7 +255,7 @@
                 if (!response.ok) { const errorResult = await response.json(); throw new Error(`[${response.status}] ${errorResult.error || '서버 요청 실패'}`); }
                 const result = await response.json(); 
                 const { audioUrl } = result;
-                const duration = await helpers.getAudioDuration(audioUrl); // Get original duration
+                const duration = await helpers.getAudioDuration(audioUrl);
                 const ttsData = { audioUrl, duration };
                 state.ttsCache.set(cacheKey, ttsData); 
                 return ttsData;
@@ -544,7 +544,7 @@
                 }, outDelay);
 
                 previewTextEl.innerHTML = '';
-                if (card.animationSequence.length > 0) { // 순서 지정 시
+                if (card.animationSequence.length > 0) {
                     card.segments.forEach((segment) => {
                         setTimeout(() => {
                             if (state.isPlaying && state.playbackCurrentIndex === index) {
@@ -553,7 +553,7 @@
                             }
                         }, segment.startTime * 1000);
                     });
-                } else { // 동시 표시
+                } else {
                      card.text.split('\n').forEach(line => {
                         const p = document.createElement('p'); p.className = 'preview-text-segment highlight'; p.textContent = line || ' '; p.style.margin = 0; previewTextEl.appendChild(p);
                      });
@@ -1119,7 +1119,7 @@
                 
                 const easeOutQuad = t => t * (2 - t); 
                 if (animName.includes('Out')) {
-                     progress = progress; // Use linear for fade out
+                     progress = progress;
                 } else {
                      progress = easeOutQuad(progress);
                 }
@@ -1144,15 +1144,30 @@
             },
             renderFrameToCanvas(ctx, card, scale, timeInCard) {
                 const RENDER_WIDTH = ctx.canvas.width; const RENDER_HEIGHT = ctx.canvas.height;
+                ctx.save();
                 ctx.clearRect(0, 0, RENDER_WIDTH, RENDER_HEIGHT);
                 ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, RENDER_WIDTH, RENDER_HEIGHT);
 
+                // --- Header ---
+                ctx.save();
                 const headerHeight = 65 * scale;
                 ctx.fillStyle = state.projectSettings.header.backgroundColor; ctx.fillRect(0, 0, RENDER_WIDTH, headerHeight);
                 ctx.font = `bold ${state.projectSettings.header.fontSize * scale}px ${state.projectSettings.header.fontFamily}`;
                 ctx.fillStyle = state.projectSettings.header.color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
                 ctx.fillText(state.projectSettings.header.text, RENDER_WIDTH / 2, headerHeight / 2);
+                if (state.projectSettings.header.logo.url) {
+                    const logoEl = state.mediaElementCache.get(state.projectSettings.header.logo.url);
+                    if (logoEl) {
+                        const logoSize = state.projectSettings.header.logo.size * scale;
+                        const logoX = RENDER_WIDTH - (15 * scale) - logoSize;
+                        const logoY = (headerHeight - logoSize) / 2;
+                        ctx.drawImage(logoEl, logoX, logoY, logoSize, logoSize);
+                    }
+                }
+                ctx.restore();
                 
+                // --- Project Info ---
+                ctx.save();
                 const infoPadding = 10 * scale; let currentY = headerHeight + infoPadding * 2;
                 ctx.font = `bold ${state.projectSettings.project.titleFontSize * scale}px ${state.projectSettings.project.titleFontFamily}`;
                 ctx.fillStyle = state.projectSettings.project.titleColor; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
@@ -1164,8 +1179,12 @@
                 currentY += 13 * scale * 2.5;
                 ctx.strokeStyle = '#eeeeee'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, currentY); ctx.lineTo(RENDER_WIDTH, currentY); ctx.stroke();
                 const contentStartY = currentY;
+                ctx.restore();
 
-                ctx.save(); ctx.rect(0, contentStartY, RENDER_WIDTH, RENDER_HEIGHT - contentStartY); ctx.clip();
+                // --- Content Area Clip ---
+                ctx.save();
+                ctx.rect(0, contentStartY, RENDER_WIDTH, RENDER_HEIGHT - contentStartY); ctx.clip();
+
                 const textAnim = this.calculateAnimationValues(card.animations.text, card.duration, timeInCard);
                 const mediaAnim = this.calculateAnimationValues(card.animations.media, card.duration, timeInCard);
                 
@@ -1173,6 +1192,7 @@
                 if(card.animationSequence.length > 0 && card.segments.length > 0) { card.segments.forEach(segment => { if(timeInCard >= segment.startTime) { textToRender += segment.text + '\n'; } }); textToRender = textToRender.trim(); } 
                 else { textToRender = card.text; }
                 
+                // --- Text Rendering ---
                 if (textToRender) {
                     ctx.save();
                     ctx.globalAlpha = textAnim.opacity;
@@ -1189,6 +1209,7 @@
                     ctx.restore();
                 }
                 
+                // --- Media Rendering ---
                 if (card.media.url) {
                     ctx.save();
                     ctx.globalAlpha = mediaAnim.opacity;
@@ -1210,8 +1231,8 @@
                         const containerAspect = containerW / containerH;
 
                         if (card.media.fit === 'cover') {
-                            if (mediaAspect > containerAspect) { drawH = containerH; drawW = elH * mediaAspect; } 
-                            else { drawW = containerW; drawH = elW / mediaAspect; }
+                            if (mediaAspect > containerAspect) { drawH = containerH; drawW = containerH * mediaAspect; } 
+                            else { drawW = containerW; drawH = containerW / mediaAspect; }
                         } else if (card.media.fit === 'fill') {
                             drawW = containerW; drawH = containerH;
                         } else { // contain
@@ -1222,7 +1243,9 @@
                     }
                     ctx.restore();
                 }
-                ctx.restore();
+
+                ctx.restore(); // Restore Content Clip
+                ctx.restore(); // Restore Top Level
             },
         };
         document.addEventListener('DOMContentLoaded', initialize);
