@@ -975,7 +975,28 @@
             handlers.addScriptCard('순삭툴에 오신 것을 환영합니다!\n텍스트를 선택해서 재생 순서를 정해보세요.');
         }
 
-                            const exporter = {
+                                    const exporter = {
+            // 이 함수는 렌더링 직전에 DOM 요소의 정확한 상태(위치, 크기, 스타일)를 측정합니다.
+            getDOMElementState(element, previewPanel, scale) {
+                if (!element || !document.body.contains(element) || element.offsetParent === null) {
+                    return null;
+                }
+                const rect = element.getBoundingClientRect();
+                const previewRect = previewPanel.getBoundingClientRect();
+
+                // 화면에 보이지 않으면 null 반환
+                if (rect.width === 0 || rect.height === 0) {
+                    return null;
+                }
+
+                const x = (rect.left - previewRect.left);
+                const y = (rect.top - previewRect.top);
+                const width = rect.width;
+                const height = rect.height;
+
+                return { x: x * scale, y: y * scale, width: width * scale, height: height * scale };
+            },
+
             async startExport() {
                 if (state.scriptCards.some(c => c.text.trim() && !c.ttsReady)) return alert('아직 음성 생성이 완료되지 않은 스크립트가 있습니다.');
                 if (state.scriptCards.length === 0) return alert('출력할 영상이 없습니다.');
@@ -986,7 +1007,6 @@
                 const RENDER_WIDTH = 1080;
                 const RENDER_HEIGHT = 1920;
                 const FPS = 30;
-                // 실제 미리보기 패널의 너비를 사용해서 더 정확한 SCALE 계산
                 const previewPanel = document.getElementById('st-preview-panel');
                 const PREVIEW_PANEL_WIDTH = previewPanel.getBoundingClientRect().width;
                 const SCALE = RENDER_WIDTH / PREVIEW_PANEL_WIDTH;
@@ -1004,8 +1024,8 @@
                     const recorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm;codecs=vp9,opus' });
                     const chunks = [];
                     recorder.ondataavailable = e => chunks.push(e.data);
-                    recorder.onstop = () => {
-                        audioContext.close();
+                    recorder.onstop = async () => {
+                        await audioContext.close();
                         const blob = new Blob(chunks, { type: 'video/webm' });
                         const url = URL.createObjectURL(blob);
                         const a = document.createElement('a');
@@ -1015,9 +1035,11 @@
                         URL.revokeObjectURL(url);
                         UI.exportBtn.disabled = false;
                         UI.progressOverlay.style.display = 'none';
+                        // 렌더링 후 미리보기 복원
                         if (state.scriptCards.length > 0) handlers.selectCard(state.scriptCards[0].id);
                     };
-
+                    
+                    // 모든 오디오가 예약된 후 녹화 시작
                     recorder.start();
 
                     UI.progressText.textContent = '프레임 렌더링 중...';
@@ -1030,7 +1052,7 @@
                     UI.progressOverlay.style.display = 'none';
                 }
             },
-
+            
             async preloadResources() {
                 UI.progressSubText.textContent = '폰트 로딩...';
                 await document.fonts.ready;
@@ -1060,33 +1082,70 @@
                 });
                 await Promise.all(mediaPromises);
             },
+
             async setupAudio() {
                 const audioContext = new AudioContext();
                 const destination = audioContext.createMediaStreamDestination();
-                const audioPromises = [];
                 let timeOffset = 0;
-                if (state.globalBGM.url) {
-                    const gainNode = audioContext.createGain(); gainNode.gain.value = state.globalBGM.volume; gainNode.connect(destination);
-                    audioPromises.push(fetch(state.globalBGM.url).then(res => res.arrayBuffer()).then(buffer => audioContext.decodeAudioData(buffer)).then(decoded => { const source = audioContext.createBufferSource(); source.buffer = decoded; source.loop = !state.globalBGM.endTime; source.connect(gainNode); source.start(0, state.globalBGM.startTime || 0); }).catch(e => console.error('BGM 로딩 에러', e)));
-                }
-                for (const card of state.scriptCards) {
+                
+                const bgmPromise = (async () => {
+                    if (state.globalBGM.url) {
+                        try {
+                            const gainNode = audioContext.createGain();
+                            gainNode.gain.value = state.globalBGM.volume;
+                            gainNode.connect(destination);
+                            const response = await fetch(state.globalBGM.url);
+                            const buffer = await response.arrayBuffer();
+                            const decoded = await audioContext.decodeAudioData(buffer);
+                            const source = audioContext.createBufferSource();
+                            source.buffer = decoded;
+                            source.loop = !state.globalBGM.endTime;
+                            source.connect(gainNode);
+                            source.start(0, state.globalBGM.startTime || 0);
+                        } catch(e) { console.error('BGM 로딩 에러', e) }
+                    }
+                })();
+
+                const clipPromises = state.scriptCards.map(card => (async () => {
+                    const cardStartTime = timeOffset;
                     if (card.audioUrl) {
-                        const gainNode = audioContext.createGain();
-                        gainNode.gain.value = card.ttsVolume;
-                        gainNode.connect(destination);
-                        const sourceNode = audioContext.createBufferSource();
-                        sourceNode.playbackRate.value = card.ttsSettings.speed;
-                        sourceNode.connect(gainNode);
-                        audioPromises.push(fetch(card.audioUrl).then(res => res.arrayBuffer()).then(buffer => audioContext.decodeAudioData(buffer)).then(decoded => { sourceNode.buffer = decoded; sourceNode.start(timeOffset); }).catch(e => console.error('TTS 로딩 에러', e)));
+                        try {
+                            const gainNode = audioContext.createGain();
+                            gainNode.gain.value = card.ttsVolume;
+                            gainNode.connect(destination);
+                            const sourceNode = audioContext.createBufferSource();
+                            sourceNode.playbackRate.value = card.ttsSettings.speed;
+                            sourceNode.connect(gainNode);
+                            const response = await fetch(card.audioUrl);
+                            const buffer = await response.arrayBuffer();
+                            const decoded = await audioContext.decodeAudioData(buffer);
+                            sourceNode.buffer = decoded;
+                            sourceNode.start(cardStartTime);
+                        } catch(e) { console.error('TTS 로딩 에러', card.audioUrl, e); }
                     }
                     if (card.sfxUrl) {
-                        const gainNode = audioContext.createGain(); gainNode.gain.value = card.sfxVolume; gainNode.connect(destination);
-                        audioPromises.push(fetch(card.sfxUrl).then(res => res.arrayBuffer()).then(buffer => audioContext.decodeAudioData(buffer)).then(decoded => { const source = audioContext.createBufferSource(); source.buffer = decoded; source.connect(gainNode); source.start(timeOffset); }).catch(e => console.error('SFX 로딩 에러', e)));
+                       try {
+                            const gainNode = audioContext.createGain();
+                            gainNode.gain.value = card.sfxVolume;
+                            gainNode.connect(destination);
+                            const response = await fetch(card.sfxUrl);
+                            const buffer = await response.arrayBuffer();
+                            const decoded = await audioContext.decodeAudioData(buffer);
+                            const source = audioContext.createBufferSource();
+                            source.buffer = decoded;
+                            source.connect(gainNode);
+                            source.start(cardStartTime);
+                       } catch(e) { console.error('SFX 로딩 에러', card.sfxUrl, e); }
                     }
                     timeOffset += card.duration;
-                }
-                await Promise.all(audioPromises);
-                return { audioContext, destination, totalDuration: timeOffset };
+                })());
+                
+                await Promise.all([bgmPromise, ...clipPromises]);
+                
+                // 모든 오디오 준비 후 최종 오프셋 계산
+                const totalDuration = state.scriptCards.reduce((sum, card) => sum + card.duration, 0);
+
+                return { audioContext, destination, totalDuration };
             },
             
             renderVideoFrames(recorder, totalDuration, fps, scale) {
@@ -1104,10 +1163,10 @@
                             resolve();
                             return;
                         }
-
                         const elapsedTime = currentFrame / fps;
                         
-                        await this.renderFrameToCanvas(ctx, elapsedTime, scale);
+                        // DOM 상태 업데이트 및 렌더링
+                        await this.updateAndRenderDOM(ctx, elapsedTime, scale);
 
                         const progress = Math.min(100, (currentFrame / totalFrames) * 100);
                         UI.progressSubText.textContent = `프레임 ${currentFrame} / ${totalFrames}`;
@@ -1120,27 +1179,9 @@
                 });
             },
 
-            wrapText(context, text, x, y, maxWidth, lineHeight) {
-                const lines = text.split('\n');
-                context.textBaseline = 'top'; // 기준점을 top으로 통일
-                
-                // 텍스트 블록의 전체 높이를 계산
-                const totalTextHeight = lines.length * lineHeight;
-                // y좌표는 블록의 중앙이므로, 그리기 시작점(top)은 y - (전체높이/2)
-                let currentY = y - (totalTextHeight / 2);
-
-                for (const line of lines) {
-                    context.fillText(line, x, currentY);
-                    currentY += lineHeight;
-                }
-            },
-            
-            // 이 함수 하나가 모든 것을 처리하도록 단순화
-            async renderFrameToCanvas(ctx, elapsedTime, scale) {
-                const RENDER_WIDTH = ctx.canvas.width;
-                const RENDER_HEIGHT = ctx.canvas.height;
-                
-                // 1. 현재 시간에 맞는 카드와 카드 내 시간(timeInCard) 계산
+            // 이 함수가 핵심: DOM을 먼저 업데이트하고, 그 결과를 캔버스에 그립니다.
+            async updateAndRenderDOM(ctx, elapsedTime, scale) {
+                // 1. 현재 시간에 맞는 카드 정보 가져오기
                 let timeTally = 0;
                 let currentCardIndex = 0;
                 while (currentCardIndex < state.scriptCards.length - 1 && elapsedTime >= timeTally + state.scriptCards[currentCardIndex].duration) {
@@ -1150,149 +1191,151 @@
                 const card = state.scriptCards[currentCardIndex];
                 const timeInCard = elapsedTime - timeTally;
 
-                // 캔버스 초기화
-                ctx.clearRect(0, 0, RENDER_WIDTH, RENDER_HEIGHT);
-                ctx.fillStyle = '#FFFFFF';
-                ctx.fillRect(0, 0, RENDER_WIDTH, RENDER_HEIGHT);
+                // 2. 미리보기 DOM을 렌더링할 상태로 업데이트
+                const previewPanel = document.getElementById('st-preview-panel');
+                const textWrapper = document.getElementById('st-preview-text-container-wrapper');
+                const previewText = document.getElementById('st-preview-text');
+                const mediaWrapper = document.getElementById('st-preview-media-container-wrapper');
+                const previewVideo = document.getElementById('st-preview-video');
+                const previewImage = document.getElementById('st-preview-image');
 
-                // --- 헤더 및 프로젝트 정보 그리기 (이전과 동일, 안정적인 부분) ---
-                const headerHeight = 65 * scale;
-                ctx.fillStyle = state.projectSettings.header.backgroundColor;
-                ctx.fillRect(0, 0, RENDER_WIDTH, headerHeight);
-                ctx.font = `bold ${state.projectSettings.header.fontSize * scale}px ${state.projectSettings.header.fontFamily}`;
-                ctx.fillStyle = state.projectSettings.header.color;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(state.projectSettings.header.text, RENDER_WIDTH / 2, headerHeight / 2);
+                // 레이아웃/스타일 초기화 및 적용
+                render.applyTransform(textWrapper, card.layout.text);
+                render.applyTransform(mediaWrapper, card.layout.media);
+                Object.assign(previewText.style, card.style);
                 
-                const infoPadding = 10 * scale;
-                let currentY = headerHeight + infoPadding * 2;
-                ctx.font = `bold ${state.projectSettings.project.titleFontSize * scale}px ${state.projectSettings.project.titleFontFamily}`;
-                ctx.fillStyle = state.projectSettings.project.titleColor;
-                ctx.textAlign = 'left';
-                ctx.textBaseline = 'top';
-                ctx.fillText(state.projectSettings.project.title, infoPadding, currentY);
-                currentY += state.projectSettings.project.titleFontSize * scale * 1.2;
-                ctx.font = `${13 * scale}px 'Noto Sans KR'`;
-                ctx.fillStyle = state.projectSettings.project.metaColor;
-                const metaText = `${state.projectSettings.project.author} | 조회수 ${Number(state.projectSettings.project.views).toLocaleString()}`;
-                ctx.fillText(metaText, infoPadding, currentY);
-                currentY += 13 * scale * 2.5;
-                ctx.strokeStyle = '#eeeeee';
-                ctx.lineWidth = 1;
-                ctx.beginPath(); ctx.moveTo(0, currentY); ctx.lineTo(RENDER_WIDTH, currentY); ctx.stroke();
-                const contentStartY = currentY;
-
-                // 2. 애니메이션 값 계산
-                const textAnim = exporter.calculateAnimationValues(card.animations.text, card.duration, timeInCard);
-                const mediaAnim = exporter.calculateAnimationValues(card.animations.media, card.duration, timeInCard);
-
-                // 3. 텍스트 그리기
+                // 순차 텍스트 표시
                 let textToRender = '';
                 if (card.animationSequence.length > 0) {
                     card.segments.forEach(segment => {
-                        if (timeInCard >= segment.startTime) {
-                            textToRender += (textToRender ? '\n' : '') + segment.text;
-                        }
+                        if (timeInCard >= segment.startTime) { textToRender += (textToRender ? '\n' : '') + segment.text; }
                     });
-                } else {
-                    textToRender = card.text;
+                } else { textToRender = card.text; }
+                previewText.innerText = textToRender;
+
+                // 미디어 표시
+                mediaWrapper.style.display = card.media.url ? 'block' : 'none';
+                if (card.media.url) {
+                    if (card.media.type === 'video') {
+                        previewVideo.style.display = 'block'; previewImage.style.display = 'none';
+                        previewVideo.style.objectFit = card.media.fit;
+                        if(previewVideo.src !== card.media.url) previewVideo.src = card.media.url;
+                        const videoTime = (card.media.startTime || 0) + timeInCard;
+                        if (videoTime < previewVideo.duration) {
+                            previewVideo.currentTime = videoTime;
+                            await new Promise(res => { previewVideo.onseeked = res; previewVideo.onerror = res; });
+                        }
+                    } else {
+                        previewImage.style.display = 'block'; previewVideo.style.display = 'none';
+                        previewImage.style.objectFit = card.media.fit;
+                        if(previewImage.src !== card.media.url) previewImage.src = card.media.url;
+                    }
                 }
 
-                if (textToRender) {
+                // 애니메이션 값 계산 및 DOM에 opacity 직접 적용
+                const textAnim = this.calculateAnimationValues(card.animations.text, card.duration, timeInCard);
+                const mediaAnim = this.calculateAnimationValues(card.animations.media, card.duration, timeInCard);
+                textWrapper.style.opacity = textAnim.opacity;
+                mediaWrapper.style.opacity = mediaAnim.opacity;
+                // 슬라이드/줌 애니메이션은 transform으로 처리되므로 getBoundingClientRect로 자동 측정됨
+                textWrapper.style.transform = `translate(${card.layout.text.x}px, ${card.layout.text.y + textAnim.y}px) scale(${card.layout.text.scale * textAnim.scale}) rotate(${card.layout.text.angle}deg)`;
+                mediaWrapper.style.transform = `translate(${card.layout.media.x}px, ${card.layout.media.y + mediaAnim.y}px) scale(${card.layout.media.scale * mediaAnim.scale}) rotate(${card.layout.media.angle}deg)`;
+
+                // 3. 브라우저가 DOM을 다시 그릴 시간을 줌
+                await new Promise(requestAnimationFrame);
+
+                // 4. 최종 렌더링된 DOM의 상태를 캔버스에 그리기
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                
+                // 헤더, 프로젝트 정보 등 정적인 요소 그리기
+                const headerState = this.getDOMElementState(previewPanel.querySelector('.st-preview-header'), previewPanel, scale);
+                if (headerState) {
+                    const headerEl = previewPanel.querySelector('.st-preview-header');
+                    ctx.fillStyle = window.getComputedStyle(headerEl).backgroundColor;
+                    ctx.fillRect(headerState.x, headerState.y, headerState.width, headerState.height);
+                    const titleEl = headerEl.querySelector('.header-title');
+                    const style = window.getComputedStyle(titleEl);
+                    ctx.font = `${style.fontWeight} ${style.fontSize.replace('px','')*scale}px ${style.fontFamily}`;
+                    ctx.fillStyle = style.color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillText(titleEl.innerText, ctx.canvas.width / 2, headerState.y + headerState.height / 2);
+                }
+                const projectInfoState = this.getDOMElementState(previewPanel.querySelector('.st-project-info'), previewPanel, scale);
+                 if (projectInfoState) {
+                    const projectInfoEl = previewPanel.querySelector('.st-project-info');
+                    const titleEl = projectInfoEl.querySelector('.title');
+                    const metaEl = projectInfoEl.querySelector('span');
+                    const titleStyle = window.getComputedStyle(titleEl);
+                    const metaStyle = window.getComputedStyle(metaEl);
+
+                    ctx.font = `${titleStyle.fontWeight} ${parseFloat(titleStyle.fontSize)*scale}px ${titleStyle.fontFamily}`;
+                    ctx.fillStyle = titleStyle.color; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+                    ctx.fillText(titleEl.innerText, projectInfoState.x + (10 * scale), projectInfoState.y);
+                    
+                    ctx.font = `${metaStyle.fontWeight} ${parseFloat(metaStyle.fontSize)*scale}px ${metaStyle.fontFamily}`;
+                    ctx.fillStyle = metaStyle.color;
+                    const titleRect = this.getDOMElementState(titleEl, previewPanel, scale);
+                    ctx.fillText(metaEl.innerText, projectInfoState.x + (10 * scale), titleRect.y + titleRect.height);
+
+                    ctx.strokeStyle = '#eeeeee'; ctx.lineWidth = 1 * scale;
+                    ctx.beginPath();
+                    ctx.moveTo(projectInfoState.x, projectInfoState.y + projectInfoState.height);
+                    ctx.lineTo(projectInfoState.x + projectInfoState.width, projectInfoState.y + projectInfoState.height);
+                    ctx.stroke();
+                }
+
+                // 텍스트 그리기
+                const textElState = this.getDOMElementState(previewText, previewPanel, scale);
+                if(textElState) {
                     ctx.save();
-                    ctx.globalAlpha = textAnim.opacity; // 계산된 투명도 적용
-                    
-                    const textLayout = card.layout.text;
-                    const textStyle = card.style;
-                    const fontSize = parseInt(textStyle.fontSize) * scale;
-                    const lineHeight = fontSize * parseFloat(textStyle.lineHeight);
-                    
-                    ctx.font = `${fontSize}px ${textStyle.fontFamily}`;
-                    ctx.fillStyle = textStyle.color;
-                    ctx.textAlign = 'center';
-                    
-                    // Flexbox 레이아웃을 흉내내는 대신, 더 단순한 방식으로 중앙 배치
-                    const textBlockX = RENDER_WIDTH / 2 + textLayout.x * scale;
-                    const textBlockY = contentStartY + (RENDER_HEIGHT - contentStartY) / 3 + textLayout.y * scale + textAnim.y * scale;
-
-                    ctx.translate(textBlockX, textBlockY);
-                    ctx.scale(textLayout.scale * textAnim.scale, textLayout.scale * textAnim.scale);
-                    ctx.rotate(textLayout.angle * Math.PI / 180);
-                    
-                    exporter.wrapText(ctx, textToRender, 0, 0, RENDER_WIDTH, lineHeight);
-
+                    ctx.globalAlpha = parseFloat(window.getComputedStyle(textWrapper).opacity);
+                    const style = card.style;
+                    ctx.font = `${parseFloat(style.fontSize)*scale}px ${style.fontFamily}`;
+                    ctx.fillStyle = style.color;
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    const lines = previewText.innerText.split('\n');
+                    const lineHeight = parseFloat(style.fontSize) * scale * parseFloat(style.lineHeight);
+                    let yPos = textElState.y + textElState.height/2 - (lines.length-1)*lineHeight/2;
+                    lines.forEach(line => {
+                        ctx.fillText(line, textElState.x + textElState.width/2, yPos);
+                        yPos += lineHeight;
+                    });
                     ctx.restore();
                 }
-
-                // 4. 미디어 그리기
-                if (card.media.url) {
-                    const mediaEl = state.mediaElementCache.get(card.media.url);
-                    if (mediaEl) {
-                        // 비디오인 경우, 현재 프레임 시간으로 이동
-                        if (card.media.type === 'video') {
-                            const videoTime = (card.media.startTime || 0) + timeInCard;
-                            if (videoTime < mediaEl.duration) {
-                                mediaEl.currentTime = videoTime;
-                                await new Promise(res => { mediaEl.onseeked = res; mediaEl.onerror = res; });
-                            }
-                        }
-
-                        ctx.save();
-                        ctx.globalAlpha = mediaAnim.opacity; // 계산된 투명도 적용
-                        
-                        const mediaLayout = card.layout.media;
-                        const mediaBlockX = RENDER_WIDTH / 2 + mediaLayout.x * scale;
-                        const mediaBlockY = contentStartY + (RENDER_HEIGHT - contentStartY) * (2/3) + mediaLayout.y * scale + mediaAnim.y * scale;
-
-                        ctx.translate(mediaBlockX, mediaBlockY);
-                        ctx.scale(mediaLayout.scale * mediaAnim.scale, mediaLayout.scale * mediaAnim.scale);
-                        ctx.rotate(mediaLayout.angle * Math.PI / 180);
-
-                        const containerW = RENDER_WIDTH - (40 * scale); // 20px padding
-                        const containerH = (RENDER_HEIGHT - contentStartY) / 2; // 대략적인 미디어 영역 높이
-                        
-                        const elW = mediaEl.videoWidth || mediaEl.width;
-                        const elH = mediaEl.videoHeight || mediaEl.height;
-                        const mediaAspect = elW / elH;
-                        const containerAspect = containerW / containerH;
-
-                        let drawW, drawH;
-                        if (card.media.fit === 'cover') {
-                            if (mediaAspect > containerAspect) { drawH = containerH; drawW = containerH * mediaAspect; } 
-                            else { drawW = containerW; drawH = containerW / mediaAspect; }
-                        } else if (card.media.fit === 'fill') {
-                            drawW = containerW; drawH = containerH;
-                        } else { // contain
-                            if (mediaAspect > containerAspect) { drawW = containerW; drawH = containerW / mediaAspect; } 
-                            else { drawH = containerH; drawW = containerH * mediaAspect; }
-                        }
-                        
-                        // 그린 후 x, y를 중앙으로 맞추기 위해 -width/2, -height/2
-                        ctx.drawImage(mediaEl, -drawW / 2, -drawH / 2, drawW, drawH);
-
-                        ctx.restore();
+                
+                // 미디어 그리기
+                const mediaElToDraw = card.media.type === 'video' ? previewVideo : previewImage;
+                const mediaState = this.getDOMElementState(mediaElToDraw, previewPanel, scale);
+                if(mediaState && card.media.url) {
+                    ctx.save();
+                    ctx.globalAlpha = parseFloat(window.getComputedStyle(mediaWrapper).opacity);
+                    const mediaElement = state.mediaElementCache.get(card.media.url);
+                    if (mediaElement) {
+                        ctx.drawImage(mediaElement, mediaState.x, mediaState.y, mediaState.width, mediaState.height);
                     }
+                    ctx.restore();
                 }
             },
             
+            // 투명도/애니메이션 버그 수정된 버전
             calculateAnimationValues(animationSet, cardDuration, timeInCard) {
                 const animIn = animationSet.in; const animOut = animationSet.out;
+                // 기본값: 완전히 보이는 상태
                 let opacity = 1, scaleValue = 1, y = 0;
-                
-                if (animIn.name !== 'none' && timeInCard < animIn.duration) {
-                    const progress = timeInCard / animIn.duration;
-                    const easeOutQuad = t => t * (2 - t);
-                    const easedProgress = easeOutQuad(progress);
 
+                const easeOutQuad = t => t * (2 - t);
+
+                if (animIn.name !== 'none' && timeInCard >= 0 && timeInCard < animIn.duration) {
+                    const progress = timeInCard / animIn.duration;
+                    const easedProgress = easeOutQuad(progress);
                     switch(animIn.name) {
                         case 'fadeIn': opacity = easedProgress; break;
                         case 'slideInUp': opacity = easedProgress; y = 50 * (1 - easedProgress); break;
                         case 'zoomIn': opacity = easedProgress; scaleValue = 0.8 + 0.2 * easedProgress; break;
                     }
                 } else if (animOut.name !== 'none' && timeInCard > cardDuration - animOut.duration && animOut.duration > 0) {
-                    const progress = (cardDuration - timeInCard) / animOut.duration;
-                    
+                    const progress = Math.max(0, (cardDuration - timeInCard) / animOut.duration);
                     switch(animOut.name) {
                         case 'fadeOut': opacity = progress; break;
                         case 'slideOutDown': opacity = progress; y = 50 * (1 - progress); break;
@@ -1300,6 +1343,7 @@
                     }
                 }
                 
+                // 애니메이션 구간이 아닐 경우, 기본값(opacity: 1 등)이 그대로 반환됨
                 return { opacity, scale: scaleValue, y };
             }
         };
