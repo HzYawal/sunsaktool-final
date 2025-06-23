@@ -990,63 +990,71 @@
             handlers.addScriptCard('순삭툴에 오신 것을 환영합니다!\n텍스트를 선택해서 재생 순서를 정해보세요.');
         }
 
-                                                                 const exporter = {
-            ffmpeg: null, // FFmpeg 인스턴스를 저장할 변수
+                                                               const exporter = {
+            ffmpeg: null,
 
-            // FFmpeg 로딩 함수 (수정된 부분)
+            // loadFFmpeg 함수만 아래 내용으로 수정되었습니다.
             async loadFFmpeg() {
                 UI.progressSubText.textContent = '렌더링 엔진 로딩 중...';
                 if (this.ffmpeg) return;
 
-                const { FFmpeg } = window.FFmpeg; // [수정] 라이브러리에서 FFmpeg 생성자를 올바르게 가져옵니다.
-                const baseURL = "https://unpkg.com/@ffmpeg/core@0.11.0/dist/";
-                this.ffmpeg = new FFmpeg(); // [수정] 가져온 생성자로 객체를 만듭니다.
-                
-                this.ffmpeg.on('log', ({ message }) => {
-                    // console.log(message);
+                // 라이브러리가 로드될 때까지 대기
+                while (typeof FFmpeg === 'undefined' || typeof FFmpeg.createFFmpeg === 'undefined') {
+                    console.log('Waiting for FFmpeg to load...');
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+
+                // FFmpeg 공식 권장 방식 사용
+                this.ffmpeg = FFmpeg.createFFmpeg({
+                    log: true,
+                    progress: ({ ratio }) => {
+                        const progress = Math.round(ratio * 100);
+                        if (progress >= 0 && progress <= 100) {
+                            UI.progressSubText.textContent = `최종 영상 합성 중... ${progress}%`;
+                            UI.progressBarInner.style.width = `${progress}%`;
+                        }
+                    },
                 });
-                this.ffmpeg.on('progress', ({ ratio }) => {
-                    if (ratio >= 0 && ratio <= 1) {
-                        UI.progressSubText.textContent = `최종 영상 합성 중... ${Math.round(ratio * 100)}%`;
-                        UI.progressBarInner.style.width = `${ratio * 100}%`;
-                    }
-                });
-                
-                await this.ffmpeg.load({
-                    coreURL: await FFmpegUtil.toBlobURL(`${baseURL}ffmpeg-core.js`, "text/javascript"),
-                    wasmURL: await FFmpegUtil.toBlobURL(`${baseURL}ffmpeg-core.wasm`, "application/wasm"),
-                });
+
+                await this.ffmpeg.load();
             },
 
-            // 소리 없는 영상 녹화 함수
             async recordVideoOnly(totalDuration, fps) {
-                UI.progressText.textContent = '화면 녹화 중...';
+                UI.progressText.textContent = '화면 녹화를 시작해주세요.';
+                UI.progressSubText.textContent = '팝업 창에서 [이 탭 공유]를 선택하세요.';
                 
                 const previewPanel = document.getElementById('st-preview-panel');
-                // getDisplayMedia를 사용하여 고화질, 정확한 FPS 녹화 시도
-                const captureStream = await navigator.mediaDevices.getDisplayMedia({
-                    video: { frameRate: { ideal: fps, max: fps } },
-                    audio: false
-                });
+                
+                // captureStream 사용으로 복귀 (getDisplayMedia는 사용자 인터랙션이 복잡함)
+                const stream = previewPanel.captureStream(fps);
+                if (!stream) {
+                    throw new Error("미리보기 패널을 녹화할 수 없습니다.");
+                }
 
-                // 사용자가 현재 탭을 선택했는지 확인하는 것이 좋지만, 우선은 진행
-                const recorder = new MediaRecorder(captureStream, { mimeType: 'video/webm;codecs=vp9' });
+                const recorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
                 const chunks = [];
                 recorder.ondataavailable = e => chunks.push(e.data);
                 
                 const recordingPromise = new Promise(resolve => recorder.onstop = () => {
-                    // 녹화 스트림 중지
-                    captureStream.getTracks().forEach(track => track.stop());
                     resolve(new Blob(chunks, { type: 'video/webm' }));
                 });
 
-                // 전체 화면 재생 시작 (오디오 없이)
-                playback.start(true); // isMuted = true
+                playback.start(true); // 오디오 없이 재생 시작
                 recorder.start();
 
-                // 총 길이만큼 기다렸다가 녹화 종료
-                await new Promise(resolve => setTimeout(resolve, totalDuration * 1000 + 500)); // 0.5초 여유
+                // 렌더링 루프를 통해 진행률 업데이트
+                let frame = 0;
+                const totalFrames = Math.floor(totalDuration * fps);
+                const intervalId = setInterval(() => {
+                    frame++;
+                    const progress = Math.min(100, (frame / totalFrames) * 100);
+                    UI.progressSubText.textContent = `화면 녹화 중... ${Math.round(progress)}%`;
+                    UI.progressBarInner.style.width = `${progress}%`;
+                }, 1000 / fps);
+
+                await new Promise(resolve => setTimeout(resolve, totalDuration * 1000 + 500));
                 
+                clearInterval(intervalId);
                 if(recorder.state === 'recording'){
                     recorder.stop();
                 }
@@ -1055,13 +1063,13 @@
                 return await recordingPromise;
             },
 
-            // 오디오 트랙 생성 함수
             async createAudioTrack(totalDuration) {
+                // 이 함수는 이전과 동일합니다.
                 UI.progressText.textContent = '오디오 트랙 생성 중...';
                 
                 const audioContext = new OfflineAudioContext({
                     numberOfChannels: 2,
-                    length: Math.ceil((totalDuration + 0.5) * 44100), // 여유 시간 추가
+                    length: Math.ceil((totalDuration + 0.5) * 44100),
                     sampleRate: 44100,
                 });
                 
@@ -1119,12 +1127,8 @@
                     const totalDuration = state.scriptCards.reduce((sum, card) => sum + card.duration, 0);
 
                     await this.loadFFmpeg();
-
-                    // 탭 녹화 대신 화면 공유 API로 변경하여, 사용자가 '이 탭 공유'를 선택하도록 유도
-                    // 이 방식이 더 안정적이고 고화질 녹화에 유리합니다.
-                    UI.progressText.textContent = '화면 녹화를 시작해주세요 (이 탭 선택)';
-                    const videoBlob = await this.recordVideoOnly(totalDuration, 30);
                     
+                    const videoBlob = await this.recordVideoOnly(totalDuration, 30);
                     const audioBlob = await this.createAudioTrack(totalDuration);
 
                     UI.progressText.textContent = '최종 영상 생성 중...';
@@ -1174,7 +1178,6 @@
                 setUint32(0x46464952);      
                 setUint32(len - 8);           
                 setUint32(0x45564157);      
-
                 setUint32(0x20746d66);      
                 setUint32(16);              
                 setUint16(1);                 
@@ -1183,7 +1186,6 @@
                 setUint32(abuffer.sampleRate * 2 * numOfChan);
                 setUint16(numOfChan * 2);     
                 setUint16(16);                
-
                 setUint32(0x61746164);      
                 setUint32(len - pos - 4);     
 
@@ -1202,15 +1204,8 @@
 
                 return new Blob([buffer], {type: "audio/wav"});
 
-                function setUint16(data) {
-                    view.setUint16(pos, data, true);
-                    pos += 2;
-                }
-
-                function setUint32(data) {
-                    view.setUint32(pos, data, true);
-                    pos += 4;
-                }
+                function setUint16(data) { view.setUint16(pos, data, true); pos += 2; }
+                function setUint32(data) { view.setUint32(pos, data, true); pos += 4; }
             }
         };
         document.addEventListener('DOMContentLoaded', initialize);
