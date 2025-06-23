@@ -1,23 +1,5 @@
-# Netlify 빌드 및 배포에 대한 전체 설정 파일
-
-[build]
-  # Publish directory: 웹사이트로 배포할 폴더입니다.
-  # index.html이 루트에 있으므로 "."으로 설정합니다.
-  publish = "."
-  
-  # Functions directory: 서버리스 함수가 있는 폴더입니다.
-  # UI 설정과 동일하게 "netlify/"로 설정합니다.
-  functions = "netlify/"
-
-# 모든 함수에 적용될 공통 설정
-[functions]
-  # node_bundler: 이것이 매우 중요합니다!
-  # 이 설정을 통해 Netlify는 package.json을 읽고,
-  # 'node-fetch' 같은 의존성을 함수 코드와 함께 묶어줍니다(Bundling).
-  node_bundler = "esbuild"
-
-# create-tts 라는 이름의 특정 함수에 대한 추가 설정
-[functions."create-tts"]
-  # Timeout: 함수 실행 시간을 25초로 늘려,
-  # Typecast API의 응답을 기다리다 시간 초과로 실패하는 것을 방지합니다.
-  timeout = 25
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Cross-Origin-Opener-Policy = "same-origin"
+    Cross-Origin-Embedder-Policy = "require-corp"
