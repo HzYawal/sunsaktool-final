@@ -49,10 +49,10 @@
         .st-preview-content { padding: 10px; color: black; flex-grow: 1; display: flex; flex-direction: column; background-color: white; overflow: hidden; position: relative; }
         .st-project-info { font-size: 13px; color: #555; margin: 0 0 16px 0; border-bottom: 1px solid #eee; padding-bottom: 16px; flex-shrink: 0; }
         .st-project-info .title { font-size: 22px; color: black; font-weight: bold; margin-bottom: 5px; }
-        .st-script-display { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; position: relative; }
-        .interactive-target { position: absolute; width: auto; height: auto; max-width: calc(100% - 20px); max-height: calc(100% - 20px); touch-action: none; transform-origin: center center; cursor: move; display: flex; align-items: center; justify-content: center; }
+        .st-script-display { flex-grow: 1; display: flex; flex-direction: column; align-items: center; text-align: center; }
+        .interactive-target { position: relative; width: 100%; touch-action: none; transform-origin: center center; cursor: move; }
         #st-preview-media-container-wrapper { margin-top: 8px; }
-        #st-preview-image, #st-preview-video { max-width: 100%; max-height: 100%; }
+        #st-preview-image, #st-preview-video { max-width: 100%; max-height: 100%; object-fit: contain; }
         .interactive-target.interactive-active { outline: 2px dashed var(--st-interact-color); z-index: 100; }
         #st-preview-text { width: 100%; font-size: 24px; color: #000; white-space: pre-wrap; flex-shrink: 0; }
         .st-timeline-controls { width: 100%; max-width: 380px; display: flex; align-items: center; gap: 10px; margin-top: 15px;}
@@ -255,7 +255,7 @@
                 if (!response.ok) { const errorResult = await response.json(); throw new Error(`[${response.status}] ${errorResult.error || '서버 요청 실패'}`); }
                 const result = await response.json(); 
                 const { audioUrl } = result;
-                const duration = await helpers.getAudioDuration(audioUrl);
+                const duration = await helpers.getAudioDuration(audioUrl); // Get original duration
                 const ttsData = { audioUrl, duration };
                 state.ttsCache.set(cacheKey, ttsData); 
                 return ttsData;
@@ -522,29 +522,29 @@
                 
                 [textWrapper, mediaWrapper].forEach(el => {
                     el.classList.remove('is-animating', ...C.ANIMATIONS.map(a => a.value));
+                    el.style.animation = '';
                     el.style.animationDuration = '';
                 });
 
                 const applyAnimation = (el, anim) => {
                     if (!el || !anim || anim.name === 'none') return;
-                    el.classList.add('is-animating', anim.name);
+                    el.style.animationName = anim.name;
                     el.style.animationDuration = `${anim.duration}s`;
+                    el.style.animationFillMode = 'both';
                 };
                 
                 applyAnimation(textWrapper, card.animations.text.in);
                 applyAnimation(mediaWrapper, card.animations.media.in);
                 
-                const outDelay = (card.duration - Math.max(card.animations.text.out.duration, card.animations.media.out.duration, 0.1)) * 1000;
+                const outDelay = Math.max(0, (card.duration - Math.max(card.animations.text.out.duration, card.animations.media.out.duration, 0.1))) * 1000;
                 setTimeout(() => {
                     if (!state.isPlaying || state.playbackCurrentIndex !== index) return;
-                    textWrapper.classList.remove(card.animations.text.in.name);
-                    mediaWrapper.classList.remove(card.animations.media.in.name);
                     applyAnimation(textWrapper, card.animations.text.out);
                     applyAnimation(mediaWrapper, card.animations.media.out);
                 }, outDelay);
 
                 previewTextEl.innerHTML = '';
-                if (card.animationSequence.length > 0) {
+                if (card.animationSequence.length > 0) { // 순서 지정 시
                     card.segments.forEach((segment) => {
                         setTimeout(() => {
                             if (state.isPlaying && state.playbackCurrentIndex === index) {
@@ -553,7 +553,7 @@
                             }
                         }, segment.startTime * 1000);
                     });
-                } else {
+                } else { // 동시 표시
                      card.text.split('\n').forEach(line => {
                         const p = document.createElement('p'); p.className = 'preview-text-segment highlight'; p.textContent = line || ' '; p.style.margin = 0; previewTextEl.appendChild(p);
                      });
@@ -1077,7 +1077,7 @@
                     const renderLoop = async () => {
                         if (currentFrame > totalFrames) { if (recorder.state === 'recording') recorder.stop(); resolve(); return; }
                         const elapsedTime = currentFrame / fps;
-                        if (currentCardIndex < state.scriptCards.length - 1 && elapsedTime >= currentTimeTally + state.scriptCards[currentCardIndex].duration) { currentTimeTally += state.scriptCards[currentCardIndex].duration; currentCardIndex++; }
+                        while (currentCardIndex < state.scriptCards.length - 1 && elapsedTime >= currentTimeTally + state.scriptCards[currentCardIndex].duration) { currentTimeTally += state.scriptCards[currentCardIndex].duration; currentCardIndex++; }
                         const card = state.scriptCards[currentCardIndex];
                         const timeInCard = elapsedTime - currentTimeTally;
                         
@@ -1088,7 +1088,7 @@
                                 if (videoTime < videoEl.duration) {
                                     if (Math.abs(videoEl.currentTime - videoTime) > (1 / fps) * 2) {
                                        videoEl.currentTime = videoTime;
-                                       await new Promise(res => { videoEl.onseeked = () => res(); });
+                                       await new Promise(res => { videoEl.onseeked = () => res(); videoEl.onerror = () => res(); });
                                     }
                                 }
                             }
@@ -1115,21 +1115,17 @@
                 } else if (timeInCard > cardDuration - animOut.duration && animOut.duration > 0) {
                     progress = (cardDuration - timeInCard) / animOut.duration;
                     animName = animOut.name;
-                } else { return { opacity: 1, scale: 1, y: 0 }; }
+                } else { return { opacity: 1, scale: 1, y: 0, transformX: 0, transformY: 0 }; }
                 
                 const easeOutQuad = t => t * (2 - t); 
-                if (animName.includes('Out')) {
-                     progress = progress;
-                } else {
-                     progress = easeOutQuad(progress);
-                }
-                
+                let easedProgress = animName.includes('Out') ? 1 - progress : easeOutQuad(progress);
+
                 switch(animName) {
-                    case 'fadeIn': opacity = progress; break;
+                    case 'fadeIn': opacity = easedProgress; break;
                     case 'fadeOut': opacity = progress; break;
-                    case 'slideInUp': opacity = progress; y = 50 * (1 - progress); break;
+                    case 'slideInUp': opacity = easedProgress; y = 50 * (1 - easedProgress); break;
                     case 'slideOutDown': opacity = progress; y = 50 * (1 - progress); break;
-                    case 'zoomIn': opacity = progress; scaleValue = 0.8 + 0.2 * progress; break;
+                    case 'zoomIn': opacity = easedProgress; scaleValue = 0.8 + 0.2 * easedProgress; break;
                     case 'zoomOut': opacity = progress; scaleValue = 0.8 + 0.2 * progress; break;
                     default: return { opacity: 1, scale: 1, y: 0 };
                 }
@@ -1140,34 +1136,22 @@
                 context.textBaseline = 'middle';
                 const totalTextHeight = lines.length * lineHeight;
                 let startY = y - totalTextHeight / 2 + lineHeight / 2;
-                for (const line of lines) { context.fillText(line, x, startY); startY += lineHeight; }
+                for (const line of lines) { 
+                    context.fillText(line, x, startY); 
+                    startY += lineHeight; 
+                }
             },
             renderFrameToCanvas(ctx, card, scale, timeInCard) {
                 const RENDER_WIDTH = ctx.canvas.width; const RENDER_HEIGHT = ctx.canvas.height;
-                ctx.save();
                 ctx.clearRect(0, 0, RENDER_WIDTH, RENDER_HEIGHT);
                 ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, RENDER_WIDTH, RENDER_HEIGHT);
 
-                // --- Header ---
-                ctx.save();
                 const headerHeight = 65 * scale;
                 ctx.fillStyle = state.projectSettings.header.backgroundColor; ctx.fillRect(0, 0, RENDER_WIDTH, headerHeight);
                 ctx.font = `bold ${state.projectSettings.header.fontSize * scale}px ${state.projectSettings.header.fontFamily}`;
                 ctx.fillStyle = state.projectSettings.header.color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
                 ctx.fillText(state.projectSettings.header.text, RENDER_WIDTH / 2, headerHeight / 2);
-                if (state.projectSettings.header.logo.url) {
-                    const logoEl = state.mediaElementCache.get(state.projectSettings.header.logo.url);
-                    if (logoEl) {
-                        const logoSize = state.projectSettings.header.logo.size * scale;
-                        const logoX = RENDER_WIDTH - (15 * scale) - logoSize;
-                        const logoY = (headerHeight - logoSize) / 2;
-                        ctx.drawImage(logoEl, logoX, logoY, logoSize, logoSize);
-                    }
-                }
-                ctx.restore();
                 
-                // --- Project Info ---
-                ctx.save();
                 const infoPadding = 10 * scale; let currentY = headerHeight + infoPadding * 2;
                 ctx.font = `bold ${state.projectSettings.project.titleFontSize * scale}px ${state.projectSettings.project.titleFontFamily}`;
                 ctx.fillStyle = state.projectSettings.project.titleColor; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
@@ -1179,27 +1163,33 @@
                 currentY += 13 * scale * 2.5;
                 ctx.strokeStyle = '#eeeeee'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, currentY); ctx.lineTo(RENDER_WIDTH, currentY); ctx.stroke();
                 const contentStartY = currentY;
-                ctx.restore();
 
-                // --- Content Area Clip ---
                 ctx.save();
-                ctx.rect(0, contentStartY, RENDER_WIDTH, RENDER_HEIGHT - contentStartY); ctx.clip();
-
+                ctx.beginPath();
+                ctx.rect(0, contentStartY, RENDER_WIDTH, RENDER_HEIGHT - contentStartY);
+                ctx.clip();
+                
                 const textAnim = this.calculateAnimationValues(card.animations.text, card.duration, timeInCard);
                 const mediaAnim = this.calculateAnimationValues(card.animations.media, card.duration, timeInCard);
                 
                 let textToRender = '';
-                if(card.animationSequence.length > 0 && card.segments.length > 0) { card.segments.forEach(segment => { if(timeInCard >= segment.startTime) { textToRender += segment.text + '\n'; } }); textToRender = textToRender.trim(); } 
-                else { textToRender = card.text; }
+                if(card.animationSequence.length > 0 && card.segments.length > 0) { 
+                    card.segments.forEach(segment => { 
+                        if(timeInCard >= segment.startTime) { 
+                            textToRender += (textToRender ? '\n' : '') + segment.text;
+                        } 
+                    }); 
+                } else { 
+                    textToRender = card.text; 
+                }
                 
-                // --- Text Rendering ---
                 if (textToRender) {
                     ctx.save();
                     ctx.globalAlpha = textAnim.opacity;
                     const textLayout = card.layout.text; const textStyle = card.style;
-                    const textCenterX = RENDER_WIDTH / 2;
-                    const textCenterY = contentStartY + (RENDER_HEIGHT - contentStartY) / 2;
-                    ctx.translate(textCenterX + textLayout.x * scale, textCenterY + textLayout.y * scale + textAnim.y * scale);
+                    const textCenterX = RENDER_WIDTH / 2 + textLayout.x * scale;
+                    const textCenterY = contentStartY + (RENDER_HEIGHT - contentStartY) / 3 + textLayout.y * scale + textAnim.y * scale; 
+                    ctx.translate(textCenterX, textCenterY);
                     ctx.rotate(textLayout.angle * Math.PI / 180); 
                     ctx.scale(textLayout.scale * textAnim.scale, textLayout.scale * textAnim.scale);
                     ctx.font = `${parseInt(textStyle.fontSize) * scale}px ${textStyle.fontFamily}`;
@@ -1209,16 +1199,18 @@
                     ctx.restore();
                 }
                 
-                // --- Media Rendering ---
                 if (card.media.url) {
                     ctx.save();
                     ctx.globalAlpha = mediaAnim.opacity;
                     const mediaEl = state.mediaElementCache.get(card.media.url);
                     if (mediaEl) {
                         const mediaLayout = card.layout.media;
-                        const mediaCenterX = RENDER_WIDTH / 2;
-                        const mediaCenterY = contentStartY + (RENDER_HEIGHT - contentStartY) / 2;
-                        ctx.translate(mediaCenterX + mediaLayout.x * scale, mediaCenterY + mediaLayout.y * scale + mediaAnim.y * scale);
+                        const mediaMarginTop = 8 * scale;
+                        const mediaCenterX = RENDER_WIDTH / 2 + mediaLayout.x * scale;
+                        // 기본 위치를 텍스트 영역 아래로 조정 (flexbox column 모방)
+                        const mediaCenterY = contentStartY + (RENDER_HEIGHT - contentStartY) * (2/3) + mediaLayout.y * scale + mediaAnim.y * scale;
+                        
+                        ctx.translate(mediaCenterX, mediaCenterY);
                         ctx.rotate(mediaLayout.angle * Math.PI / 180); 
                         ctx.scale(mediaLayout.scale * mediaAnim.scale, mediaLayout.scale * mediaAnim.scale);
                         
@@ -1226,8 +1218,9 @@
                         const mediaAspect = elW / elH;
                         
                         let drawW, drawH;
-                        const containerW = RENDER_WIDTH - (40 * scale);
-                        const containerH = RENDER_HEIGHT - contentStartY - (20 * scale);
+                        // 미디어 컨테이너의 크기를 대략적으로 계산 (텍스트 영역 아래 남은 공간)
+                        const containerW = RENDER_WIDTH - (20 * scale);
+                        const containerH = (RENDER_HEIGHT - contentStartY) / 2;
                         const containerAspect = containerW / containerH;
 
                         if (card.media.fit === 'cover') {
@@ -1243,9 +1236,7 @@
                     }
                     ctx.restore();
                 }
-
-                ctx.restore(); // Restore Content Clip
-                ctx.restore(); // Restore Top Level
+                ctx.restore();
             },
         };
         document.addEventListener('DOMContentLoaded', initialize);
