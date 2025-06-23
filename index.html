@@ -6,6 +6,7 @@
     <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
     <script src="https://unpkg.com/@ffmpeg/util@0.11.0/dist/util.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=IBM+Plex+Sans+KR:wght@400;700&family=Gowun+Dodum&family=Gowun+Batang&family=Nanum+Myeongjo:wght@400;700;800&family=Do+Hyeon&family=Black+Han+Sans&family=Gaegu:wght@400;700&family=Hi+Melody&family=Noto+Serif+KR:wght@400;700;900&family=Dokdo&display=swap');
         @font-face { font-family: 'Pretendard'; src: url('https://cdn.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Regular.woff') format('woff'); font-weight: 400; }
@@ -477,9 +478,8 @@
                 }
             },
         };
-                const playback = {
+        const playback = {
             togglePlay: () => { state.isPlaying ? playback.stop() : playback.start(); },
-            // isMutedForRecord 파라미터 추가
             start: (isMutedForRecord = false) => {
                 interaction.deactivateAllInteractive();
                 const unready = state.scriptCards.some(c => c.text.trim() && !c.ttsReady);
@@ -487,7 +487,6 @@
                 if (state.scriptCards.length === 0) return;
                 state.isPlaying = true; UI.playAllBtn.textContent = '❚❚';
                 
-                // 녹화 중일 때는 BGM 재생 안 함
                 if (!isMutedForRecord) {
                     playback.playBGM();
                 }
@@ -502,11 +501,9 @@
                 document.getElementById('st-preview-video').pause();
                 document.querySelectorAll('.is-animating').forEach(el => el.classList.remove('is-animating', ...C.ANIMATIONS.map(a => a.value)));
                 state.currentPersistentMedia = null;
-                // 중지 시에는 항상 현재 선택된 카드로 복원
                 if(state.selectedCardId) render.updatePreviewDisplay();
             },
             playBGM: (bgmData = state.globalBGM) => {
-                // 이 함수는 수정 없음
                 if (bgmData && bgmData.url) {
                     if (UI.bgmPlayer.src !== bgmData.url) UI.bgmPlayer.src = bgmData.url;
                     UI.bgmPlayer.volume = state.globalBGM.volume; 
@@ -521,7 +518,6 @@
                     }
                 } else { UI.bgmPlayer.pause(); }
             },
-            // isMutedForRecord 파라미터 추가
             playCardByIndex(index, isMutedForRecord = false) {
                 if (index >= state.scriptCards.length || !state.isPlaying) { playback.stop(); return; }
                 state.playbackCurrentIndex = index;
@@ -571,7 +567,6 @@
                      });
                 }
                 
-                // 녹화 중일 때는 오디오 재생 안 함
                 if (!isMutedForRecord) {
                     if (card.audioUrl) { 
                         UI.ttsPlayer.src = card.audioUrl; 
@@ -990,17 +985,14 @@
             handlers.addScriptCard('순삭툴에 오신 것을 환영합니다!\n텍스트를 선택해서 재생 순서를 정해보세요.');
         }
 
-                                                                                       const exporter = {
+        const exporter = {
             ffmpeg: null,
-            assetCache: new Map(), // 이미지/비디오 로딩을 위한 캐시
+            assetCache: new Map(), // 오디오/비디오 blob 캐시
 
             // FFmpeg 로드
             async loadFFmpeg() {
                 UI.progressSubText.textContent = '렌더링 엔진 로딩 중...';
                 if (this.ffmpeg) return;
-                while (typeof FFmpeg === 'undefined' || typeof FFmpeg.createFFmpeg === 'undefined') {
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                }
                 const { createFFmpeg } = FFmpeg;
                 this.ffmpeg = createFFmpeg({
                     log: true,
@@ -1014,329 +1006,305 @@
                 UI.progressSubText.textContent = '렌더링 엔진 로딩 완료!';
             },
             
-            // 이미지/비디오 에셋을 미리 로드하고 캐시에 저장
-            async getAsset(url) {
-                if (this.assetCache.has(url)) {
-                    return this.assetCache.get(url);
-                }
-                try {
-                    const response = await fetch(url);
-                    const blob = await response.blob();
-                    const type = blob.type.split('/')[0];
-
-                    let element;
-                    if (type === 'image') {
-                        element = await createImageBitmap(blob);
-                    } else if (type === 'video') {
-                        element = document.createElement('video');
-                        element.autoplay = false;
-                        element.muted = true;
-                        element.loop = false;
-                        element.src = URL.createObjectURL(blob);
-                        await element.load();
-                        await new Promise(resolve => {
-                            element.onloadeddata = resolve;
-                        });
-                    }
-                    this.assetCache.set(url, element);
-                    return element;
-                } catch (e) {
-                    console.error(`에셋 로딩 실패: ${url}`, e);
-                    this.assetCache.set(url, null);
-                    return null;
-                }
-            },
-
-            // 현재 시간에 필요한 에셋들을 미리 로드
-            async preloadAssetsForTime(layers, currentTime) {
-                const activeLayers = layers.filter(layer => layer.source && currentTime >= layer.startTime && currentTime < layer.endTime);
-                const promises = activeLayers.map(layer => this.getAsset(layer.source));
-                await Promise.all(promises);
-            },
-            
-            // 애니메이션 타입에 맞는 보간 함수 반환 (수정된 부분)
-            getEasing(type) {
-                switch(type) {
-                    case 'fadeIn': case 'zoomIn': case 'slideInUp':
-                        return (t) => t; // 0 -> 1
-                    case 'fadeOut': case 'zoomOut': case 'slideOutDown':
-                        return (t) => 1 - t; // 1 -> 0
-                    default:
-                        return (t) => 1; // 애니메이션 없음
-                }
-            },
-
-            // 애니메이션 속성 계산
-            calculateAnimatedProperties(layer, currentTime) {
-                const props = { ...layer.properties };
-                props.opacity = 1.0; // 기본 투명도
-
-                (layer.animations || []).forEach(anim => {
-                    const animStartTime = anim.startTime;
-                    const animEndTime = anim.startTime + anim.duration;
-
-                    if (currentTime >= animStartTime && currentTime < animEndTime) {
-                        const progress = Math.max(0, Math.min(1, (currentTime - animStartTime) / anim.duration));
-                        const value = this.getEasing(anim.type)(progress);
-
-                        switch (anim.type) {
-                            case 'fadeIn': props.opacity *= value; break;
-                            case 'fadeOut': props.opacity *= value; break;
-                            case 'zoomIn':
-                                props.scale = (props.scale ?? 1) * (0.8 + 0.2 * value);
-                                props.opacity *= value;
-                                break;
-                            case 'zoomOut':
-                                props.scale = (props.scale ?? 1) * (0.8 + 0.2 * value);
-                                props.opacity *= value;
-                                break;
-                            case 'slideInUp':
-                                props.y = (props.y ?? 0) - (50 * (1 - value));
-                                props.opacity *= value;
-                                break;
-                            case 'slideOutDown':
-                                props.y = (props.y ?? 0) + (50 * value);
-                                props.opacity *= (1-value); // fadeOut과 로직이 겹치지 않게 수정
-                                break;
-                        }
-                    }
-                });
-                return props;
-            },
-            
-            // 프레임 렌더링 함수
-            async renderFrame(timeline, currentTime) {
-                const canvas = new OffscreenCanvas(timeline.width, timeline.height);
-                const ctx = canvas.getContext('2d');
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                
-                ctx.fillStyle = timeline.backgroundColor || 'white';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                await this.preloadAssetsForTime(timeline.layers, currentTime);
-                
-                const visualLayers = timeline.layers
-                    .filter(layer => layer.type !== 'audio')
-                    .sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
-
-                for (const layer of visualLayers) {
-                    if (currentTime >= layer.startTime && currentTime < layer.endTime) {
-                        const props = this.calculateAnimatedProperties(layer, currentTime);
-
-                        if(props.opacity <= 0) continue; // 투명하면 그리지 않음
-
-                        ctx.save();
-                        ctx.globalAlpha = props.opacity;
-
-                        if (layer.type === 'rect') {
-                             ctx.fillStyle = props.color || 'black';
-                             ctx.fillRect(props.x, props.y, props.width, props.height);
-                        } else {
-                            const centerX = props.x + (props.width / 2);
-                            const centerY = props.y + (props.height / 2);
-                            ctx.translate(centerX, centerY);
-                            ctx.scale(props.scale ?? 1, props.scale ?? 1);
-                            ctx.rotate((props.angle ?? 0) * Math.PI / 180);
-                            ctx.translate(-centerX, -centerY);
-
-                            if (layer.type === 'text') {
-                                ctx.fillStyle = props.color || 'black';
-                                ctx.font = `${props.fontSize}px ${props.fontFamily}`;
-                                ctx.textAlign = 'center';
-                                ctx.textBaseline = 'middle';
-                                const lines = layer.content.split('\n');
-                                const lineHeight = props.fontSize * (props.lineHeight || 1.2);
-                                const totalTextHeight = (lines.length -1) * lineHeight;
-                                let startY = props.y - (totalTextHeight / 2);
-                                
-                                lines.forEach(line => {
-                                    ctx.fillText(line, props.x, startY);
-                                    startY += lineHeight;
-                                });
-
-                            } else if (layer.type === 'image' || layer.type === 'video') {
-                                const asset = this.assetCache.get(layer.source);
-                                if (asset) {
-                                    const assetWidth = layer.type === 'image' ? asset.width : asset.videoWidth;
-                                    const assetHeight = layer.type === 'image' ? asset.height : asset.videoHeight;
-                                    const assetRatio = assetWidth / assetHeight;
-                                    const containerRatio = props.width / props.height;
-                                    let sx=0, sy=0, sWidth=assetWidth, sHeight=assetHeight;
-                                    let dx=props.x, dy=props.y, dWidth=props.width, dHeight=props.height;
-                                    
-                                    if(props.fit === 'contain') {
-                                        if(assetRatio > containerRatio) { dHeight = props.width / assetRatio; dy = props.y + (props.height - dHeight) / 2; } 
-                                        else { dWidth = props.height * assetRatio; dx = props.x + (props.width - dWidth) / 2; }
-                                    } else if(props.fit === 'cover') {
-                                         if(assetRatio < containerRatio) { sHeight = assetWidth / containerRatio; sy = (assetHeight - sHeight) / 2; } 
-                                         else { sWidth = assetHeight * containerRatio; sx = (assetWidth - sWidth) / 2; }
-                                    }
-
-                                    if(layer.type === 'video') {
-                                        const videoTime = (currentTime - layer.startTime) + (layer.videoStartTime || 0);
-                                        if (asset.currentTime !== videoTime) {
-                                            asset.currentTime = videoTime;
-                                            await new Promise(r => { asset.onseeked = r; setTimeout(r, 20);});
-                                        }
-                                    }
-                                    ctx.drawImage(asset, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight);
-                                }
-                            }
-                        }
-                        ctx.restore();
-                    }
-                }
-                return canvas;
-            },
-
-            // 카드 데이터를 타임라인 데이터로 변환
-            convertCardsToTimeline(cards, projectSettings, globalBGM) {
-                const totalDuration = cards.reduce((sum, c) => sum + c.duration, 0);
-                const timeline = { width: 1080, height: 1920, duration: totalDuration, backgroundColor: 'white', layers: [], audioTracks: [] };
-                const previewPanelWidth = 420; // 실제 미리보기 패널의 CSS 너비
-                const scaleRatio = timeline.width / previewPanelWidth;
-
-                // 오디오 트랙 추가
-                if (globalBGM.url) { timeline.audioTracks.push({ source: globalBGM.url, startTime: 0, volume: globalBGM.volume, loop: !globalBGM.endTime, trim: { start: globalBGM.startTime, end: globalBGM.endTime } }); }
-                let globalTime = 0;
-                cards.forEach(card => {
-                    if (card.audioUrl) timeline.audioTracks.push({ source: card.audioUrl, startTime: globalTime, volume: card.ttsVolume, speed: card.ttsSettings.speed });
-                    if (card.sfxUrl) timeline.audioTracks.push({ source: card.sfxUrl, startTime: globalTime, volume: card.sfxVolume });
-                    globalTime += card.duration;
+            // 특정 시간(currentTime)에 맞게 DOM 상태를 업데이트하는 함수
+            async renderDOMForTime(currentTime) {
+                // 모든 애니메이션 클래스 초기화
+                document.querySelectorAll('.is-animating').forEach(el => {
+                    el.classList.remove('is-animating', ...C.ANIMATIONS.map(a => a.value));
+                    el.style.animation = '';
                 });
 
-                // 시각적 레이어 추가
-                // 프로젝트 헤더, 정보 등 전체에 걸쳐 표시될 요소들
-                // ... (이 부분은 필요에 따라 더 정교하게 구현 가능)
+                let accumulatedTime = 0;
+                let currentCard = null;
+                let timeInCard = 0;
 
-                globalTime = 0;
-                cards.forEach((card, index) => {
-                    const cardStartTime = globalTime;
-                    const cardEndTime = globalTime + card.duration;
+                for (const card of state.scriptCards) {
+                    const cardEndTime = accumulatedTime + card.duration;
+                    if (currentTime >= accumulatedTime && currentTime < cardEndTime) {
+                        currentCard = card;
+                        timeInCard = currentTime - accumulatedTime;
+                        break;
+                    }
+                    accumulatedTime += card.duration;
+                }
+
+                if (!currentCard) { // 영상 끝부분 처리
+                    if (state.scriptCards.length > 0) {
+                         currentCard = state.scriptCards[state.scriptCards.length-1];
+                         timeInCard = currentCard.duration;
+                    } else {
+                         return; // 카드가 없으면 아무것도 안함
+                    }
+                }
+
+                // 현재 카드 선택 및 미리보기 업데이트 (기존 로직 활용)
+                handlers.selectCard(currentCard.id, true);
+
+                const textWrapper = document.getElementById('st-preview-text-container-wrapper');
+                const mediaWrapper = document.getElementById('st-preview-media-container-wrapper');
+                const previewVideo = document.getElementById('st-preview-video');
+                
+                // 애니메이션 상태 계산 및 적용
+                const applyAnimationState = (el, animIn, animOut, duration) => {
+                    const inDuration = animIn.duration;
+                    const outStartTime = duration - animOut.duration;
                     
-                    const textLayout = card.layout.text;
-                    const textProps = {
-                        x: textLayout.x * scaleRatio + (timeline.width / 2),
-                        y: textLayout.y * scaleRatio + (timeline.height / 2),
-                        scale: textLayout.scale, angle: textLayout.angle,
-                        ...card.style, fontSize: parseFloat(card.style.fontSize) * scaleRatio,
-                    };
-                    timeline.layers.push({
-                        type: 'text', content: card.text, startTime: cardStartTime, endTime: cardEndTime, zIndex: 20, properties: textProps,
-                        animations: [
-                            { type: card.animations.text.in.name, startTime: cardStartTime, duration: card.animations.text.in.duration },
-                            { type: card.animations.text.out.name, startTime: cardEndTime - card.animations.text.out.duration, duration: card.animations.text.out.duration }
-                        ]
-                    });
+                    el.style.opacity = 1;
+                    el.style.transform = `translate(${el.dataset.x || 0}px, ${el.dataset.y || 0}px) scale(${el.dataset.scale || 1}) rotate(${el.dataset.angle || 0}deg)`;
 
-                    if (card.media.url) {
-                        let mediaEndTime = cardEndTime;
-                        if(card.media.persistUntilCardId) {
-                            const endIndex = cards.findIndex(c => c.id === card.media.persistUntilCardId);
-                            if(endIndex > index) mediaEndTime = cards.slice(0, endIndex + 1).reduce((sum, c) => sum + c.duration, 0);
+                    let progress = 0;
+
+                    if (timeInCard < inDuration) { // In Animation
+                        progress = timeInCard / inDuration;
+                        const easedValue = exporter.getEasing(animIn.name)(progress);
+                        exporter.applyAnimProps(el, animIn.name, easedValue, true);
+                    } else if (timeInCard > outStartTime) { // Out Animation
+                        progress = (timeInCard - outStartTime) / animOut.duration;
+                        const easedValue = exporter.getEasing(animOut.name)(progress);
+                        exporter.applyAnimProps(el, animOut.name, easedValue, false);
+                    }
+                };
+                
+                // 미리보기 레이아웃을 위해 데이터 속성에 위치 저장
+                textWrapper.dataset.x = currentCard.layout.text.x || 0;
+                textWrapper.dataset.y = currentCard.layout.text.y || 0;
+                textWrapper.dataset.scale = currentCard.layout.text.scale || 1;
+                textWrapper.dataset.angle = currentCard.layout.text.angle || 0;
+                mediaWrapper.dataset.x = currentCard.layout.media.x || 0;
+                mediaWrapper.dataset.y = currentCard.layout.media.y || 0;
+                mediaWrapper.dataset.scale = currentCard.layout.media.scale || 1;
+                mediaWrapper.dataset.angle = currentCard.layout.media.angle || 0;
+                
+                applyAnimationState(textWrapper, currentCard.animations.text.in, currentCard.animations.text.out, currentCard.duration);
+                if (currentCard.media.url) {
+                    applyAnimationState(mediaWrapper, currentCard.animations.media.in, currentCard.animations.media.out, currentCard.duration);
+                }
+
+                // 텍스트 순차 등장 처리
+                const previewTextEl = document.getElementById('st-preview-text');
+                previewTextEl.innerHTML = '';
+                if (currentCard.animationSequence.length > 0) {
+                    currentCard.segments.forEach(segment => {
+                        if (timeInCard >= segment.startTime) {
+                             const p = document.createElement('p'); p.className = 'preview-text-segment highlight'; p.textContent = segment.text || ' '; p.style.margin = 0; previewTextEl.appendChild(p);
                         }
-                        
-                        const mediaLayout = card.layout.media;
-                        const mediaProps = {
-                             x: mediaLayout.x * scaleRatio, y: mediaLayout.y * scaleRatio,
-                             width: (mediaLayout.width || previewPanelWidth) * scaleRatio,
-                             height: (mediaLayout.height || 300) * scaleRatio, // 임시 높이
-                             scale: mediaLayout.scale, angle: mediaLayout.angle, fit: card.media.fit
-                        };
-                        timeline.layers.push({
-                            type: card.media.type, source: card.media.url, startTime: cardStartTime, endTime: mediaEndTime, videoStartTime: card.media.startTime, zIndex: 10, properties: mediaProps,
-                            animations: [
-                                { type: card.animations.media.in.name, startTime: cardStartTime, duration: card.animations.media.in.duration },
-                                { type: card.animations.media.out.name, startTime: mediaEndTime - card.animations.media.out.duration, duration: card.animations.media.out.duration }
-                            ]
+                    });
+                } else {
+                     currentCard.text.split('\n').forEach(line => {
+                        const p = document.createElement('p'); p.className = 'preview-text-segment highlight'; p.textContent = line || ' '; p.style.margin = 0; previewTextEl.appendChild(p);
+                     });
+                }
+                
+                // 비디오 프레임 처리
+                if (currentCard.media.type === 'video' && previewVideo.style.display !== 'none') {
+                    const videoTime = timeInCard + (currentCard.media.startTime || 0);
+                    if (previewVideo.currentTime !== videoTime) {
+                        previewVideo.currentTime = videoTime;
+                        // 'seeked' 이벤트를 기다려 정확한 프레임을 보장
+                        await new Promise(resolve => {
+                            const onSeeked = () => {
+                                previewVideo.removeEventListener('seeked', onSeeked);
+                                resolve();
+                            };
+                            previewVideo.addEventListener('seeked', onSeeked);
+                            // 타임아웃 fallback
+                            setTimeout(resolve, 100); 
                         });
                     }
-                    globalTime += card.duration;
-                });
-                return timeline;
+                }
+            },
+
+            // 애니메이션 타입에 따른 보간 값 (0 -> 1)
+            getEasing: (type) => (t) => t, // 간단한 Linear easing, 필요시 복잡한 함수로 교체 가능
+
+            // 계산된 애니메이션 속성을 DOM 요소에 직접 적용
+            applyAnimProps: (el, type, progress, isIntro) => {
+                const initialTransform = `translate(${el.dataset.x || 0}px, ${el.dataset.y || 0}px) scale(${el.dataset.scale || 1}) rotate(${el.dataset.angle || 0}deg)`;
+                let newTransform = initialTransform;
+
+                switch (type) {
+                    case 'fadeIn': el.style.opacity = progress; break;
+                    case 'fadeOut': el.style.opacity = 1 - progress; break;
+                    case 'zoomIn':
+                        el.style.opacity = progress;
+                        newTransform += ` scale(${0.8 + 0.2 * progress})`;
+                        break;
+                    case 'zoomOut':
+                        el.style.opacity = 1 - progress;
+                        newTransform += ` scale(${1 - 0.2 * progress})`;
+                        break;
+                    case 'slideInUp':
+                        el.style.opacity = progress;
+                        newTransform += ` translateY(${50 * (1 - progress)}px)`;
+                        break;
+                    case 'slideOutDown':
+                         el.style.opacity = 1 - progress;
+                         newTransform += ` translateY(${50 * progress}px)`;
+                        break;
+                }
+                el.style.transform = newTransform;
             },
             
             // 오디오 트랙 합성
-            async createAudioTrack(timeline) {
-                const audioContext = new OfflineAudioContext({ numberOfChannels: 2, length: Math.ceil((timeline.duration + 0.5) * 44100), sampleRate: 44100 });
-                const promises = timeline.audioTracks.map(async (track) => {
-                    try {
-                        const response = await fetch(track.source);
-                        const arrayBuffer = await response.arrayBuffer();
-                        const decoded = await audioContext.decodeAudioData(arrayBuffer);
-                        const gainNode = audioContext.createGain(); gainNode.gain.value = track.volume ?? 1.0; gainNode.connect(audioContext.destination);
-                        const source = audioContext.createBufferSource(); source.buffer = decoded; source.playbackRate.value = track.speed ?? 1.0; source.loop = track.loop ?? false;
-                        if(source.loop && track.trim) { source.loopStart = track.trim.start || 0; source.loopEnd = track.trim.end || decoded.duration; }
-                        source.connect(gainNode);
-                        const trimStart = track.trim?.start || 0; const trimDuration = track.trim?.end ? track.trim.end - trimStart : undefined;
-                        source.start(track.startTime, trimStart, trimDuration);
-                    } catch(e) { console.error('오디오 트랙 처리 오류:', track.source, e); }
+            async createAudioTrack() {
+                const totalDuration = state.scriptCards.reduce((sum, c) => sum + c.duration, 0);
+                const audioContext = new OfflineAudioContext({ numberOfChannels: 2, length: Math.ceil((totalDuration + 1) * 44100), sampleRate: 44100 });
+                
+                const fetchAndDecode = async (url) => {
+                    if (exporter.assetCache.has(url)) return exporter.assetCache.get(url);
+                    const response = await fetch(url);
+                    const arrayBuffer = await response.arrayBuffer();
+                    const decoded = await audioContext.decodeAudioData(arrayBuffer);
+                    exporter.assetCache.set(url, decoded);
+                    return decoded;
+                };
+
+                const audioTracks = [];
+                if (state.globalBGM.url) { audioTracks.push({ ...state.globalBGM, startTime: 0, isBGM: true }); }
+                let globalTime = 0;
+                state.scriptCards.forEach(card => {
+                    if (card.audioUrl) audioTracks.push({ url: card.audioUrl, startTime: globalTime, volume: card.ttsVolume, speed: card.ttsSettings.speed });
+                    if (card.sfxUrl) audioTracks.push({ url: card.sfxUrl, startTime: globalTime, volume: card.sfxVolume });
+                    globalTime += card.duration;
                 });
-                await Promise.all(promises);
+
+                await Promise.all(audioTracks.map(async (track) => {
+                    try {
+                        const decoded = await fetchAndDecode(track.url);
+                        const gainNode = audioContext.createGain(); gainNode.gain.value = track.volume ?? 1.0; gainNode.connect(audioContext.destination);
+                        const source = audioContext.createBufferSource(); source.buffer = decoded;
+                        if (track.speed) source.playbackRate.value = track.speed;
+                        source.connect(gainNode);
+                        
+                        if (track.isBGM) {
+                            source.loop = track.endTime ? false : true;
+                            if(source.loop) {
+                                source.loopStart = track.startTime || 0;
+                                source.loopEnd = track.endTime || decoded.duration;
+                            }
+                            const offset = track.startTime || 0;
+                            const duration = track.endTime ? track.endTime - offset : undefined;
+                            source.start(0, offset, duration);
+                        } else {
+                            source.start(track.startTime);
+                        }
+                    } catch(e) { console.error('오디오 트랙 처리 오류:', track.url, e); }
+                }));
+                
                 const renderedBuffer = await audioContext.startRendering();
                 return this.bufferToWave(renderedBuffer);
             },
-            
+
             // 최종 내보내기 실행
             async startExport() {
                 if (state.scriptCards.some(c => c.text.trim() && !c.ttsReady)) return alert('아직 음성 생성이 완료되지 않은 스크립트가 있습니다.');
                 if (state.scriptCards.length === 0) return alert('출력할 영상이 없습니다.');
+                
+                playback.stop(); // 재생 중지
                 UI.exportBtn.disabled = true;
                 UI.progressOverlay.style.display = 'flex';
                 this.assetCache.clear();
 
-                try {
-                    UI.progressText.textContent = '준비 중...'; await this.loadFFmpeg();
-                    UI.progressText.textContent = '타임라인 구성 중...'; UI.progressBarInner.style.width = '0%';
-                    const timeline = this.convertCardsToTimeline(state.scriptCards, state.projectSettings, state.globalBGM);
-                    UI.progressText.textContent = '오디오 트랙 생성 중...';
-                    const audioBlob = await this.createAudioTrack(timeline);
-                    this.ffmpeg.FS('writeFile', 'audio.wav', new Uint8Array(await audioBlob.arrayBuffer()));
+                // 미리보기 패널을 최종 렌더링 크기로 일시적 변경
+                const previewPanel = document.getElementById('st-preview-panel');
+                const originalStyle = { width: previewPanel.style.width, height: previewPanel.style.height, transform: previewPanel.style.transform, transformOrigin: previewPanel.style.transformOrigin };
+                Object.assign(previewPanel.style, {
+                    width: '1080px',
+                    height: '1920px',
+                    transform: 'scale(0.35) translate(-85%, -85%)', // 화면에 보이도록 축소/이동
+                    transformOrigin: 'top left',
+                });
 
+
+                try {
+                    await this.loadFFmpeg();
+                    UI.progressText.textContent = '오디오 트랙 생성 중...'; UI.progressBarInner.style.width = '0%';
+                    const audioBlob = await this.createAudioTrack();
+                    this.ffmpeg.FS('writeFile', 'audio.wav', new Uint8Array(await audioBlob.arrayBuffer()));
+                    
                     const fps = 30;
-                    const totalFrames = Math.floor(timeline.duration * fps);
+                    const totalDuration = state.scriptCards.reduce((sum, c) => sum + c.duration, 0);
+                    const totalFrames = Math.floor(totalDuration * fps);
+                    
                     for (let i = 0; i < totalFrames; i++) {
                         const currentTime = i / fps;
-                        const frameCanvas = await this.renderFrame(timeline, currentTime);
-                        const blob = await frameCanvas.convertToBlob({ type: 'image/png' });
-                        const frameData = new Uint8Array(await blob.arrayBuffer());
-                        const frameNumber = String(i).padStart(5, '0');
-                        this.ffmpeg.FS('writeFile', `frame-${frameNumber}.png`, frameData);
-                        
-                        const progress = ((i + 1) / totalFrames) * 100;
-                        UI.progressBarInner.style.width = `${progress}%`;
                         UI.progressText.textContent = `비디오 프레임 렌더링 중... ${i + 1}/${totalFrames}`;
+                        UI.progressSubText.textContent = `시간: ${currentTime.toFixed(2)}s`;
+                        UI.progressBarInner.style.width = `${((i + 1) / totalFrames) * 100}%`;
+                        
+                        // 1. 현재 시간에 맞게 DOM 상태 업데이트
+                        await this.renderDOMForTime(currentTime);
+
+                        // 2. DOM을 이미지로 캡처
+                        const dataUrl = await htmlToImage.toPng(previewPanel, {
+                            width: 1080,
+                            height: 1920,
+                            // 폰트가 깨지지 않도록 외부 폰트 포함
+                            fontEmbedCSS: Array.from(document.styleSheets)
+                                .map(s => s.href)
+                                .filter(Boolean)
+                                .join('\n'),
+                        });
+                        
+                        // 3. 캡처한 이미지를 FFmpeg에 저장
+                        const frameData = await (await fetch(dataUrl)).arrayBuffer();
+                        const frameNumber = String(i).padStart(5, '0');
+                        this.ffmpeg.FS('writeFile', `frame-${frameNumber}.png`, new Uint8Array(frameData));
                     }
                     
                     UI.progressText.textContent = '최종 영상 합성 중...';
                     UI.progressBarInner.style.width = `0%`;
-                    await this.ffmpeg.run( '-framerate', String(fps), '-i', 'frame-%05d.png', '-i', 'audio.wav', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-shortest', 'output.mp4');
+                    await this.ffmpeg.run( '-framerate', String(fps), '-i', 'frame-%05d.png', '-i', 'audio.wav', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-shortest', '-y', 'output.mp4');
 
                     const outputData = this.ffmpeg.FS('readFile', 'output.mp4');
                     const a = document.createElement('a');
                     a.href = URL.createObjectURL(new Blob([outputData.buffer], { type: 'video/mp4' }));
                     a.download = `${state.projectSettings.project.title || 'sunsak-video'}.mp4`;
                     a.click();
+                    URL.revokeObjectURL(a.href);
 
+                    UI.progressSubText.textContent = '파일 정리 중...';
                     for (let i = 0; i < totalFrames; i++) { this.ffmpeg.FS('unlink', `frame-${String(i).padStart(5, '0')}.png`); }
-                    this.ffmpeg.FS('unlink', 'audio.wav'); this.ffmpeg.FS('unlink', 'output.mp4');
+                    this.ffmpeg.FS('unlink', 'audio.wav'); 
+                    this.ffmpeg.FS('unlink', 'output.mp4');
                 } catch (error) {
                     console.error("영상 생성 오류:", error);
-                    alert(`영상 생성 중 오류가 발생했습니다: ${error.message}`);
+                    alert(`영상 생성 중 치명적인 오류가 발생했습니다: ${error.message}`);
                 } finally {
+                    // 미리보기 패널 스타일 원상복구
+                    Object.assign(previewPanel.style, originalStyle);
                     UI.exportBtn.disabled = false;
                     UI.progressOverlay.style.display = 'none';
                     this.assetCache.clear();
+                    // 마지막 카드 상태로 미리보기 복원
+                    if (state.selectedCardId) handlers.selectCard(state.selectedCardId);
                 }
             },
 
             // WAV 변환 헬퍼 함수
             bufferToWave(abuffer) {
                 let numOfChan = abuffer.numberOfChannels, len = abuffer.length * numOfChan * 2 + 44, buffer = new ArrayBuffer(len), view = new DataView(buffer), channels = [], i, sample, offset = 0, pos = 0;
-                setUint32(0x46464952); setUint32(len - 8); setUint32(0x45564157); setUint32(0x20746d66); setUint32(16); setUint16(1); setUint16(numOfChan); setUint32(abuffer.sampleRate); setUint32(abuffer.sampleRate * 2 * numOfChan); setUint16(numOfChan * 2); setUint16(16); setUint32(0x61746164); setUint32(len - pos - 4);
+                setUint32(0x46464952); // "RIFF"
+                setUint32(len - 8); // file length - 8
+                setUint32(0x45564157); // "WAVE"
+                setUint32(0x20746d66); // "fmt " chunk
+                setUint32(16); // length of fmt data
+                setUint16(1); // PCM - integer samples
+                setUint16(numOfChan); // two channels
+                setUint32(abuffer.sampleRate); // samples per second
+                setUint32(abuffer.sampleRate * 2 * numOfChan); // avg bytes per second
+                setUint16(numOfChan * 2); // block-align
+                setUint16(16); // 16-bit samples
+                setUint32(0x61746164); // "data" - chunk
+                setUint32(len - pos - 4); // chunk length
                 for(i = 0; i < abuffer.numberOfChannels; i++) channels.push(abuffer.getChannelData(i));
                 while(pos < len) {
-                    for(i = 0; i < numOfChan; i++) { sample = Math.max(-1, Math.min(1, channels[i][offset])); sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767)|0; view.setInt16(pos, sample, true); pos += 2; }
+                    for(i = 0; i < numOfChan; i++) {
+                        sample = Math.max(-1, Math.min(1, channels[i][offset]));
+                        sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767)|0;
+                        view.setInt16(pos, sample, true);
+                        pos += 2;
+                    }
                     offset++;
                 }
                 return new Blob([buffer], {type: "audio/wav"});
@@ -1344,6 +1312,7 @@
                 function setUint32(data) { view.setUint32(pos, data, true); pos += 4; }
             }
         };
+
         document.addEventListener('DOMContentLoaded', initialize);
     })();
     </script>
