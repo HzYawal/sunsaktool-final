@@ -37,7 +37,10 @@
         .interactive-target { position: relative; width: 100%; text-align: center; cursor: move; }
         #st-preview-text-container-wrapper { z-index: 10; }
         #st-preview-media-container-wrapper { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; z-index: 5; margin-top: 0; }
-        #st-preview-image, #st-preview-video { max-width: 100%; max-height: 100%; object-fit: contain; }
+        #st-preview-image, #st-preview-video { max-width: 100%; max-height: 100%; width: 100%; height: 100%; }
+        #st-preview-video.fit-contain, #st-preview-image.fit-contain { object-fit: contain; }
+        #st-preview-video.fit-cover, #st-preview-image.fit-cover { object-fit: cover; }
+        #st-preview-video.fit-fill, #st-preview-image.fit-fill { object-fit: fill; }
         #st-preview-source-container-wrapper { position: absolute; bottom: 5px; right: 5px; width: auto; max-width: 95%; font-size: 10px; color: #888; text-align: right; }
         .interactive-target.interactive-active { outline: 2px dashed var(--st-interact-color); z-index: 100; }
         .resize-handle { position: absolute; width: 12px; height: 12px; background: white; border-radius: 50%; border: 2px solid var(--st-interact-color); z-index: 101; display: none; }
@@ -66,6 +69,7 @@
         .st-card-footer .st-duration-label { cursor: pointer; text-decoration: underline; }
         .st-card-footer .st-duration-input { width: 60px; padding: 2px 4px; }
         .st-card-footer .st-volume-slider { width: 70px; }
+        .st-card-footer .media-fit-label { display: flex; align-items: center; gap: 5px; }
         input[type="file"] { display: none; }
         .st-action-btn { background: none; border:none; color: var(--st-subtext-color); text-decoration: underline; cursor: pointer; padding: 0; font-size: 13px; }
         .st-play-clip-btn { font-size: 18px; background: none; padding: 0 5px; cursor: pointer; border: none; color: var(--st-text-color); }
@@ -101,8 +105,8 @@
         @keyframes zoomOut { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.5); } } .anim-zoom-out { animation-name: zoomOut; }
         @keyframes slideInLeft { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } } .anim-slide-in-left { animation-name: slideInLeft; }
         @keyframes slideOutRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } } .anim-slide-out-right { animation-name: slideOutRight; }
-        @keyframes slideInUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } } .anim-slide-in-up { animation-name: slideInUp; }
-        @keyframes slideOutDown { from { transform: translateY(0); opacity: 1; } to { transform: translateY(100%); opacity: 0; } } .anim-slide-out-down { animation-name: slideOutDown; }
+        @keyframes slideInUp { from { transform: translateY(100%); opacity: 0; } to { translateY(0); opacity: 1; } } .anim-slide-in-up { animation-name: slideInUp; }
+        @keyframes slideOutDown { from { transform: translateY(0); opacity: 1; } to { translateY(100%); opacity: 0; } } .anim-slide-out-down { animation-name: slideOutDown; }
         #st-sequence-menu { position: fixed; z-index: 1001; background-color: var(--st-panel-color); border: 1px solid var(--st-border-color); border-radius: 5px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); list-style: none; padding: 5px 0; margin: 0; font-size: 14px; }
         #st-sequence-menu li { padding: 8px 15px; cursor: pointer; }
         #st-sequence-menu li:hover { background-color: var(--st-accent-color); color: white; }
@@ -123,7 +127,7 @@
             <div class="st-panel st-preview-area">
                 <div class="st-preview-panel" id="st-preview-panel">
                      <div class="st-preview-header"><div class="header-icon"></div><div class="header-title"></div><div class="header-logo-container"><img class="header-logo"></div></div>
-                     <div class="st-preview-content">
+                     <div class="st-preview-content" id="st-preview-content">
                          <div class="st-project-info"><div class="title"></div><span></span></div>
                          <div class="st-script-display">
                             <div id="st-preview-media-container-wrapper" class="interactive-target" data-layout-key="media">
@@ -175,209 +179,441 @@
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const ANIMATION_LIST = [ { name: '없음', value: 'none' }, { name: '나타나기 (Fade In)', value: 'fade-in' }, { name: '사라지기 (Fade Out)', value: 'fade-out' }, { name: '확대하며 나타나기 (Zoom In)', value: 'zoom-in' }, { name: '축소하며 사라지기 (Zoom Out)', value: 'zoom-out' }, { name: '왼쪽에서 슬라이드 (Slide In Left)', value: 'slide-in-left' }, { name: '오른쪽으로 슬라이드 (Slide Out Right)', value: 'slide-out-right' }, { name: '위로 슬라이드 (Slide In Up)', value: 'slide-in-up' }, { name: '아래로 슬라이드 (Slide Out Down)', value: 'slide-out-down' }, ];
-            const FONT_LIST = [ { name: '프리텐다드 (본문용 추천)', value: 'Pretendard' }, { name: 'Noto Sans KR (기본 고딕)', value: "'Noto Sans KR', sans-serif" }, { name: 'G마켓 산스 (개성있는 제목)', value: 'GmarketSans' }, { name: 'IBM Plex Sans KR (모던한 고딕)', value: "'IBM Plex Sans KR', sans-serif" }, { name: 'Do Hyeon (레트로 제목)', value: "'Do Hyeon', sans-serif" }, { name: '나눔명조 (감성적인 본문)', value: "'Nanum Myeongjo', serif" }, { name: '고운 바탕 (부드러운 명조)', value: "'Gowun Batang', serif" }, { name: 'Black Han Sans (강력한 제목)', value: "'Black Han Sans', sans-serif" }, { name: '개구 (귀여운 손글씨)', value: "'Gaegu', cursive" }, { name: 'Hi Melody (아기자기 손글씨)', value: "'Hi Melody', cursive" }, { name: 'Noto Serif KR (정갈한 명조)', value: "'Noto Serif KR', serif" }, { name: '스포카 한 산스 네오 (깔끔한 본문)', value: "'Spoqa Han Sans Neo', sans-serif" }, { name: '독도 (거친 붓글씨)', value: "'Dokdo', cursive" }, ];
-            const BGM_LIST = [ { name: '선택 안함', url: '' }, { name: 'big-cafe', url: 'https://sunsaktool-final.netlify.app/big-cafe.mp3' }, { name: 'blue-jacket', url: 'https://sunsaktool-final.netlify.app/blue-jacket.mp3' }, { name: 'cute-puppy', url: 'https://sunsaktool-final.netlify.app/cute-puppy.mp3' }, { name: 'laughter-in-the-breeze', url: 'https://sunsaktool-final.netlify.app/laughter-in-the-breeze-_happy_.mp3' }, { name: 'murder-in-my-mind', url: 'https://sunsaktool-final.netlify.app/murder-in-my-mind.mp3' }, { name: 'smiley-composure', url: 'https://sunsaktool-final.netlify.app/smiley-composure.mp3' }, { name: 'spider', url: 'https://sunsaktool-final.netlify.app/spider.mp3' }, { name: 'white-color', url: 'https://sunsaktool-final.netlify.app/white-color.mp3' } ];
-            let SFX_LIST = [{ name: "효과음 목록 로딩 중...", url: "" }];
-            let recentlyUsedSfx = [];
-            let sfxUploadTargetCardId = null;
-            let globalBGM = { url: null, volume: 0.3, startTime: 0, endTime: null };
-            let projectSettings = { 
+    (function SunsakTool() {
+        'use strict';
+
+        // --- 1. 상수 (Constants) ---
+        const C = {
+            ANIMATION_LIST: [ { name: '없음', value: 'none' }, { name: '나타나기 (Fade In)', value: 'fade-in' }, { name: '사라지기 (Fade Out)', value: 'fade-out' }, { name: '확대하며 나타나기 (Zoom In)', value: 'zoom-in' }, { name: '축소하며 사라지기 (Zoom Out)', value: 'zoom-out' }, { name: '왼쪽에서 슬라이드 (Slide In Left)', value: 'slide-in-left' }, { name: '오른쪽으로 슬라이드 (Slide Out Right)', value: 'slide-out-right' }, { name: '위로 슬라이드 (Slide In Up)', value: 'slide-in-up' }, { name: '아래로 슬라이드 (Slide Out Down)', value: 'slide-out-down' }, ],
+            FONT_LIST: [ { name: '프리텐다드 (본문용 추천)', value: 'Pretendard' }, { name: 'Noto Sans KR (기본 고딕)', value: "'Noto Sans KR', sans-serif" }, { name: 'G마켓 산스 (개성있는 제목)', value: 'GmarketSans' }, { name: 'IBM Plex Sans KR (모던한 고딕)', value: "'IBM Plex Sans KR', sans-serif" }, { name: 'Do Hyeon (레트로 제목)', value: "'Do Hyeon', sans-serif" }, { name: '나눔명조 (감성적인 본문)', value: "'Nanum Myeongjo', serif" }, { name: '고운 바탕 (부드러운 명조)', value: "'Gowun Batang', serif" }, { name: 'Black Han Sans (강력한 제목)', value: "'Black Han Sans', sans-serif" }, { name: '개구 (귀여운 손글씨)', value: "'Gaegu', cursive" }, { name: 'Hi Melody (아기자기 손글씨)', value: "'Hi Melody', cursive" }, { name: 'Noto Serif KR (정갈한 명조)', value: "'Noto Serif KR', serif" }, { name: '스포카 한 산스 네오 (깔끔한 본문)', value: "'Spoqa Han Sans Neo', sans-serif" }, { name: '독도 (거친 붓글씨)', value: "'Dokdo', cursive" }, ],
+            BGM_LIST: [ { name: '선택 안함', url: '' }, { name: 'big-cafe', url: 'https://sunsaktool-final.netlify.app/big-cafe.mp3' }, { name: 'blue-jacket', url: 'https://sunsaktool-final.netlify.app/blue-jacket.mp3' }, { name: 'cute-puppy', url: 'https://sunsaktool-final.netlify.app/cute-puppy.mp3' }, { name: 'laughter-in-the-breeze', url: 'https://sunsaktool-final.netlify.app/laughter-in-the-breeze-_happy_.mp3' }, { name: 'murder-in-my-mind', url: 'https://sunsaktool-final.netlify.app/murder-in-my-mind.mp3' }, { name: 'smiley-composure', url: 'https://sunsaktool-final.netlify.app/smiley-composure.mp3' }, { name: 'spider', url: 'https://sunsaktool-final.netlify.app/spider.mp3' }, { name: 'white-color', url: 'https://sunsaktool-final.netlify.app/white-color.mp3' } ]
+        };
+
+        // --- 2. 상태 (State) ---
+        const state = {
+            sfxList: [{ name: "효과음 목록 로딩 중...", url: "" }],
+            recentlyUsedSfx: [],
+            sfxUploadTargetCardId: null,
+            globalBGM: { url: null, volume: 0.3, startTime: 0, endTime: null },
+            projectSettings: { 
                 header: { text: '채널 이름', backgroundColor: '#e82c43', color: '#ffffff', fontFamily: 'GmarketSans', fontSize: 24, icon: 'none', logo: { url: null, size: 40 } }, 
                 project: { title: '제목을 입력해주세요', author: 'ㅇㅇ', views: 0, titleColor: '#000000', metaColor: '#555555' },
                 defaultStyle: { color: '#000000', fontFamily: "'Noto Sans KR', sans-serif", fontSize: '24', lineHeight: '1.5', letterSpacing: '0' }
-            };
-            let scriptCards = [];
-            let isPlaying = false;
-            let ttsCache = new Map();
-            let playbackCurrentIndex = 0;
-            let selectedCardId = null;
-            let activeInteractiveElement = null;
-            let playbackTimeoutId = null;
-            let currentSelectionContext = null;
-            let currentPersistentMedia = null;
-            const cardContainer = document.getElementById('st-card-container');
-            const playAllBtn = document.getElementById('st-btn-play-all');
-            const timelineSlider = document.getElementById('st-timeline-slider');
-            const ttsPlayer = document.getElementById('st-tts-player');
-            const bgmPlayer = document.getElementById('st-bgm-player');
-            const sfxPlayer = document.getElementById('st-sfx-player'); 
-            const globalSettingsPanel = document.getElementById('st-global-settings-panel');
-            const animationSettingsPanel = document.getElementById('st-animation-settings-panel');
-            const addCardBtn = document.getElementById('st-btn-add-card');
-            const addGptsBtn = document.getElementById('st-btn-add-gpts');
-            const newProjectBtn = document.getElementById('st-btn-add-project');
-            const gptsModal = document.getElementById('st-modal-gpts');
-            const gptsCancelBtn = document.getElementById('st-btn-gpts-cancel');
-            const gptsConfirmBtn = document.getElementById('st-btn-gpts-confirm');
-            const gptsTextarea = document.getElementById('st-gpts-textarea');
-            const sfxFileInput = document.getElementById('st-sfx-file-upload');
-            const bgmFileInput = document.getElementById('st-bgm-file-upload');
-            const sequenceMenu = document.getElementById('st-sequence-menu');
-            let wavesurfer = null;
-            let activeRegion = null;
-            let bgmEditorContext = { onConfirm: null, onCancel: null };
-            
-            function initializeBgmEditor() { if (wavesurfer) return; if (typeof WaveSurfer === 'undefined') { return alert("BGM 편집기 라이브러리 로딩에 실패했습니다. 인터넷 연결을 확인하고 페이지를 새로고침 해주세요."); } wavesurfer = WaveSurfer.create({ container: '#st-waveform-container', waveColor: '#ddd', progressColor: '#e82c43', cursorColor: '#fff', barWidth: 2, barRadius: 3, plugins: [ WaveSurfer.regions.create({ dragSelection: { slop: 5 } }) ] }); wavesurfer.on('error', (err) => { console.error('WaveSurfer Error:', err); alert('BGM 파일을 불러오는 데 실패했습니다.'); closeBgmEditor(); }); wavesurfer.on('ready', () => { document.getElementById('st-waveform-loading').style.display = 'none'; wavesurfer.clearRegions(); const totalDuration = wavesurfer.getDuration(); const regionDuration = Math.min(60, totalDuration); let region = wavesurfer.addRegion({ start: 0, end: regionDuration, color: 'rgba(232, 44, 67, 0.3)', drag: true, resize: true }); activeRegion = region; document.getElementById('st-bgm-time-display').textContent = `${region.start.toFixed(2)}s - ${region.end.toFixed(2)}s`; }); wavesurfer.on('region-updated', (region) => { activeRegion = region; document.getElementById('st-bgm-time-display').textContent = `${region.start.toFixed(2)}s - ${region.end.toFixed(2)}s`; }); wavesurfer.on('region-clicked', (region, e) => { e.stopPropagation(); activeRegion = region; region.play(); }); document.getElementById('st-btn-bgm-play-pause').addEventListener('click', () => wavesurfer.playPause()); document.getElementById('st-btn-bgm-play-region').addEventListener('click', () => { if (activeRegion) activeRegion.play(); }); document.getElementById('st-btn-bgm-confirm').addEventListener('click', () => { if (bgmEditorContext.onConfirm && activeRegion) { bgmEditorContext.onConfirm({ startTime: activeRegion.start, endTime: activeRegion.end }); } closeBgmEditor(); }); document.getElementById('st-btn-bgm-cancel').addEventListener('click', () => { if (bgmEditorContext.onCancel) { bgmEditorContext.onCancel(); } closeBgmEditor(); }); }
-            function openBgmEditor(url, callbacks) { bgmEditorContext = callbacks; document.getElementById('st-modal-bgm').classList.add('visible'); document.getElementById('st-waveform-loading').style.display = 'block'; if (wavesurfer) { wavesurfer.destroy(); wavesurfer = null; } initializeBgmEditor(); wavesurfer.load(url); }
-            function closeBgmEditor() { document.getElementById('st-modal-bgm').classList.remove('visible'); if (wavesurfer) { wavesurfer.destroy(); wavesurfer = null; } }
-            const debounce = (callback, delay) => { let timeout; return (...args) => { clearTimeout(timeout); timeout = setTimeout(() => callback(...args), delay); }; };
-            const getAudioDuration = (url) => new Promise(resolve => { const audio = new Audio(); audio.onloadedmetadata = () => resolve(audio.duration); audio.onerror = () => resolve(0.5); audio.src = url; });
-            async function fetchTTS(text, cardId) { text = text.trim(); if (!text) return null; const cacheKey = text; if (ttsCache.has(cacheKey)) return ttsCache.get(cacheKey); showLoadingOnCard(cardId, true, '서버에 요청 중...'); try { const response = await fetch('/.netlify/functions/create-tts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: text }) }); if (!response.ok) { const errorResult = await response.json(); throw new Error(`[${response.status}] ${errorResult.error || '서버 요청 실패'}`); } const result = await response.json(); const audioUrl = result.audioUrl; const duration = await getAudioDuration(audioUrl); const ttsData = { audioUrl, duration }; ttsCache.set(cacheKey, ttsData); return ttsData; } catch (error) { console.error('TTS 생성 오류:', error); alert(`음성 생성 중 오류가 발생했습니다: ${error.message}`); return null; } finally { showLoadingOnCard(cardId, false); } }
-            
-            function renderGlobalControls() {
-                const fontOptions = FONT_LIST.map(font => `<option value="${font.value}" ${projectSettings.defaultStyle.fontFamily === font.value ? 'selected' : ''}>${font.name}</option>`).join('');
-                const bgmOptions = BGM_LIST.map(bgm => `<option value="${bgm.url}">${bgm.name}</option>`).join('');
-                globalSettingsPanel.innerHTML = `<div class="st-accordion-item active"><div class="st-accordion-header">영상 설정</div><div class="st-accordion-content"><div class="st-control-group"><h4>상단 헤더</h4><label>헤더 텍스트</label><input type="text" id="st-setting-header-text" value="${projectSettings.header.text}"><div class="st-flex-group" style="margin-top: 8px;"><div><label>배경 색상</label><input type="color" id="st-setting-header-bg" value="${projectSettings.header.backgroundColor}"></div><div><label>글자 색상</label><input type="color" id="st-setting-header-color" value="${projectSettings.header.color}"></div></div><div class="st-flex-group" style="margin-top: 8px;"><div><label>폰트</label><select id="st-setting-header-font">${fontOptions}</select></div><div><label>크기</label><input type="number" id="st-setting-header-size" value="${projectSettings.header.fontSize}"></div></div><div style="margin-top: 8px;"><label>왼쪽 아이콘</label><select id="st-setting-header-icon"><option value="none">없음</option><option value="back">뒤로가기</option><option value="menu">메뉴</option></select></div><div style="margin-top: 8px;"><label>오른쪽 로고</label><div class="st-flex-group"><button id="st-btn-header-logo" style="width: auto; flex-grow: 1;">로고 추가/변경</button><input type="file" id="st-header-logo-file" accept="image/*" style="display:none;"></div><label style="margin-top: 4px; display: block;">로고 크기: <span id="st-header-logo-size-label">${projectSettings.header.logo.size}</span>px</label><input type="range" id="st-setting-header-logo-size" min="20" max="60" value="${projectSettings.header.logo.size}"></div></div><div class="st-control-group"><h4>콘텐츠 정보</h4><label>프로젝트 제목</label><input type="text" id="st-setting-project-title" value="${projectSettings.project.title}"><div style="margin-top: 8px;"><label>작성자</label><input type="text" id="st-setting-project-author" value="${projectSettings.project.author}"></div><div style="margin-top: 8px;"><label>조회수</label><input type="number" id="st-setting-project-views" value="${projectSettings.project.views}"></div><div class="st-flex-group" style="margin-top: 8px;"><div><label>제목 색상</label><input type="color" id="st-setting-title-color" value="${projectSettings.project.titleColor}"></div><div><label>정보 색상</label><input type="color" id="st-setting-meta-color" value="${projectSettings.project.metaColor}"></div></div><hr style="border-color: var(--st-border-color); margin: 15px 0;"><label>기본 스크립트 스타일</label><div class="st-flex-group" style="margin-top: 8px;"><div><label>폰트</label><select id="st-setting-script-font">${fontOptions}</select></div><div><label>크기</label><input type="number" id="st-setting-script-size" value="${projectSettings.defaultStyle.fontSize}"></div></div><div style="margin-top: 8px;"><label>색상</label><input type="color" id="st-setting-script-color" value="${projectSettings.defaultStyle.color}"></div><div style="margin-top: 8px;"><label>줄 간격</label><input type="range" id="st-setting-line-height" min="1" max="2.5" step="0.1" value="${projectSettings.defaultStyle.lineHeight}"></div><div style="margin-top: 8px;"><label>자간</label><input type="range" id="st-setting-letter-spacing" min="-2" max="5" step="0.1" value="${projectSettings.defaultStyle.letterSpacing}"></div></div><div class="st-control-group"><h4>배경음악</h4><label>전체 BGM 선택</label><select id="st-setting-global-bgm">${bgmOptions}</select><button id="st-btn-upload-bgm" style="width:100%; margin-top: 8px; background-color: #3e3e3e;">내 BGM 업로드</button><div style="margin-top: 8px;"><label>BGM 볼륨</label><input type="range" id="st-setting-global-bgm-volume" min="0" max="1" step="0.01" value="${globalBGM.volume}"></div></div></div></div>`;
-                globalSettingsPanel.querySelector('.st-accordion-header').addEventListener('click', (e) => e.currentTarget.parentElement.classList.toggle('active'));
-            }
-            function renderAnimationControls(element) { if (!selectedCardId || !element) return; const card = scriptCards.find(c => c.id === selectedCardId); const layoutKey = element.dataset.layoutKey; const anims = card.animations[layoutKey]; const animOptions = ANIMATION_LIST.map(a => `<option value="${a.value}" ${anims.in.name === a.value ? 'selected' : ''}>${a.name}</option>`).join(''); const animOptionsOut = ANIMATION_LIST.map(a => `<option value="${a.value}" ${anims.out.name === a.value ? 'selected' : ''}>${a.name}</option>`).join(''); const elementType = layoutKey === 'text' ? '텍스트' : (layoutKey === 'media' ? '미디어' : '출처'); animationSettingsPanel.innerHTML = `<h3>${elementType} 애니메이션</h3><div class="st-control-group"><label>시작 애니메이션 (In)</label><select id="anim-in-type">${animOptions}</select><label>지속 시간 (초)</label><input type="number" id="anim-in-duration" min="0.1" max="5" step="0.1" value="${anims.in.duration}"></div><div class="st-control-group"><label>종료 애니메이션 (Out)</label><select id="anim-out-type">${animOptionsOut}</select><label>지속 시간 (초)</label><input type="number" id="anim-out-duration" min="0.1" max="5" step="0.1" value="${anims.out.duration}"></div>`; document.getElementById('anim-in-type').addEventListener('input', e => { anims.in.name = e.target.value; }); document.getElementById('anim-in-duration').addEventListener('input', e => { anims.in.duration = parseFloat(e.target.value) || 0.3; }); document.getElementById('anim-out-type').addEventListener('input', e => { anims.out.name = e.target.value; }); document.getElementById('anim-out-duration').addEventListener('input', e => { anims.out.duration = parseFloat(e.target.value) || 0.3; }); }
-            function showGlobalSettingsPanel() { globalSettingsPanel.style.display = 'block'; animationSettingsPanel.style.display = 'none'; }
-            function showAnimationPanel(element) { globalSettingsPanel.style.display = 'none'; animationSettingsPanel.style.display = 'block'; renderAnimationControls(element); }
-            function updateProjectSettings() {
-                projectSettings.header.text = document.getElementById('st-setting-header-text').value;
-                projectSettings.header.backgroundColor = document.getElementById('st-setting-header-bg').value;
-                projectSettings.header.color = document.getElementById('st-setting-header-color').value;
-                projectSettings.header.fontFamily = document.getElementById('st-setting-header-font').value;
-                projectSettings.header.fontSize = document.getElementById('st-setting-header-size').value;
-                projectSettings.header.icon = document.getElementById('st-setting-header-icon').value;
-                projectSettings.project.title = document.getElementById('st-setting-project-title').value;
-                projectSettings.project.author = document.getElementById('st-setting-project-author').value;
-                projectSettings.project.views = document.getElementById('st-setting-project-views').value;
-                projectSettings.project.titleColor = document.getElementById('st-setting-title-color').value;
-                projectSettings.project.metaColor = document.getElementById('st-setting-meta-color').value;
-                projectSettings.defaultStyle.color = document.getElementById('st-setting-script-color').value;
-                projectSettings.defaultStyle.fontFamily = document.getElementById('st-setting-script-font').value;
-                projectSettings.defaultStyle.fontSize = document.getElementById('st-setting-script-size').value;
-                projectSettings.defaultStyle.lineHeight = document.getElementById('st-setting-line-height').value;
-                projectSettings.defaultStyle.letterSpacing = document.getElementById('st-setting-letter-spacing').value;
-                applyScriptStylesToSelectedCard();
-                updatePreviewDisplay();
-            }
-            function getGroupKey(name) { const keywords = ['물방울','클릭','등장','알림','타격','게임','스윕','넘어가는','넘기는','종이','카툰','폭발','팡파레','스우','깜짝','전자음']; for (const key of keywords) { if (name.includes(key)) return key; } return '기타'; }
-            function generateSfxOptions() { const groups = {}; SFX_LIST.slice(1).filter(sfx => !recentlyUsedSfx.find(recent => recent.url === sfx.url)).forEach(sfx => { const groupKey = getGroupKey(sfx.name); if (!groups[groupKey]) groups[groupKey] = []; groups[groupKey].push(sfx); }); let optionsHtml = '<option value="">효과음 없음</option><option value="upload-my-own">--- 내 효과음 업로드 ---</option>'; if (recentlyUsedSfx.length > 0) { optionsHtml += '<optgroup label="최근 사용">'; recentlyUsedSfx.forEach(sfx => { optionsHtml += `<option value="${sfx.url}">${sfx.name}</option>`; }); optionsHtml += '</optgroup>'; } Object.keys(groups).sort().forEach(groupName => { optionsHtml += `<optgroup label="${groupName}">`; groups[groupName].forEach(sfx => { optionsHtml += `<option value="${sfx.url}">${sfx.name}</option>`; }); optionsHtml += '</optgroup>'; }); return optionsHtml; }
-            function addScriptCard(text = '') {
-                const cardId = `card-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
-                const cardData = {
-                    id: cardId, text, segments: [], animationSequence: [], duration: 0.5, ttsDuration: 0.5, isDurationManual: false,
-                    media: { url: null, type: null, showOnSegment: 1, persistUntilCardId: null, playFull: false },
-                    style: { ...projectSettings.defaultStyle, fontSize: projectSettings.defaultStyle.fontSize + 'px', letterSpacing: projectSettings.defaultStyle.letterSpacing + 'px' },
-                    audioUrl: null, ttsReady: false, ttsVolume: 0.8, sfxUrl: null, sfxVolume: 0.8,
-                    source: { enabled: false, text: '출처:', layout: { x: 0, y: 0, scale: 1, angle: 0 } },
-                    layout: { text: { x: 0, y: 0, scale: 1, angle: 0 }, media: { x: 0, y: 0, scale: 1, angle: 0 } },
-                    animations: { text: { in: { name: 'none', duration: 0.3 }, out: { name: 'none', duration: 0.3 } }, media: { in: { name: 'none', duration: 0.3 }, out: { name: 'none', duration: 0.3 } }, source: { in: { name: 'none', duration: 0.3 }, out: { name: 'none', duration: 0.3 } } }
+            },
+            scriptCards: [],
+            isPlaying: false,
+            ttsCache: new Map(),
+            playbackCurrentIndex: 0,
+            selectedCardId: null,
+            activeInteractiveElement: null,
+            playbackTimeoutId: null,
+            currentSelectionContext: null,
+            currentPersistentMedia: null, // 지속성 비디오를 위한 상태
+            wavesurfer: null,
+            activeRegion: null,
+            bgmEditorContext: { onConfirm: null, onCancel: null }
+        };
+        
+        // --- 3. UI 요소 (DOM Elements) ---
+        const UI = {
+            cardContainer: document.getElementById('st-card-container'),
+            playAllBtn: document.getElementById('st-btn-play-all'),
+            timelineSlider: document.getElementById('st-timeline-slider'),
+            ttsPlayer: document.getElementById('st-tts-player'),
+            bgmPlayer: document.getElementById('st-bgm-player'),
+            sfxPlayer: document.getElementById('st-sfx-player'),
+            globalSettingsPanel: document.getElementById('st-global-settings-panel'),
+            animationSettingsPanel: document.getElementById('st-animation-settings-panel'),
+            addCardBtn: document.getElementById('st-btn-add-card'),
+            addGptsBtn: document.getElementById('st-btn-add-gpts'),
+            newProjectBtn: document.getElementById('st-btn-add-project'),
+            gptsModal: document.getElementById('st-modal-gpts'),
+            gptsCancelBtn: document.getElementById('st-btn-gpts-cancel'),
+            gptsConfirmBtn: document.getElementById('st-btn-gpts-confirm'),
+            gptsTextarea: document.getElementById('st-gpts-textarea'),
+            sfxFileInput: document.getElementById('st-sfx-file-upload'),
+            bgmFileInput: document.getElementById('st-bgm-file-upload'),
+            sequenceMenu: document.getElementById('st-sequence-menu'),
+            previewContent: document.getElementById('st-preview-content')
+        };
+        
+        // --- 4. 헬퍼 함수 (Helpers) ---
+        const helpers = {
+            debounce: (callback, delay) => {
+                let timeout;
+                return (...args) => {
+                    clearTimeout(timeout);
+                    timeout = setTimeout(() => callback(...args), delay);
                 };
-                scriptCards.push(cardData);
-                const cardEl = createCardElement(cardData);
-                cardContainer.appendChild(cardEl);
-                bindCardEvents(cardId);
-                const editor = cardEl.querySelector('.st-script-editor');
-                renderSegmentsInEditor(editor, cardData.text);
-                getDebouncedFetchAndUpdate()(cardId);
-                if (!selectedCardId) selectCard(cardId);
-                updateCardNumbers();
-                updateCardUI(cardId);
+            },
+            getAudioDuration: (url) => new Promise(resolve => {
+                const audio = new Audio();
+                audio.onloadedmetadata = () => resolve(audio.duration);
+                audio.onerror = () => resolve(0.5); // Fallback
+                audio.src = url;
+            }),
+            generateId: (prefix = 'id') => `${prefix}-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+            getGroupKey: (name) => {
+                const keywords = ['물방울','클릭','등장','알림','타격','게임','스윕','넘어가는','넘기는','종이','카툰','폭발','팡파레','스우','깜짝','전자음'];
+                for (const key of keywords) { if (name.includes(key)) return key; }
+                return '기타';
             }
-            function createCardElement(cardData) { const cardEl = document.createElement('div'); cardEl.className = 'st-card'; cardEl.dataset.id = cardData.id; const sfxOptions = generateSfxOptions(); cardEl.innerHTML = `<div class="st-card-header st-card-drag-handle"><span class="st-card-number"></span><button class="st-btn-delete-card">🗑️</button></div><div class="st-script-editor" contenteditable="true" spellcheck="false"></div><div class="st-card-footer"><div class="footer-row"><button class="st-play-clip-btn" title="미리듣기" disabled>▶️</button><span class="st-duration-label" title="클릭하여 자동/수동 전환">길이(자동)</span><input type="number" class="st-duration-input" min="0.1" step="0.1" value="${cardData.duration}" title="길이(초)" style="display: none;"><label class="st-action-btn" for="${cardData.id}-file">미디어</label><input type="file" id="${cardData.id}-file" accept="image/*,video/*"></div><div class="footer-row media-controls" style="display: none;"><span>미디어 표시:</span><select class="media-timing-select"></select></div><div class="footer-row media-controls" style="display: none;"><span>재생 방식:</span><input type="radio" name="media-play-${cardData.id}" value="clip" checked><span>클립</span><input type="radio" name="media-play-${cardData.id}" value="full"><span>전체</span></div><div class="footer-row media-controls" style="display: none;"><span>지속 시간:</span><select class="media-persist-select"></select></div><div class="footer-row"><span>TTS 소리</span><input type="range" class="st-volume-slider tts-volume" min="0" max="1" step="0.05" value="${cardData.ttsVolume}"><span style="margin-left:10px;">효과음 소리</span><input type="range" class="st-volume-slider sfx-volume" min="0" max="1" step="0.05" value="${cardData.sfxVolume}"></div><div class="footer-row"><select class="st-sfx-select" style="flex-grow: 1;">${sfxOptions}</select></div></div>`; cardEl.querySelector('.st-sfx-select').value = cardData.sfxUrl || ''; return cardEl; }
-            function renderSegmentsInEditor(editorEl, text) { editorEl.innerHTML = ''; const lines = text.split('\n'); if (lines.length === 1 && lines[0] === '') { editorEl.innerHTML = '<p class="script-segment"><br></p>'; } else { lines.forEach(line => { const p = document.createElement('p'); p.className = 'script-segment'; p.textContent = line; editorEl.appendChild(p); }); } }
+        };
+
+        // --- 5. API 호출 ---
+        async function fetchTTS(text, cardId) {
+            text = text.trim();
+            if (!text) return null;
+            const cacheKey = text;
+            if (state.ttsCache.has(cacheKey)) return state.ttsCache.get(cacheKey);
+            render.showLoadingOnCard(cardId, true, '서버에 요청 중...');
+            try {
+                // 이 부분은 Netlify 서버리스 함수가 필요합니다.
+                const response = await fetch('/.netlify/functions/create-tts', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ text: text }) 
+                });
+                if (!response.ok) {
+                    const errorResult = await response.json();
+                    throw new Error(`[${response.status}] ${errorResult.error || '서버 요청 실패'}`);
+                }
+                const result = await response.json();
+                const audioUrl = result.audioUrl;
+                const duration = await helpers.getAudioDuration(audioUrl);
+                const ttsData = { audioUrl, duration };
+                state.ttsCache.set(cacheKey, ttsData);
+                return ttsData;
+            } catch (error) {
+                console.error('TTS 생성 오류:', error);
+                alert(`음성 생성 중 오류가 발생했습니다: ${error.message}\n(백엔드 기능이 설정되지 않았을 수 있습니다.)`);
+                return null;
+            } finally {
+                render.showLoadingOnCard(cardId, false);
+            }
+        }
+        
+        const debouncedTTSRequest = helpers.debounce(async (cardId) => {
+            const cardData = state.scriptCards.find(c => c.id === cardId);
+            if (!cardData) return;
             
-            const debouncedTTSRequest = debounce(async (cardId) => {
-                const cardData = scriptCards.find(c => c.id === cardId);
-                if (!cardData) return;
-                
-                const allLines = cardData.text.split('\n').filter(line => line.trim());
-                let textForTTS, segmentsForTiming;
-                
-                if (cardData.animationSequence && cardData.animationSequence.length > 0) {
-                    const sequencedLines = cardData.animationSequence;
-                    const remainingLines = allLines.filter(line => line && !sequencedLines.includes(line));
-                    segmentsForTiming = [...sequencedLines, ...remainingLines];
-                } else {
-                    segmentsForTiming = allLines;
-                }
-                textForTTS = segmentsForTiming.join(' ');
-                
-                if (!textForTTS) {
-                    cardData.ttsReady = false; cardData.duration = 0.5; cardData.ttsDuration = 0.5; cardData.segments = [];
-                    updateCardUI(cardId); updateTotalDuration();
-                    return;
-                }
-                const ttsData = await fetchTTS(textForTTS, cardId);
-                if (ttsData && cardData) {
-                    cardData.ttsDuration = ttsData.duration;
-                    if (!cardData.isDurationManual) { cardData.duration = ttsData.duration; }
-                    cardData.audioUrl = ttsData.audioUrl;
-                    cardData.ttsReady = true;
-                    const totalChars = segmentsForTiming.reduce((sum, s) => sum + s.length, 0);
-                    let accumulatedTime = 0;
-                    cardData.segments = segmentsForTiming.map(segmentText => {
-                        const segmentDuration = totalChars > 0 ? (segmentText.length / totalChars) * ttsData.duration : 0;
-                        const segmentTiming = { text: segmentText, startTime: accumulatedTime, duration: segmentDuration };
-                        accumulatedTime += segmentDuration;
-                        return segmentTiming;
-                    });
-                    
-                    if(selectedCardId === cardId) updateCardUI(cardId);
-                    updateTotalDuration();
-                    updateMediaTimingControl(cardId);
-                }
-            }, 800);
-            function getDebouncedFetchAndUpdate() { return debouncedTTSRequest; }
+            const allLines = cardData.text.split('\n').filter(line => line.trim());
+            let segmentsForTiming = (cardData.animationSequence && cardData.animationSequence.length > 0)
+                ? [...cardData.animationSequence, ...allLines.filter(line => line && !cardData.animationSequence.includes(line))]
+                : allLines;
             
-            function bindCardEvents(cardId) {
-                const cardEl = document.querySelector(`.st-card[data-id="${cardId}"]`);
-                const cardData = scriptCards.find(c => c.id === cardId);
-                const editor = cardEl.querySelector('.st-script-editor');
+            const textForTTS = segmentsForTiming.join(' ');
+            
+            if (!textForTTS) {
+                cardData.ttsReady = false; cardData.duration = 0.5; cardData.ttsDuration = 0.5; cardData.segments = [];
+                render.updateCardUI(cardId); handlers.updateTotalDuration();
+                return;
+            }
+            
+            const ttsData = await fetchTTS(textForTTS, cardId);
+            if (ttsData && cardData) {
+                cardData.ttsDuration = ttsData.duration;
+                if (!cardData.isDurationManual) { cardData.duration = ttsData.duration; }
+                cardData.audioUrl = ttsData.audioUrl;
+                cardData.ttsReady = true;
                 
-                editor.addEventListener('input', () => {
-                    if (editor.children.length === 0 && editor.textContent) {
-                        const p = document.createElement('p'); p.className = 'script-segment'; p.textContent = editor.textContent; editor.innerHTML = ''; editor.appendChild(p);
-                        const range = document.createRange(); const sel = window.getSelection(); range.selectNodeContents(p); range.collapse(false); sel.removeAllRanges(); sel.addRange(range);
-                    }
-                    cardData.text = Array.from(editor.children).map(child => child.textContent).join('\n');
-                    updatePreviewDisplay();
-                    debouncedTTSRequest(cardId);
+                const totalChars = segmentsForTiming.reduce((sum, s) => sum + s.length, 0);
+                let accumulatedTime = 0;
+                cardData.segments = segmentsForTiming.map(segmentText => {
+                    const segmentDuration = totalChars > 0 ? (segmentText.length / totalChars) * ttsData.duration : 0;
+                    const segmentTiming = { text: segmentText, startTime: accumulatedTime, duration: segmentDuration };
+                    accumulatedTime += segmentDuration;
+                    return segmentTiming;
                 });
                 
-                new Sortable(editor, { animation: 150, ghostClass: 'sortable-ghost', onEnd: () => { 
-                    cardData.text = Array.from(editor.children).map(child => child.textContent).join('\n');
-                    updatePreviewDisplay();
-                    debouncedTTSRequest(cardId);
-                } });
-                const fileInput = cardEl.querySelector(`#${cardId}-file`); const playClipBtn = cardEl.querySelector('.st-play-clip-btn'); const sfxSelect = cardEl.querySelector('.st-sfx-select'); const ttsVolumeSlider = cardEl.querySelector('.tts-volume'); const sfxVolumeSlider = cardEl.querySelector('.sfx-volume'); const durationLabel = cardEl.querySelector('.st-duration-label'); const durationInput = cardEl.querySelector('.st-duration-input'); const mediaTimingSelect = cardEl.querySelector('.media-timing-select'); const mediaPersistSelect = cardEl.querySelector('.media-persist-select');
-                fileInput.addEventListener('change', (e) => { if (e.target.files && e.target.files[0]) { const file = e.target.files[0]; cardData.media.url = URL.createObjectURL(file); if (file.type.startsWith('video/')) { cardData.media.type = 'video'; } else { cardData.media.type = 'image'; } updateMediaTimingControl(cardId); if (selectedCardId === cardId) { updatePreviewDisplay(); } } });
-                mediaTimingSelect.addEventListener('change', (e) => { cardData.media.showOnSegment = parseInt(e.target.value, 10); });
-                mediaPersistSelect.addEventListener('change', e => { cardData.media.persistUntilCardId = e.target.value || null; });
-                cardEl.querySelectorAll(`input[name="media-play-${cardId}"]`).forEach(radio => { radio.addEventListener('change', async (e) => { cardData.media.playFull = e.target.value === 'full'; if (cardData.media.playFull) { const videoDuration = await getAudioDuration(cardData.media.url); cardData.duration = videoDuration; cardData.isDurationManual = true; } else { cardData.isDurationManual = false; cardData.duration = cardData.ttsDuration; } updateCardUI(cardId); updateTotalDuration(); }); });
-                playClipBtn.addEventListener('click', (e) => { e.stopPropagation(); stopPlayback(); if (cardData.ttsReady && cardData.audioUrl) { ttsPlayer.volume = cardData.ttsVolume; ttsPlayer.src = cardData.audioUrl; ttsPlayer.play(); } if(cardData.sfxUrl) { sfxPlayer.src = cardData.sfxUrl; sfxPlayer.volume = cardData.sfxVolume; sfxPlayer.play(); } });
-                sfxSelect.addEventListener('change', (e) => { const url = e.target.value; if (url === 'upload-my-own') { sfxUploadTargetCardId = cardId; sfxFileInput.value = null; sfxFileInput.click(); e.target.value = cardData.sfxUrl || ''; return; } cardData.sfxUrl = url || null; if (url) { sfxPlayer.src = url; sfxPlayer.volume = cardData.sfxVolume; sfxPlayer.play(); const sfxItem = SFX_LIST.find(item => item.url === url); if (sfxItem) { recentlyUsedSfx = [sfxItem, ...recentlyUsedSfx.filter(item => item.url !== url)].slice(0, 5); updateAllSfxSelects(); } } });
-                ttsVolumeSlider.addEventListener('input', (e) => { cardData.ttsVolume = parseFloat(e.target.value); });
-                sfxVolumeSlider.addEventListener('input', (e) => { cardData.sfxVolume = parseFloat(e.target.value); });
-                durationLabel.addEventListener('click', () => { cardData.isDurationManual = !cardData.isDurationManual; durationInput.style.display = cardData.isDurationManual ? 'inline-block' : 'none'; durationLabel.textContent = `길이(${cardData.isDurationManual ? '수동' : '자동'})`; if (!cardData.isDurationManual) { cardData.duration = cardData.ttsDuration; } updateCardUI(cardId); updateTotalDuration(); });
-                durationInput.addEventListener('input', () => { if (cardData.isDurationManual) { cardData.duration = parseFloat(durationInput.value) || 0.5; updateTotalDuration(); } });
-                cardEl.querySelector('.st-btn-delete-card').addEventListener('click', (e) => { e.stopPropagation(); deleteCard(cardId); });
-                cardEl.addEventListener('click', () => selectCard(cardId));
+                if (state.selectedCardId === cardId) {
+                    render.updateCardUI(cardId);
+                    render.updateMediaControls(cardId);
+                }
+                handlers.updateTotalDuration();
             }
-            function updateAllSfxSelects() { const newOptions = generateSfxOptions(); document.querySelectorAll('.st-card').forEach(cardEl => { const id = cardEl.dataset.id; const cardData = scriptCards.find(c => c.id === id); const selectEl = cardEl.querySelector('.st-sfx-select'); if(selectEl && cardData) { selectEl.innerHTML = newOptions; selectEl.value = cardData.sfxUrl || ''; } }); }
-            function updateCardUI(cardId) { const cardData = scriptCards.find(c => c.id === cardId); const cardEl = document.querySelector(`.st-card[data-id="${cardId}"]`); if (!cardData || !cardEl) return; cardEl.querySelector('.st-play-clip-btn').disabled = !cardData.ttsReady; cardEl.querySelector('.tts-volume').value = cardData.ttsVolume; cardEl.querySelector('.sfx-volume').value = cardData.sfxVolume; const durationLabel = cardEl.querySelector('.st-duration-label'); const durationInput = cardEl.querySelector('.st-duration-input'); durationInput.value = (cardData.duration || 0).toFixed(2); durationInput.style.display = cardData.isDurationManual ? 'inline-block' : 'none'; durationLabel.textContent = `길이(${cardData.isDurationManual ? '수동' : '자동'})`; }
-            function deleteCard(cardId) { const cardIndex = scriptCards.findIndex(c => c.id === cardId); if(cardIndex === -1) return; scriptCards.splice(cardIndex, 1); document.querySelector(`.st-card[data-id="${cardId}"]`).remove(); if (selectedCardId === cardId) { selectedCardId = null; if(scriptCards.length > 0) { const nextIndex = Math.max(0, cardIndex - 1); if (scriptCards[nextIndex]) selectCard(scriptCards[nextIndex].id); } else { updatePreviewDisplay(); } } updateTotalDuration(); updateCardNumbers(); deactivateAllInteractive(); }
-            function updateCardNumbers() { const allCards = cardContainer.querySelectorAll('.st-card'); scriptCards.forEach((cardData, index) => { const cardEl = Array.from(allCards).find(el => el.dataset.id === cardData.id); if (cardEl) { cardEl.querySelector('.st-card-number').textContent = index + 1; } }); }
-            function updateTotalDuration() { const total = scriptCards.reduce((sum, card) => sum + (card.duration || 0.5), 0); if(timelineSlider) timelineSlider.max = total; }
-            function showLoadingOnCard(cardId, show, message) { const cardEl = document.querySelector(`.st-card[data-id="${cardId}"]`); if (!cardEl) return; let overlay = cardEl.querySelector('.st-card-loading'); if (show) { if (!overlay) { overlay = document.createElement('div'); overlay.className = 'st-card-loading'; cardEl.appendChild(overlay); } overlay.textContent = message; } else { if (overlay) overlay.remove(); } }
-            function selectCard(cardId, fromPlayback = false) { if (isPlaying && !fromPlayback) stopPlayback(); selectedCardId = cardId; deactivateAllInteractive(); document.querySelectorAll('.st-card').forEach(c => c.classList.remove('active')); const cardEl = document.querySelector(`.st-card[data-id="${cardId}"]`); if (cardEl) { cardEl.classList.add('active'); if (!fromPlayback) cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' }); updateScriptStyleControls(); updatePreviewDisplay(); } else { updatePreviewDisplay(); } }
-            function applyTransform(el, layout, animationTransform) { if (el && layout) { const layoutTransform = `translate(${layout.x}px, ${layout.y}px) scale(${layout.scale}) rotate(${layout.angle}deg)`; el.style.transform = `${layoutTransform} ${animationTransform}`; } }
-            function updatePreviewDisplay(forPlayback = false) {
-                const headerEl = document.querySelector('.st-preview-header'); if (!headerEl) return; const headerIconEl = headerEl.querySelector('.header-icon'); const headerTitleEl = headerEl.querySelector('.header-title'); const headerLogoEl = headerEl.querySelector('.header-logo'); headerTitleEl.textContent = projectSettings.header.text; headerEl.style.backgroundColor = projectSettings.header.backgroundColor; headerEl.style.color = projectSettings.header.color; headerEl.style.fontFamily = projectSettings.header.fontFamily; headerTitleEl.style.fontSize = projectSettings.header.fontSize + 'px'; const iconSVG = { back: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${projectSettings.header.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>`, menu: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${projectSettings.header.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>` }; headerIconEl.innerHTML = iconSVG[projectSettings.header.icon] || ''; if (projectSettings.header.logo.url) { headerLogoEl.src = projectSettings.header.logo.url; headerLogoEl.style.width = projectSettings.header.logo.size + 'px'; headerLogoEl.style.height = projectSettings.header.logo.size + 'px'; headerLogoEl.style.display = 'block'; } else { headerLogoEl.style.display = 'none'; } const titleEl = document.querySelector('.st-project-info .title'); if (titleEl) { titleEl.textContent = projectSettings.project.title; titleEl.style.color = projectSettings.project.titleColor; } const metaEl = document.querySelector('.st-project-info span'); if (metaEl) { metaEl.textContent = `${projectSettings.project.author || ''} | 조회수 ${Number(projectSettings.project.views || 0).toLocaleString()}`; metaEl.style.color = projectSettings.project.metaColor; }
-                const card = scriptCards.find(c => c.id === selectedCardId);
-                const textWrapper = document.getElementById('st-preview-text-container-wrapper'); const previewText = document.getElementById('st-preview-text'); const mediaWrapper = document.getElementById('st-preview-media-container-wrapper'); const previewImage = document.getElementById('st-preview-image'); const previewVideo = document.getElementById('st-preview-video');
-                if (!card) { textWrapper.style.display = 'none'; mediaWrapper.style.display = 'none'; return; }
-                [textWrapper, mediaWrapper].forEach(el => { const key = el.dataset.layoutKey; el.className = `interactive-target`; el.style.animation = ''; el.style.opacity = '1'; if (card.layout[key]) applyTransform(el, card.layout[key]); });
-                textWrapper.style.display = 'block'; Object.assign(previewText.style, card.style);
+        }, 800);
+
+        // --- 6. 렌더링 함수 (Render Functions) ---
+        const render = {
+            showPanel(panelToShow) {
+                UI.globalSettingsPanel.style.display = 'none';
+                UI.animationSettingsPanel.style.display = 'none';
+                if (panelToShow === 'global') {
+                    UI.globalSettingsPanel.style.display = 'block';
+                } else if (panelToShow === 'animation') {
+                    UI.animationSettingsPanel.style.display = 'block';
+                }
+            },
+            
+            globalControls() {
+                const fontOptions = C.FONT_LIST.map(font => `<option value="${font.value}" ${state.projectSettings.defaultStyle.fontFamily === font.value ? 'selected' : ''}>${font.name}</option>`).join('');
+                const bgmOptions = C.BGM_LIST.map(bgm => `<option value="${bgm.url}">${bgm.name}</option>`).join('');
+                UI.globalSettingsPanel.innerHTML = `
+                    <div class="st-accordion-item active">
+                        <div class="st-accordion-header">영상 설정</div>
+                        <div class="st-accordion-content">
+                            <div class="st-control-group"><h4>상단 헤더</h4><label>헤더 텍스트</label><input type="text" id="st-setting-header-text" value="${state.projectSettings.header.text}"><div class="st-flex-group" style="margin-top: 8px;"><div><label>배경 색상</label><input type="color" id="st-setting-header-bg" value="${state.projectSettings.header.backgroundColor}"></div><div><label>글자 색상</label><input type="color" id="st-setting-header-color" value="${state.projectSettings.header.color}"></div></div><div class="st-flex-group" style="margin-top: 8px;"><div><label>폰트</label><select id="st-setting-header-font">${fontOptions.replace(`value="${state.projectSettings.header.fontFamily}"`, `value="${state.projectSettings.header.fontFamily}" selected`)}</select></div><div><label>크기</label><input type="number" id="st-setting-header-size" value="${state.projectSettings.header.fontSize}"></div></div><div style="margin-top: 8px;"><label>왼쪽 아이콘</label><select id="st-setting-header-icon"><option value="none">없음</option><option value="back">뒤로가기</option><option value="menu">메뉴</option></select></div><div style="margin-top: 8px;"><label>오른쪽 로고</label><div class="st-flex-group"><button id="st-btn-header-logo" style="width: auto; flex-grow: 1;">로고 추가/변경</button><input type="file" id="st-header-logo-file" accept="image/*" style="display:none;"></div><label style="margin-top: 4px; display: block;">로고 크기: <span id="st-header-logo-size-label">${state.projectSettings.header.logo.size}</span>px</label><input type="range" id="st-setting-header-logo-size" min="20" max="60" value="${state.projectSettings.header.logo.size}"></div></div>
+                            <div class="st-control-group"><h4>콘텐츠 정보</h4><label>프로젝트 제목</label><input type="text" id="st-setting-project-title" value="${state.projectSettings.project.title}"><div style="margin-top: 8px;"><label>작성자</label><input type="text" id="st-setting-project-author" value="${state.projectSettings.project.author}"></div><div style="margin-top: 8px;"><label>조회수</label><input type="number" id="st-setting-project-views" value="${state.projectSettings.project.views}"></div><div class="st-flex-group" style="margin-top: 8px;"><div><label>제목 색상</label><input type="color" id="st-setting-title-color" value="${state.projectSettings.project.titleColor}"></div><div><label>정보 색상</label><input type="color" id="st-setting-meta-color" value="${state.projectSettings.project.metaColor}"></div></div><hr style="border-color: var(--st-border-color); margin: 15px 0;"><label>기본 스크립트 스타일</label><div class="st-flex-group" style="margin-top: 8px;"><div><label>폰트</label><select id="st-setting-script-font">${fontOptions}</select></div><div><label>크기</label><input type="number" id="st-setting-script-size" value="${state.projectSettings.defaultStyle.fontSize}"></div></div><div style="margin-top: 8px;"><label>색상</label><input type="color" id="st-setting-script-color" value="${state.projectSettings.defaultStyle.color}"></div><div style="margin-top: 8px;"><label>줄 간격</label><input type="range" id="st-setting-line-height" min="1" max="2.5" step="0.1" value="${state.projectSettings.defaultStyle.lineHeight}"></div><div style="margin-top: 8px;"><label>자간</label><input type="range" id="st-setting-letter-spacing" min="-2" max="5" step="0.1" value="${state.projectSettings.defaultStyle.letterSpacing}"></div></div>
+                            <div class="st-control-group"><h4>배경음악</h4><label>전체 BGM 선택</label><select id="st-setting-global-bgm">${bgmOptions}</select><button id="st-btn-upload-bgm" style="width:100%; margin-top: 8px; background-color: #3e3e3e;">내 BGM 업로드</button><div style="margin-top: 8px;"><label>BGM 볼륨</label><input type="range" id="st-setting-global-bgm-volume" min="0" max="1" step="0.01" value="${state.globalBGM.volume}"></div></div>
+                        </div>
+                    </div>`;
+                UI.globalSettingsPanel.querySelector('.st-accordion-header').addEventListener('click', (e) => e.currentTarget.parentElement.classList.toggle('active'));
+            },
+
+            animationControls(element) {
+                if (!state.selectedCardId || !element) return;
+                const card = state.scriptCards.find(c => c.id === state.selectedCardId);
+                const layoutKey = element.dataset.layoutKey;
+                const anims = card.animations[layoutKey];
+                const animOptions = C.ANIMATION_LIST.map(a => `<option value="${a.value}" ${anims.in.name === a.value ? 'selected' : ''}>${a.name}</option>`).join('');
+                const animOptionsOut = C.ANIMATION_LIST.map(a => `<option value="${a.value}" ${anims.out.name === a.value ? 'selected' : ''}>${a.name}</option>`).join('');
+                const elementType = layoutKey === 'text' ? '텍스트' : (layoutKey === 'media' ? '미디어' : '출처');
+                
+                UI.animationSettingsPanel.innerHTML = `<h3>${elementType} 애니메이션</h3>
+                    <div class="st-control-group"><label>시작 애니메이션 (In)</label><select id="anim-in-type">${animOptions}</select><label>지속 시간 (초)</label><input type="number" id="anim-in-duration" min="0.1" max="5" step="0.1" value="${anims.in.duration}"></div>
+                    <div class="st-control-group"><label>종료 애니메이션 (Out)</label><select id="anim-out-type">${animOptionsOut}</select><label>지속 시간 (초)</label><input type="number" id="anim-out-duration" min="0.1" max="5" step="0.1" value="${anims.out.duration}"></div>`;
+                
+                document.getElementById('anim-in-type').addEventListener('input', e => { anims.in.name = e.target.value; });
+                document.getElementById('anim-in-duration').addEventListener('input', e => { anims.in.duration = parseFloat(e.target.value) || 0.3; });
+                document.getElementById('anim-out-type').addEventListener('input', e => { anims.out.name = e.target.value; });
+                document.getElementById('anim-out-duration').addEventListener('input', e => { anims.out.duration = parseFloat(e.target.value) || 0.3; });
+                
+                this.showPanel('animation');
+            },
+            
+            sfxOptions: () => {
+                const groups = {};
+                state.sfxList.slice(1).filter(sfx => !state.recentlyUsedSfx.find(recent => recent.url === sfx.url)).forEach(sfx => {
+                    const groupKey = helpers.getGroupKey(sfx.name);
+                    if (!groups[groupKey]) groups[groupKey] = [];
+                    groups[groupKey].push(sfx);
+                });
+                let optionsHtml = '<option value="">효과음 없음</option><option value="upload-my-own">--- 내 효과음 업로드 ---</option>';
+                if (state.recentlyUsedSfx.length > 0) {
+                    optionsHtml += '<optgroup label="최근 사용">';
+                    state.recentlyUsedSfx.forEach(sfx => { optionsHtml += `<option value="${sfx.url}">${sfx.name}</option>`; });
+                    optionsHtml += '</optgroup>';
+                }
+                Object.keys(groups).sort().forEach(groupName => {
+                    optionsHtml += `<optgroup label="${groupName}">`;
+                    groups[groupName].forEach(sfx => { optionsHtml += `<option value="${sfx.url}">${sfx.name}</option>`; });
+                    optionsHtml += '</optgroup>';
+                });
+                return optionsHtml;
+            },
+            
+            allSfxSelects: () => {
+                const newOptions = render.sfxOptions();
+                document.querySelectorAll('.st-card').forEach(cardEl => {
+                    const id = cardEl.dataset.id;
+                    const cardData = state.scriptCards.find(c => c.id === id);
+                    const selectEl = cardEl.querySelector('.st-sfx-select');
+                    if (selectEl && cardData) {
+                        selectEl.innerHTML = newOptions;
+                        selectEl.value = cardData.sfxUrl || '';
+                    }
+                });
+            },
+
+            cardElement: (cardData) => {
+                const cardEl = document.createElement('div');
+                cardEl.className = 'st-card';
+                cardEl.dataset.id = cardData.id;
+                const sfxOptions = render.sfxOptions();
+                cardEl.innerHTML = `
+                    <div class="st-card-header st-card-drag-handle"><span class="st-card-number"></span><button class="st-btn-delete-card">🗑️</button></div>
+                    <div class="st-script-editor" contenteditable="true" spellcheck="false"></div>
+                    <div class="st-card-footer">
+                        <div class="footer-row">
+                            <button class="st-play-clip-btn" title="미리듣기" disabled>▶️</button>
+                            <span class="st-duration-label" title="클릭하여 자동/수동 전환">길이(자동)</span>
+                            <input type="number" class="st-duration-input" min="0.1" step="0.1" value="${cardData.duration}" title="길이(초)" style="display: none;">
+                            <label class="st-action-btn" for="${cardData.id}-file">미디어 추가</label>
+                            <input type="file" id="${cardData.id}-file" accept="image/*,video/*">
+                        </div>
+                        <div class="footer-row media-controls" style="display: none;">
+                            <span>미디어 표시:</span><select class="media-timing-select"></select>
+                            <span>지속 시간:</span><select class="media-persist-select"></select>
+                        </div>
+                        <div class="footer-row media-controls" style="display: none;">
+                           <span>비디오 맞춤:</span>
+                           <label class="media-fit-label"><input type="radio" name="media-fit-${cardData.id}" value="cover">꽉 채우기</label>
+                           <label class="media-fit-label"><input type="radio" name="media-fit-${cardData.id}" value="contain" checked>안에 맞추기</label>
+                           <label class="media-fit-label"><input type="radio" name="media-fit-${cardData.id}" value="fill">늘리기</label>
+                        </div>
+                        <div class="footer-row">
+                            <span>TTS 소리</span><input type="range" class="st-volume-slider tts-volume" min="0" max="1" step="0.05" value="${cardData.ttsVolume}">
+                            <span style="margin-left:10px;">효과음 소리</span><input type="range" class="st-volume-slider sfx-volume" min="0" max="1" step="0.05" value="${cardData.sfxVolume}">
+                        </div>
+                        <div class="footer-row"><select class="st-sfx-select" style="flex-grow: 1;">${sfxOptions}</select></div>
+                    </div>`;
+                cardEl.querySelector('.st-sfx-select').value = cardData.sfxUrl || '';
+                return cardEl;
+            },
+            
+            segmentsInEditor: (editorEl, text) => {
+                editorEl.innerHTML = '';
+                const lines = text.split('\n');
+                if (lines.length === 1 && lines[0] === '') {
+                    editorEl.innerHTML = '<p class="script-segment"><br></p>';
+                } else {
+                    lines.forEach(line => {
+                        const p = document.createElement('p');
+                        p.className = 'script-segment';
+                        p.textContent = line;
+                        editorEl.appendChild(p);
+                    });
+                }
+            },
+            
+            updateCardUI: (cardId) => {
+                const cardData = state.scriptCards.find(c => c.id === cardId);
+                const cardEl = document.querySelector(`.st-card[data-id="${cardId}"]`);
+                if (!cardData || !cardEl) return;
+
+                cardEl.querySelector('.st-play-clip-btn').disabled = !cardData.ttsReady;
+                cardEl.querySelector('.tts-volume').value = cardData.ttsVolume;
+                cardEl.querySelector('.sfx-volume').value = cardData.sfxVolume;
+                
+                const durationLabel = cardEl.querySelector('.st-duration-label');
+                const durationInput = cardEl.querySelector('.st-duration-input');
+                durationInput.value = (cardData.duration || 0).toFixed(2);
+                durationInput.style.display = cardData.isDurationManual ? 'inline-block' : 'none';
+                durationLabel.textContent = `길이(${cardData.isDurationManual ? '수동' : '자동'})`;
+
+                render.updateMediaControls(cardId);
+            },
+            
+            updateMediaControls(cardId) {
+                const cardData = state.scriptCards.find(c => c.id === cardId);
+                const cardEl = document.querySelector(`.st-card[data-id="${cardId}"]`);
+                if (!cardData || !cardEl) return;
+                
+                const mediaControls = cardEl.querySelectorAll('.media-controls');
+                
+                if (cardData.media.url) {
+                    mediaControls.forEach(el => el.style.display = 'flex');
+
+                    // 미디어 타이밍 (등장 시점)
+                    const timingSelect = cardEl.querySelector('.media-timing-select');
+                    timingSelect.innerHTML = `<option value="1">스크립트 시작 시</option>`;
+                    if (cardData.segments.length > 1) {
+                        cardData.segments.forEach((seg, i) => {
+                            timingSelect.innerHTML += `<option value="${i + 2}">"${seg.text.substring(0, 10)}..." 이후</option>`;
+                        });
+                    }
+                    timingSelect.value = cardData.media.showOnSegment;
+
+                    // 미디어 지속 시간
+                    const persistSelect = cardEl.querySelector('.media-persist-select');
+                    const currentIndex = state.scriptCards.findIndex(c => c.id === cardId);
+                    persistSelect.innerHTML = `<option value="">이 클립에서만</option>`;
+                    if (currentIndex < state.scriptCards.length - 1) {
+                         state.scriptCards.slice(currentIndex).forEach((c, i) => {
+                             if(i > 0) persistSelect.innerHTML += `<option value="${c.id}">카드 ${currentIndex + i + 1}까지</option>`;
+                         });
+                    }
+                    persistSelect.value = cardData.media.persistUntilCardId || '';
+
+                    // 비디오 맞춤
+                    cardEl.querySelector(`input[name="media-fit-${cardId}"][value="${cardData.media.fit}"]`).checked = true;
+
+                } else {
+                    mediaControls.forEach(el => el.style.display = 'none');
+                }
+            },
+            
+            updateCardNumbers: () => {
+                const allCardElements = UI.cardContainer.querySelectorAll('.st-card');
+                state.scriptCards.forEach((cardData, index) => {
+                    const cardEl = Array.from(allCardElements).find(el => el.dataset.id === cardData.id);
+                    if (cardEl) {
+                        cardEl.querySelector('.st-card-number').textContent = index + 1;
+                    }
+                });
+                // 모든 카드의 미디어 지속시간 옵션 업데이트
+                state.scriptCards.forEach(card => render.updateMediaControls(card.id));
+            },
+            
+            showLoadingOnCard: (cardId, show, message) => {
+                const cardEl = document.querySelector(`.st-card[data-id="${cardId}"]`);
+                if (!cardEl) return;
+                let overlay = cardEl.querySelector('.st-card-loading');
+                if (show) {
+                    if (!overlay) {
+                        overlay = document.createElement('div');
+                        overlay.className = 'st-card-loading';
+                        cardEl.appendChild(overlay);
+                    }
+                    overlay.textContent = message;
+                } else {
+                    if (overlay) overlay.remove();
+                }
+            },
+
+            applyTransform: (el, layout) => {
+                if (el && layout) {
+                    el.style.transform = `translate(${layout.x}px, ${layout.y}px) scale(${layout.scale}) rotate(${layout.angle}deg)`;
+                }
+            },
+            
+            updatePreviewDisplay(forPlayback = false) {
+                const headerEl = document.querySelector('.st-preview-header');
+                const headerIconEl = headerEl.querySelector('.header-icon');
+                const headerTitleEl = headerEl.querySelector('.header-title');
+                const headerLogoEl = headerEl.querySelector('.header-logo');
+                headerTitleEl.textContent = state.projectSettings.header.text;
+                headerEl.style.backgroundColor = state.projectSettings.header.backgroundColor;
+                headerEl.style.color = state.projectSettings.header.color;
+                headerEl.style.fontFamily = state.projectSettings.header.fontFamily;
+                headerTitleEl.style.fontSize = state.projectSettings.header.fontSize + 'px';
+                const iconSVG = {
+                    back: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${state.projectSettings.header.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>`,
+                    menu: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${state.projectSettings.header.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>`
+                };
+                headerIconEl.innerHTML = iconSVG[state.projectSettings.header.icon] || '';
+                if (state.projectSettings.header.logo.url) {
+                    headerLogoEl.src = state.projectSettings.header.logo.url;
+                    headerLogoEl.style.width = state.projectSettings.header.logo.size + 'px';
+                    headerLogoEl.style.height = state.projectSettings.header.logo.size + 'px';
+                    headerLogoEl.style.display = 'block';
+                } else {
+                    headerLogoEl.style.display = 'none';
+                }
+                const titleEl = document.querySelector('.st-project-info .title');
+                titleEl.textContent = state.projectSettings.project.title;
+                titleEl.style.color = state.projectSettings.project.titleColor;
+                const metaEl = document.querySelector('.st-project-info span');
+                metaEl.textContent = `${state.projectSettings.project.author || ''} | 조회수 ${Number(state.projectSettings.project.views || 0).toLocaleString()}`;
+                metaEl.style.color = state.projectSettings.project.metaColor;
+
+                const card = state.scriptCards.find(c => c.id === state.selectedCardId);
+                const textWrapper = document.getElementById('st-preview-text-container-wrapper');
+                const previewText = document.getElementById('st-preview-text');
+                const mediaWrapper = document.getElementById('st-preview-media-container-wrapper');
+                const previewImage = document.getElementById('st-preview-image');
+                const previewVideo = document.getElementById('st-preview-video');
+                
+                if (!card) {
+                    textWrapper.style.display = 'none';
+                    mediaWrapper.style.display = 'none';
+                    return;
+                }
+                
+                [textWrapper, mediaWrapper].forEach(el => {
+                    const key = el.dataset.layoutKey;
+                    el.className = `interactive-target ${el.classList.contains('interactive-active') ? 'interactive-active' : ''}`;
+                    el.style.animation = '';
+                    el.style.opacity = '1';
+                    if (card.layout[key]) render.applyTransform(el, card.layout[key]);
+                });
+                
+                textWrapper.style.display = 'block';
+                Object.assign(previewText.style, card.style);
                 
                 previewText.innerHTML = '';
-                const lines = card.text.split('\n');
-                lines.forEach(line => {
+                card.text.split('\n').forEach(line => {
                     const p = document.createElement('p');
                     p.className = 'preview-text-segment';
                     p.textContent = line || ' '; 
@@ -386,68 +622,150 @@
                     previewText.appendChild(p);
                 });
                 
-                applyTransform(textWrapper, card.layout.text);
-                previewImage.style.display = 'none'; previewVideo.style.display = 'none';
-                if (card.media.url) { mediaWrapper.style.display = 'flex'; if (card.media.type === 'video') { previewVideo.style.display = 'block'; if (previewVideo.src !== card.media.url) previewVideo.src = card.media.url; } else { previewImage.style.display = 'block'; if (previewImage.src !== card.media.url) previewImage.src = card.media.url; } } else { mediaWrapper.style.display = 'none'; }
-                applyTransform(mediaWrapper, card.layout.media);
-            }
-            function updateScriptStyleControls() { const card = scriptCards.find(c => c.id === selectedCardId); if (!card) return; document.getElementById('st-setting-script-color').value = card.style?.color || '#000000'; document.getElementById('st-setting-script-font').value = card.style?.fontFamily || "'Noto Sans KR', sans-serif"; document.getElementById('st-setting-script-size').value = (card.style?.fontSize || '24px').replace('px',''); document.getElementById('st-setting-line-height').value = card.style?.lineHeight || '1.5'; document.getElementById('st-setting-letter-spacing').value = (card.style?.letterSpacing || '0px').replace('px',''); }
-            function applyScriptStylesToSelectedCard() { const card = scriptCards.find(c => c.id === selectedCardId); if (!card) return; card.style = { color: document.getElementById('st-setting-script-color').value, fontFamily: document.getElementById('st-setting-script-font').value, fontSize: document.getElementById('st-setting-script-size').value + 'px', lineHeight: document.getElementById('st-setting-line-height').value, letterSpacing: document.getElementById('st-setting-letter-spacing').value + 'px' }; updatePreviewDisplay(); }
-            function playBGM(bgmData = globalBGM) { if (bgmData && bgmData.url) { if (bgmPlayer.src !== bgmData.url) bgmPlayer.src = bgmData.url; bgmPlayer.volume = globalBGM.volume; bgmPlayer.currentTime = bgmData.startTime || 0; bgmPlayer.play().catch(e => console.error("BGM Playback Error:", e)); } else { bgmPlayer.pause(); } }
-            bgmPlayer.addEventListener('timeupdate', () => { if (!isPlaying) return; if (globalBGM.endTime && bgmPlayer.currentTime >= globalBGM.endTime) { bgmPlayer.currentTime = globalBGM.startTime || 0; } });
-            function togglePlay() { isPlaying ? stopPlayback() : startPlayback(); }
-            function startPlayback() { deactivateAllInteractive(); const unready = scriptCards.some(c => !c.ttsReady && c.text.trim()); if (unready) return alert('아직 음성 생성이 완료되지 않은 스크립트가 있습니다.'); if (scriptCards.length === 0) return; isPlaying = true; playAllBtn.textContent = '❚❚'; playBGM(); playCardByIndex(0); }
-            function stopPlayback() { isPlaying = false; clearTimeout(playbackTimeoutId); playAllBtn.textContent = '▶'; ttsPlayer.pause(); bgmPlayer.pause(); sfxPlayer.pause(); document.getElementById('st-preview-video').pause(); currentPersistentMedia = null; updatePreviewDisplay(); }
-            function playCardByIndex(index) {
-                if (index >= scriptCards.length || !isPlaying) { stopPlayback(); return; }
-                playbackCurrentIndex = index;
-                const card = scriptCards[index];
-                selectCard(card.id, true);
-                updatePreviewDisplay(true);
+                render.applyTransform(textWrapper, card.layout.text);
+                
+                previewImage.style.display = 'none';
+                previewVideo.style.display = 'none';
+                
+                let mediaToShow = card.media;
+                // 지속성 미디어 확인
+                if (!forPlayback && state.currentPersistentMedia) {
+                    const startIndex = state.scriptCards.findIndex(c => c.id === state.currentPersistentMedia.startCardId);
+                    const endIndex = state.scriptCards.findIndex(c => c.id === state.currentPersistentMedia.persistUntilCardId);
+                    const selectedIndex = state.scriptCards.findIndex(c => c.id === state.selectedCardId);
+                    if(selectedIndex >= startIndex && selectedIndex <= endIndex) {
+                        mediaToShow = state.currentPersistentMedia;
+                    }
+                }
+
+                if (mediaToShow && mediaToShow.url) {
+                    mediaWrapper.style.display = 'flex';
+                    const targetEl = mediaToShow.type === 'video' ? previewVideo : previewImage;
+                    const otherEl = mediaToShow.type === 'video' ? previewImage : previewVideo;
+                    
+                    targetEl.style.display = 'block';
+                    otherEl.style.display = 'none';
+                    
+                    if (targetEl.src !== mediaToShow.url) targetEl.src = mediaToShow.url;
+                    
+                    targetEl.className = `fit-${mediaToShow.fit}`;
+                    render.applyTransform(mediaWrapper, card.layout.media);
+                } else {
+                    mediaWrapper.style.display = 'none';
+                }
+            },
+        };
+        
+        // --- 7. 재생 관련 함수 (Playback) ---
+        const playback = {
+            togglePlay: () => {
+                state.isPlaying ? playback.stop() : playback.start();
+            },
+            
+            start: () => {
+                interaction.deactivateAllInteractive();
+                const unready = state.scriptCards.some(c => !c.ttsReady && c.text.trim());
+                if (unready) return alert('아직 음성 생성이 완료되지 않은 스크립트가 있습니다.');
+                if (state.scriptCards.length === 0) return;
+                
+                state.isPlaying = true;
+                UI.playAllBtn.textContent = '❚❚';
+                playback.playBGM();
+                playback.playCardByIndex(0);
+            },
+            
+            stop: () => {
+                state.isPlaying = false;
+                clearTimeout(state.playbackTimeoutId);
+                UI.playAllBtn.textContent = '▶';
+                UI.ttsPlayer.pause();
+                UI.bgmPlayer.pause();
+                UI.sfxPlayer.pause();
+                document.getElementById('st-preview-video').pause();
+                state.currentPersistentMedia = null;
+                render.updatePreviewDisplay();
+            },
+
+            playBGM: (bgmData = state.globalBGM) => {
+                if (bgmData && bgmData.url) {
+                    if (UI.bgmPlayer.src !== bgmData.url) UI.bgmPlayer.src = bgmData.url;
+                    UI.bgmPlayer.volume = state.globalBGM.volume;
+                    UI.bgmPlayer.currentTime = bgmData.startTime || 0;
+                    UI.bgmPlayer.play().catch(e => console.error("BGM Playback Error:", e));
+                } else {
+                    UI.bgmPlayer.pause();
+                }
+            },
+
+            playCardByIndex: (index) => {
+                if (index >= state.scriptCards.length || !state.isPlaying) {
+                    playback.stop();
+                    return;
+                }
+                
+                state.playbackCurrentIndex = index;
+                const card = state.scriptCards[index];
+                handlers.selectCard(card.id, true);
+                
                 const previewTextEl = document.getElementById('st-preview-text');
                 const previewVideo = document.getElementById('st-preview-video');
                 const previewImage = document.getElementById('st-preview-image');
                 const mediaWrapper = document.getElementById('st-preview-media-container-wrapper');
                 
+                // 새로운 지속성 미디어 시작 확인
                 if (card.media.url && card.media.persistUntilCardId) {
-                    currentPersistentMedia = { ...card.media, startCardId: card.id };
+                    state.currentPersistentMedia = { ...card.media, startCardId: card.id };
                 }
 
-                if (currentPersistentMedia) {
+                // 미디어 표시 로직
+                mediaWrapper.style.visibility = 'hidden';
+                let activeMedia = state.currentPersistentMedia || (card.media.url ? card.media : null);
+
+                if(activeMedia) {
                     mediaWrapper.style.visibility = 'visible';
-                    if(currentPersistentMedia.type === 'video') {
-                        if (previewVideo.src !== currentPersistentMedia.url) {
-                            previewVideo.src = currentPersistentMedia.url;
-                            previewVideo.currentTime = 0;
+                    const targetEl = activeMedia.type === 'video' ? previewVideo : previewImage;
+                    const otherEl = activeMedia.type === 'video' ? previewImage : videoImage;
+                    if (targetEl.src !== activeMedia.url) targetEl.src = activeMedia.url;
+                    targetEl.className = `fit-${activeMedia.fit}`;
+                    targetEl.style.display = 'block';
+                    if (otherEl) otherEl.style.display = 'none';
+
+                    if (activeMedia.type === 'video') {
+                        if (state.currentPersistentMedia) { // 지속성 비디오
+                           if (UI.previewVideo.paused) {
+                                UI.previewVideo.currentTime = 0;
+                                UI.previewVideo.play().catch(()=>{});
+                           }
+                        } else { // 단일 클립 비디오
+                            UI.previewVideo.currentTime = 0;
                         }
-                        previewVideo.play().catch(()=>{});
-                    } else {
-                        if(previewImage.src !== currentPersistentMedia.url) previewImage.src = currentPersistentMedia.url;
                     }
-                } else {
-                     mediaWrapper.style.visibility = 'hidden';
                 }
                 
+                // 텍스트 렌더링 및 애니메이션
+                previewTextEl.innerHTML = '';
                 if (card.segments && card.segments.length > 0) {
                     const segmentElements = card.segments.map(segment => {
-                        const p = document.createElement('p'); p.className = 'preview-text-segment'; p.textContent = segment.text || ' '; p.style.margin = 0;
+                        const p = document.createElement('p');
+                        p.className = 'preview-text-segment';
+                        p.textContent = segment.text || ' ';
+                        p.style.margin = 0;
                         previewTextEl.appendChild(p);
                         return p;
                     });
                     
                     card.segments.forEach((segment, segIndex) => {
                         setTimeout(() => {
-                            if (isPlaying && playbackCurrentIndex === index) {
+                            if (state.isPlaying && state.playbackCurrentIndex === index) {
                                 if (segmentElements[segIndex]) segmentElements[segIndex].classList.add('highlight');
                             }
                         }, segment.startTime * 1000);
 
-                        if (card.media.url && !currentPersistentMedia && card.media.showOnSegment === (segIndex + 1)) {
+                        // 단일 미디어 등장 타이밍
+                        if (card.media.url && !state.currentPersistentMedia && card.media.showOnSegment === (segIndex + 2)) {
                              setTimeout(() => {
-                                if (isPlaying && playbackCurrentIndex === index) {
-                                    mediaWrapper.style.visibility = 'visible';
+                                if (state.isPlaying && state.playbackCurrentIndex === index) {
                                     if (card.media.type === 'video') {
-                                        previewVideo.currentTime = 0;
                                         previewVideo.play().catch(() => {});
                                     }
                                 }
@@ -455,81 +773,366 @@
                         }
                     });
 
-                    if (card.media.url && !currentPersistentMedia && card.media.showOnSegment === 1) {
-                        mediaWrapper.style.visibility = 'visible';
+                    // 스크립트 시작시 등장
+                    if (card.media.url && !state.currentPersistentMedia && card.media.showOnSegment === 1) {
                         if (card.media.type === 'video') {
-                            previewVideo.currentTime = 0;
                             previewVideo.play().catch(() => {});
                         }
                     }
                 } else {
-                    previewTextEl.textContent = card.text;
-                    if(card.media.url && !currentPersistentMedia) mediaWrapper.style.visibility = 'visible';
-                }
-
-                if (card.audioUrl) { ttsPlayer.volume = card.ttsVolume; ttsPlayer.src = card.audioUrl; ttsPlayer.play(); } if (card.sfxUrl) { sfxPlayer.volume = card.sfxVolume; sfxPlayer.src = card.sfxUrl; sfxPlayer.play(); } 
-                
-                if (currentPersistentMedia && currentPersistentMedia.persistUntilCardId === card.id) {
-                    currentPersistentMedia = null; 
+                    const p = document.createElement('p');
+                    p.className = 'preview-text-segment highlight';
+                    p.textContent = card.text || ' ';
+                    p.style.margin = 0;
+                    previewTextEl.appendChild(p);
                 }
                 
-                playbackTimeoutId = setTimeout(() => { if (isPlaying) playCardByIndex(index + 1); }, card.duration * 1000);
+                // 오디오 재생
+                if (card.audioUrl) { UI.ttsPlayer.volume = card.ttsVolume; UI.ttsPlayer.src = card.audioUrl; UI.ttsPlayer.play(); }
+                if (card.sfxUrl) { UI.sfxPlayer.volume = card.sfxVolume; UI.sfxPlayer.src = card.sfxUrl; UI.sfxPlayer.play(); }
+                
+                // 지속성 미디어 종료 확인
+                if (state.currentPersistentMedia && state.currentPersistentMedia.persistUntilCardId === card.id) {
+                    state.currentPersistentMedia = null;
+                }
+                
+                state.playbackTimeoutId = setTimeout(() => {
+                    if (state.isPlaying) playback.playCardByIndex(index + 1);
+                }, card.duration * 1000);
             }
-            function setupGptsModal() { addGptsBtn.addEventListener('click', () => { gptsModal.classList.add('visible'); }); function closeModal() { gptsModal.classList.remove('visible'); gptsTextarea.value = ''; } gptsCancelBtn.addEventListener('click', closeModal); gptsModal.addEventListener('click', (e) => { if (e.target === gptsModal) { closeModal(); } }); gptsConfirmBtn.addEventListener('click', () => { const text = gptsTextarea.value.trim(); if (!text) return; const lines = text.split(/\n\s*\n/).filter(line => line.trim() !== ''); lines.forEach(line => { addScriptCard(line.trim()); }); closeModal(); if(lines.length > 0 && scriptCards.length > 0) { const firstNewCardId = scriptCards[scriptCards.length - lines.length].id; selectCard(firstNewCardId); } }); }
-            function setupExportButton() { const exportBtn = document.getElementById('st-btn-export-video'); const progressOverlay = document.getElementById('st-export-progress-overlay'); const progressText = document.getElementById('st-export-progress-text'); const progressSubText = document.getElementById('st-export-progress-subtext'); const progressBarInner = document.getElementById('st-export-progress-bar-inner'); const RENDER_WIDTH = 1080; const RENDER_HEIGHT = 1920; const FPS = 30; function getAnimProps(animName, progress) { let opacity = 1, transform = ''; switch (animName) { case 'fade-in': opacity = progress; break; case 'fade-out': opacity = 1 - progress; break; case 'zoom-in': opacity = progress; transform = `scale(${0.5 + 0.5 * progress})`; break; case 'zoom-out': opacity = 1 - progress; transform = `scale(${1 - 0.5 * progress})`; break; case 'slide-in-left': opacity = progress; transform = `translateX(${-100 + 100 * progress}%)`; break; case 'slide-out-right': opacity = 1 - progress; transform = `translateX(${100 * progress}%)`; break; case 'slide-in-up': opacity = progress; transform = `translateY(${100 - 100 * progress}%)`; break; case 'slide-out-down': opacity = 1 - progress; transform = `translateY(${100 * progress}%)`; break; } return { opacity, transform }; } exportBtn.addEventListener('click', async () => { if (scriptCards.some(c => !c.ttsReady && c.text.trim())) return alert('아직 음성 생성이 완료되지 않은 스크립트가 있습니다.'); if (scriptCards.length === 0) return alert('출력할 영상이 없습니다.'); exportBtn.disabled = true; progressOverlay.style.display = 'flex'; progressText.textContent = '장면 스냅샷 준비 중...'; let audioContext, recorder, animationFrameId; const cleanup = () => { if (recorder && recorder.state !== 'inactive') recorder.stop(); if (animationFrameId) cancelAnimationFrame(animationFrameId); if (audioContext) audioContext.close(); progressOverlay.style.display = 'none'; exportBtn.disabled = false; selectCard(scriptCards[0].id); }; try { progressText.textContent = '오디오 트랙 처리 중...'; progressSubText.textContent = '음성 파일들을 하나로 합칩니다.'; audioContext = new AudioContext(); const destination = audioContext.createMediaStreamDestination(); const masterGain = audioContext.createGain(); masterGain.gain.value = 0.8; masterGain.connect(destination); const totalDuration = scriptCards.reduce((sum, card) => sum + (card.duration || 0.5), 0); async function analyzeAudio(url) { if (!url) return { buffer: null, trimStart: 0 }; try { const response = await fetch(url); const arrayBuffer = await response.arrayBuffer(); const audioBuffer = await audioContext.decodeAudioData(arrayBuffer.slice(0)); let trimStart = 0; const audioData = audioBuffer.getChannelData(0); for (let i = 0; i < audioData.length; i++) { if (Math.abs(audioData[i]) > 0.01) { trimStart = i / audioBuffer.sampleRate; break; } } return { buffer: audioBuffer, trimStart }; } catch (e) { console.error(`오디오 분석 실패: ${url}`, e); return { buffer: null, trimStart: 0 }; } } if (globalBGM.url) { try { const { buffer } = await analyzeAudio(globalBGM.url); if (buffer) { const bgmSource = audioContext.createBufferSource(); bgmSource.buffer = buffer; bgmSource.loop = true; const gainNode = audioContext.createGain(); gainNode.gain.value = globalBGM.volume; bgmSource.connect(gainNode).connect(masterGain); bgmSource.start(0, globalBGM.startTime); } } catch (e) { console.error("BGM 로딩 실패:", e); } } const audioFilePromises = scriptCards.flatMap((card, index) => { const timeOffset = scriptCards.slice(0, index).reduce((sum, c) => sum + (c.duration || 0.5), 0); const promises = []; if (card.audioUrl) promises.push({ url: card.audioUrl, time: timeOffset, volume: card.ttsVolume, isTTS: true }); if (card.sfxUrl) promises.push({ url: card.sfxUrl, time: timeOffset, volume: card.sfxVolume, isTTS: false }); return promises; }); await Promise.all(audioFilePromises.map(async (audio) => { const { buffer, trimStart } = await analyzeAudio(audio.url); if (buffer) { const source = audioContext.createBufferSource(); source.buffer = buffer; const gainNode = audioContext.createGain(); gainNode.gain.value = audio.volume; source.connect(gainNode).connect(masterGain); source.start(audio.time, audio.isTTS ? trimStart : 0); } })); const canvas = document.getElementById('st-render-canvas'); const ctx = canvas.getContext('2d'); canvas.width = RENDER_WIDTH; canvas.height = RENDER_HEIGHT; const canvasStream = canvas.captureStream(FPS); const combinedStream = new MediaStream([...canvasStream.getVideoTracks(), ...destination.stream.getAudioTracks()]); recorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm;codecs=vp9,opus' }); const chunks = []; recorder.ondataavailable = e => chunks.push(e.data); recorder.onstop = () => { const blob = new Blob(chunks, { type: 'video/webm' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'sunsak-video.webm'; a.click(); URL.revokeObjectURL(url); cleanup(); }; recorder.start(); progressText.textContent = '프레임 렌더링 중...'; const renderStartTime = performance.now(); const renderLoop = async () => { const elapsedTime = (performance.now() - renderStartTime) / 1000; if (elapsedTime >= totalDuration) { if(recorder.state === 'recording') recorder.stop(); return; } let timeTally = 0; let currentCardIndex = -1; let cardStartTime = 0; for(let i = 0; i < scriptCards.length; i++) { const cardDuration = scriptCards[i].duration || 0.5; if (elapsedTime < timeTally + cardDuration) { currentCardIndex = i; cardStartTime = timeTally; break; } timeTally += cardDuration; } if (currentCardIndex !== -1) { const card = scriptCards[currentCardIndex]; selectCard(card.id, true); await new Promise(r => setTimeout(r, 10)); const elapsedTimeInCard = elapsedTime - cardStartTime; const previewTextEl = document.getElementById('st-preview-text'); previewTextEl.innerHTML = ''; if (card.segments && card.segments.length > 0) { card.segments.forEach((segment, segIndex) => { const p = document.createElement('p'); p.className = 'preview-text-segment'; p.textContent = segment.text || ' '; p.style.margin = 0; if (elapsedTimeInCard >= segment.startTime) { p.classList.add('highlight'); } previewTextEl.appendChild(p); }); } else { previewTextEl.textContent = card.text; } const previewPanelEl = document.getElementById('st-preview-panel'); const snapshotCanvas = await html2canvas(previewPanelEl, { scale: RENDER_WIDTH / previewPanelEl.offsetWidth, useCORS: true, allowTaint: true, backgroundColor: '#ffffff' }); ctx.clearRect(0, 0, RENDER_WIDTH, RENDER_HEIGHT); ctx.drawImage(snapshotCanvas, 0, 0, RENDER_WIDTH, RENDER_HEIGHT); } const progress = Math.min(100, (elapsedTime / totalDuration) * 100); progressSubText.textContent = `${elapsedTime.toFixed(2)}s / ${totalDuration.toFixed(2)}s`; progressBarInner.style.width = `${progress}%`; animationFrameId = requestAnimationFrame(renderLoop); }; animationFrameId = requestAnimationFrame(renderLoop); } catch (error) { console.error('영상 생성 오류:', error); alert(`영상 생성 중 오류가 발생했습니다: ${error.message}`); cleanup(); } }); }
-            function setupImagePaste() { document.addEventListener('paste', (event) => { if (!selectedCardId) return; const items = (event.clipboardData || window.clipboardData).items; let imageFile = null; for (const item of items) { if (item.type.indexOf('image') === 0) { imageFile = item.getAsFile(); break; } } if (imageFile) { event.preventDefault(); const card = scriptCards.find(c => c.id === selectedCardId); if (!card) return; const reader = new FileReader(); reader.onload = (e) => { card.imageUrl = e.target.result; updatePreviewDisplay(); }; reader.readAsDataURL(imageFile); } }); }
-            function initializeInteract() { let previewContent = document.querySelector('.st-preview-content'); interact('.interactive-target').on('tap', (event) => { const target = event.currentTarget; if (activeInteractiveElement === target) return; deactivateAllInteractive(); activeInteractiveElement = target; target.classList.add('interactive-active'); showAnimationPanel(target); ['top-left', 'top-right', 'bottom-left', 'bottom-right'].forEach(pos => { const handle = document.createElement('div'); handle.className = `resize-handle`; handle.style.top = pos.includes('top') ? '-6px' : ''; handle.style.bottom = pos.includes('bottom') ? '-6px' : ''; handle.style.left = pos.includes('left') ? '-6px' : ''; handle.style.right = pos.includes('right') ? '-6px' : ''; handle.style.cursor = pos === 'top-left' || pos === 'bottom-right' ? 'nwse-resize' : 'nesw-resize'; target.appendChild(handle); }); const rotHandle = document.createElement('div'); rotHandle.className = 'rotation-handle'; rotHandle.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14.7594 20.0001C11.5894 20.5301 8.20942 19.5601 5.86942 17.2201C2.59942 13.9501 2.59942 8.55006 5.86942 5.28006C9.13942 2.01006 14.5394 2.01006 17.8094 5.28006C19.7994 7.27006 20.6594 9.87006 20.4794 12.4401" stroke="#333" stroke-width="2" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M15.4297 12.4401L20.4797 12.4401L18.4297 10.3901" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`; target.appendChild(rotHandle); event.preventDefault(); }).on('doubletap', (event) => { const card = scriptCards.find(c => c.id === selectedCardId); if (!card) return; const layoutKey = event.currentTarget.dataset.layoutKey; if (layoutKey === 'source') { const currentText = card.source.text.replace('출처:', '').trim(); const newText = prompt('출처 내용을 수정하세요:', currentText); if (newText !== null) { card.source.text = '출처: ' + newText; updatePreviewDisplay(); } } }); const interactionListeners = { start (event) { document.body.classList.add('interaction-active'); if(event.target.closest('.interactive-target')) event.target.closest('.interactive-target').classList.add('interacting'); }, end (event) { document.body.classList.remove('interaction-active'); document.querySelectorAll('.interacting').forEach(el => el.classList.remove('interacting')); }}; interact('.rotation-handle').draggable({ listeners: { start: interactionListeners.start, move: (event) => { const parent = event.target.parentNode; if (!parent) return; const card = scriptCards.find(c => c.id === selectedCardId); if (!card) return; const layoutKey = parent.dataset.layoutKey; const layout = layoutKey === 'source' ? card.source.layout : card.layout[layoutKey]; const rect = parent.getBoundingClientRect(); const centerX = rect.left + rect.width / 2; const centerY = rect.top + rect.height / 2; const angle = Math.atan2(event.clientY - centerY, event.clientX - centerX); layout.angle = angle * (180 / Math.PI) + 90; applyTransform(parent, layout); event.target.style.transform = `translateX(-50%) rotate(${-layout.angle}deg)`; }, end: interactionListeners.end }}); interact('.interactive-target').draggable({ listeners: { start: interactionListeners.start, move(event) { const card = scriptCards.find(c => c.id === selectedCardId); if (!card) return; const layoutKey = event.target.dataset.layoutKey; const layout = layoutKey === 'source' ? card.source.layout : card.layout[layoutKey]; layout.x += event.dx; layout.y += event.dy; applyTransform(event.target, layout); }, end: interactionListeners.end } }).resizable({ edges: { top: true, left: true, bottom: true, right: true }, listeners: { start: interactionListeners.start, move(event) { const card = scriptCards.find(c => c.id === selectedCardId); if (!card) return; const layoutKey = event.target.dataset.layoutKey; const layout = layoutKey === 'source' ? card.source.layout : card.layout[layoutKey]; const oldWidth = event.target.getBoundingClientRect().width; layout.x += event.deltaRect.left; layout.y += event.deltaRect.top; const newWidth = event.rect.width; if (oldWidth > 0) layout.scale *= newWidth / oldWidth; applyTransform(event.target, layout); }, end: interactionListeners.end }, modifiers: [ interact.modifiers.aspectRatio({ ratio: 'preserve' }) ], inertia: true }); document.body.addEventListener('click', (e) => { if (previewContent.contains(e.target) && !e.target.closest('.interactive-target')) { deactivateAllInteractive(); } }); }
-            function deactivateAllInteractive() { document.querySelectorAll('.interactive-target.interactive-active').forEach(el => { el.classList.remove('interactive-active'); el.querySelectorAll('.resize-handle, .rotation-handle').forEach(h => h.remove()); }); activeInteractiveElement = null; showGlobalSettingsPanel(); }
-            function setupSequenceFeature() { document.addEventListener('selectionchange', debounce(() => { const selection = window.getSelection(); if (!selection || selection.isCollapsed) { hideSequenceMenu(); return; } const editor = selection.anchorNode?.parentElement?.closest('.st-script-editor'); if(editor) { const range = selection.getRangeAt(0); const segmentEl = range.startContainer.parentElement.closest('.script-segment'); if (!segmentEl) { hideSequenceMenu(); return; } const cardEl = editor.closest('.st-card'); currentSelectionContext = { cardId: cardEl.dataset.id, text: segmentEl.textContent.trim() }; const rect = range.getBoundingClientRect(); showSequenceMenu(rect.right, rect.top); } else { hideSequenceMenu(); } }, 100)); document.addEventListener('mousedown', (e) => { if (!sequenceMenu.contains(e.target) && !e.target.closest('.st-script-editor')) { hideSequenceMenu(); } }); sequenceMenu.addEventListener('click', e => { if (e.target.tagName !== 'LI') return; const { cardId, text } = currentSelectionContext; const cardData = scriptCards.find(c => c.id === cardId); if (!cardData) return; const action = e.target.dataset.action; if (action === 'set') { const index = parseInt(e.target.dataset.index, 10); cardData.animationSequence = cardData.animationSequence.filter(seqText => seqText !== text); cardData.animationSequence.splice(index, 0, text); } else if (action === 'clear') { cardData.animationSequence = []; } getDebouncedFetchAndUpdate()(cardId); hideSequenceMenu(); }); }
-            function showSequenceMenu(x, y) { const { cardId } = currentSelectionContext; const cardData = scriptCards.find(c => c.id === cardId); if(!cardData) return; const sequence = cardData.animationSequence || []; let menuItems = ''; for(let i=0; i <= sequence.length; i++) { menuItems += `<li data-action="set" data-index="${i}">${i + 1}번째로 재생</li>`; } menuItems += '<hr><li data-action="clear">순서 초기화</li>'; sequenceMenu.innerHTML = menuItems; sequenceMenu.style.left = `${x + 10}px`; sequenceMenu.style.top = `${y}px`; sequenceMenu.style.display = 'block'; }
-            function hideSequenceMenu() { sequenceMenu.style.display = 'none'; currentSelectionContext = null; }
+        };
 
-            function bindGlobalEventListeners() {
-                addCardBtn.addEventListener('click', () => addScriptCard('')); 
-                newProjectBtn.addEventListener('click', () => { if(confirm('정말로 새 프로젝트를 시작하시겠습니까? 모든 작업 내용이 사라집니다.')) { location.reload(); } }); 
-                playAllBtn.addEventListener('click', togglePlay); 
+        // --- 8. 이벤트 핸들러 (Event Handlers) ---
+        const handlers = {
+            updateProjectSettings() {
+                state.projectSettings.header.text = document.getElementById('st-setting-header-text').value;
+                state.projectSettings.header.backgroundColor = document.getElementById('st-setting-header-bg').value;
+                state.projectSettings.header.color = document.getElementById('st-setting-header-color').value;
+                state.projectSettings.header.fontFamily = document.getElementById('st-setting-header-font').value;
+                state.projectSettings.header.fontSize = document.getElementById('st-setting-header-size').value;
+                state.projectSettings.header.icon = document.getElementById('st-setting-header-icon').value;
+                state.projectSettings.project.title = document.getElementById('st-setting-project-title').value;
+                state.projectSettings.project.author = document.getElementById('st-setting-project-author').value;
+                state.projectSettings.project.views = document.getElementById('st-setting-project-views').value;
+                state.projectSettings.project.titleColor = document.getElementById('st-setting-title-color').value;
+                state.projectSettings.project.metaColor = document.getElementById('st-setting-meta-color').value;
+                state.projectSettings.defaultStyle.color = document.getElementById('st-setting-script-color').value;
+                state.projectSettings.defaultStyle.fontFamily = document.getElementById('st-setting-script-font').value;
+                state.projectSettings.defaultStyle.fontSize = document.getElementById('st-setting-script-size').value;
+                state.projectSettings.defaultStyle.lineHeight = document.getElementById('st-setting-line-height').value;
+                state.projectSettings.defaultStyle.letterSpacing = document.getElementById('st-setting-letter-spacing').value;
+                handlers.applyScriptStylesToSelectedCard();
+                render.updatePreviewDisplay();
+            },
+            
+            updateScriptStyleControls() {
+                const card = state.scriptCards.find(c => c.id === state.selectedCardId);
+                if (!card) return;
+                document.getElementById('st-setting-script-color').value = card.style?.color || '#000000';
+                document.getElementById('st-setting-script-font').value = card.style?.fontFamily || "'Noto Sans KR', sans-serif";
+                document.getElementById('st-setting-script-size').value = (card.style?.fontSize || '24px').replace('px','');
+                document.getElementById('st-setting-line-height').value = card.style?.lineHeight || '1.5';
+                document.getElementById('st-setting-letter-spacing').value = (card.style?.letterSpacing || '0px').replace('px','');
+            },
+
+            applyScriptStylesToSelectedCard() {
+                const card = state.scriptCards.find(c => c.id === state.selectedCardId);
+                if (!card) return;
+                card.style = {
+                    color: document.getElementById('st-setting-script-color').value,
+                    fontFamily: document.getElementById('st-setting-script-font').value,
+                    fontSize: document.getElementById('st-setting-script-size').value + 'px',
+                    lineHeight: document.getElementById('st-setting-line-height').value,
+                    letterSpacing: document.getElementById('st-setting-letter-spacing').value + 'px'
+                };
+                render.updatePreviewDisplay();
+            },
+
+            addScriptCard(text = '') {
+                const cardId = helpers.generateId('card');
+                const cardData = {
+                    id: cardId, text, segments: [], animationSequence: [], duration: 0.5, ttsDuration: 0.5, isDurationManual: false,
+                    media: { url: null, type: null, fit: 'contain', showOnSegment: 1, persistUntilCardId: null },
+                    style: { ...state.projectSettings.defaultStyle, fontSize: state.projectSettings.defaultStyle.fontSize + 'px', letterSpacing: state.projectSettings.defaultStyle.letterSpacing + 'px' },
+                    audioUrl: null, ttsReady: false, ttsVolume: 0.8, sfxUrl: null, sfxVolume: 0.8,
+                    layout: { text: { x: 0, y: 0, scale: 1, angle: 0 }, media: { x: 0, y: 0, scale: 1, angle: 0 } },
+                    animations: { text: { in: { name: 'none', duration: 0.3 }, out: { name: 'none', duration: 0.3 } }, media: { in: { name: 'none', duration: 0.3 }, out: { name: 'none', duration: 0.3 } } }
+                };
+                state.scriptCards.push(cardData);
+                const cardEl = render.cardElement(cardData);
+                UI.cardContainer.appendChild(cardEl);
+                handlers.bindCardEvents(cardId);
                 
-                globalSettingsPanel.addEventListener('input', (e) => {
-                    if (e.target.id.startsWith('st-setting-')) {
-                        updateProjectSettings();
+                const editor = cardEl.querySelector('.st-script-editor');
+                render.segmentsInEditor(editor, cardData.text);
+                debouncedTTSRequest(cardId);
+                
+                if (!state.selectedCardId) {
+                    handlers.selectCard(cardId);
+                }
+                
+                render.updateCardNumbers();
+                render.updateCardUI(cardId);
+            },
+            
+            bindCardEvents(cardId) {
+                const cardEl = document.querySelector(`.st-card[data-id="${cardId}"]`);
+                const cardData = state.scriptCards.find(c => c.id === cardId);
+                const editor = cardEl.querySelector('.st-script-editor');
+                
+                editor.addEventListener('input', () => {
+                    cardData.text = Array.from(editor.children).map(child => child.textContent).join('\n');
+                    render.updatePreviewDisplay();
+                    debouncedTTSRequest(cardId);
+                });
+                
+                new Sortable(editor, { animation: 150, ghostClass: 'sortable-ghost', onEnd: () => { 
+                    cardData.text = Array.from(editor.children).map(child => child.textContent).join('\n');
+                    render.updatePreviewDisplay();
+                    debouncedTTSRequest(cardId);
+                }});
+
+                const fileInput = cardEl.querySelector(`#${cardId}-file`);
+                fileInput.addEventListener('change', (e) => {
+                    if (e.target.files && e.target.files[0]) {
+                        const file = e.target.files[0];
+                        cardData.media.url = URL.createObjectURL(file);
+                        cardData.media.type = file.type.startsWith('video/') ? 'video' : 'image';
+                        render.updateMediaControls(cardId);
+                        if (state.selectedCardId === cardId) {
+                            render.updatePreviewDisplay();
+                        }
                     }
                 });
                 
-                const uploadBgmBtn = document.getElementById('st-btn-upload-bgm');
-                if(uploadBgmBtn) uploadBgmBtn.addEventListener('click', () => bgmFileInput.click());
+                cardEl.querySelector('.media-timing-select').addEventListener('change', e => {
+                    cardData.media.showOnSegment = parseInt(e.target.value, 10);
+                });
+                cardEl.querySelector('.media-persist-select').addEventListener('change', e => {
+                    cardData.media.persistUntilCardId = e.target.value || null;
+                });
+                cardEl.querySelectorAll(`input[name="media-fit-${cardId}"]`).forEach(radio => {
+                    radio.addEventListener('change', e => {
+                        cardData.media.fit = e.target.value;
+                        if(state.selectedCardId === cardId) render.updatePreviewDisplay();
+                    });
+                });
+                cardEl.querySelector('.st-play-clip-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    playback.stop();
+                    if (cardData.ttsReady && cardData.audioUrl) { UI.ttsPlayer.volume = cardData.ttsVolume; UI.ttsPlayer.src = cardData.audioUrl; UI.ttsPlayer.play(); }
+                    if (cardData.sfxUrl) { UI.sfxPlayer.src = cardData.sfxUrl; UI.sfxPlayer.volume = cardData.sfxVolume; UI.sfxPlayer.play(); }
+                });
+                cardEl.querySelector('.st-sfx-select').addEventListener('change', (e) => {
+                    const url = e.target.value;
+                    if (url === 'upload-my-own') {
+                        state.sfxUploadTargetCardId = cardId;
+                        UI.sfxFileInput.value = null;
+                        UI.sfxFileInput.click();
+                        e.target.value = cardData.sfxUrl || '';
+                        return;
+                    }
+                    cardData.sfxUrl = url || null;
+                    if (url) {
+                        UI.sfxPlayer.src = url;
+                        UI.sfxPlayer.volume = cardData.sfxVolume;
+                        UI.sfxPlayer.play();
+                        const sfxItem = state.sfxList.find(item => item.url === url);
+                        if (sfxItem) {
+                            state.recentlyUsedSfx = [sfxItem, ...state.recentlyUsedSfx.filter(item => item.url !== url)].slice(0, 5);
+                            render.allSfxSelects();
+                        }
+                    }
+                });
+                cardEl.querySelector('.tts-volume').addEventListener('input', e => { cardData.ttsVolume = parseFloat(e.target.value); });
+                cardEl.querySelector('.sfx-volume').addEventListener('input', e => { cardData.sfxVolume = parseFloat(e.target.value); });
+                cardEl.querySelector('.st-duration-label').addEventListener('click', () => {
+                    cardData.isDurationManual = !cardData.isDurationManual;
+                    if (!cardData.isDurationManual) { cardData.duration = cardData.ttsDuration; }
+                    render.updateCardUI(cardId);
+                    handlers.updateTotalDuration();
+                });
+                cardEl.querySelector('.st-duration-input').addEventListener('input', (e) => {
+                    if (cardData.isDurationManual) { cardData.duration = parseFloat(e.target.value) || 0.5; handlers.updateTotalDuration(); }
+                });
+                cardEl.querySelector('.st-btn-delete-card').addEventListener('click', (e) => { e.stopPropagation(); handlers.deleteCard(cardId); });
+                cardEl.addEventListener('click', () => handlers.selectCard(cardId));
+            },
 
-                const headerLogoBtn = document.getElementById('st-btn-header-logo');
-                if(headerLogoBtn) headerLogoBtn.addEventListener('click', () => document.getElementById('st-header-logo-file').click());
+            deleteCard(cardId) {
+                const cardIndex = state.scriptCards.findIndex(c => c.id === cardId);
+                if (cardIndex === -1) return;
                 
-                const headerLogoFile = document.getElementById('st-header-logo-file');
-                if(headerLogoFile) headerLogoFile.addEventListener('change', (e) => { if (e.target.files && e.target.files[0]) { const reader = new FileReader(); reader.onload = (event) => { projectSettings.header.logo.url = event.target.result; updatePreviewDisplay(); }; reader.readAsDataURL(e.target.files[0]); } });
+                state.scriptCards.splice(cardIndex, 1);
+                document.querySelector(`.st-card[data-id="${cardId}"]`).remove();
+                
+                if (state.selectedCardId === cardId) {
+                    state.selectedCardId = null;
+                    if (state.scriptCards.length > 0) {
+                        const nextIndex = Math.max(0, cardIndex - 1);
+                        if (state.scriptCards[nextIndex]) {
+                            handlers.selectCard(state.scriptCards[nextIndex].id);
+                        }
+                    } else {
+                        render.updatePreviewDisplay();
+                    }
+                }
+                handlers.updateTotalDuration();
+                render.updateCardNumbers();
+                interaction.deactivateAllInteractive();
+            },
+            
+            updateTotalDuration() {
+                const total = state.scriptCards.reduce((sum, card) => sum + (card.duration || 0.5), 0);
+                if (UI.timelineSlider) UI.timelineSlider.max = total;
+            },
+            
+            selectCard(cardId, fromPlayback = false) {
+                if (state.isPlaying && !fromPlayback) playback.stop();
+                
+                state.selectedCardId = cardId;
+                interaction.deactivateAllInteractive();
+                
+                document.querySelectorAll('.st-card').forEach(c => c.classList.remove('active'));
+                const cardEl = document.querySelector(`.st-card[data-id="${cardId}"]`);
+                
+                if (cardEl) {
+                    cardEl.classList.add('active');
+                    if (!fromPlayback) {
+                        cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                    handlers.updateScriptStyleControls();
+                    render.updatePreviewDisplay();
+                } else {
+                     render.updatePreviewDisplay();
+                }
+            },
+        };
+        
+        // --- 9. 인터랙션 (Interaction) ---
+        const interaction = {
+            deactivateAllInteractive() {
+                document.querySelectorAll('.interactive-target.interactive-active').forEach(el => {
+                    el.classList.remove('interactive-active');
+                    el.querySelectorAll('.resize-handle, .rotation-handle').forEach(h => h.remove());
+                });
+                state.activeInteractiveElement = null;
+                render.showPanel('global');
+            },
 
-                const globalBgmSelect = document.getElementById('st-setting-global-bgm');
-                if(globalBgmSelect) globalBgmSelect.addEventListener('change', (e) => { const url = e.target.value; const originalUrl = globalBGM.url || ''; if (url) { openBgmEditor(url, { onConfirm: ({ startTime, endTime }) => { globalBGM = { ...globalBGM, url, startTime, endTime }; if (isPlaying) playBGM(); }, onCancel: () => { globalBgmSelect.value = originalUrl; } }); } else { globalBGM.url = null; if (isPlaying) bgmPlayer.pause(); } });
+            activateInteractive(target) {
+                if (state.activeInteractiveElement === target) return;
+                
+                interaction.deactivateAllInteractive();
+                state.activeInteractiveElement = target;
+                target.classList.add('interactive-active');
+                
+                ['top-left', 'top-right', 'bottom-left', 'bottom-right'].forEach(pos => {
+                    const handle = document.createElement('div');
+                    handle.className = `resize-handle`;
+                    handle.style.top = pos.includes('top') ? '-6px' : ''; handle.style.bottom = pos.includes('bottom') ? '-6px' : '';
+                    handle.style.left = pos.includes('left') ? '-6px' : ''; handle.style.right = pos.includes('right') ? '-6px' : '';
+                    handle.style.cursor = pos === 'top-left' || pos === 'bottom-right' ? 'nwse-resize' : 'nesw-resize';
+                    target.appendChild(handle);
+                });
+                
+                const rotHandle = document.createElement('div');
+                rotHandle.className = 'rotation-handle';
+                rotHandle.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14.7594 20.0001C11.5894 20.5301 8.20942 19.5601 5.86942 17.2201C2.59942 13.9501 2.59942 8.55006 5.86942 5.28006C9.13942 2.01006 14.5394 2.01006 17.8094 5.28006C19.7994 7.27006 20.6594 9.87006 20.4794 12.4401" stroke="#333" stroke-width="2" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M15.4297 12.4401L20.4797 12.4401L18.4297 10.3901" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+                target.appendChild(rotHandle);
+                
+                render.animationControls(target);
+            },
+
+            initialize() {
+                interact('.interactive-target').on('tap', (event) => {
+                    interaction.activateInteractive(event.currentTarget);
+                    event.preventDefault();
+                });
+                
+                const interactionListeners = {
+                    start(event) { document.body.classList.add('interaction-active'); if(event.target.closest('.interactive-target')) event.target.closest('.interactive-target').classList.add('interacting'); },
+                    move(event) {
+                        const card = state.scriptCards.find(c => c.id === state.selectedCardId); if (!card) return;
+                        const layoutKey = event.target.dataset.layoutKey; const layout = card.layout[layoutKey];
+                        layout.x += event.dx; layout.y += event.dy;
+                        render.applyTransform(event.target, layout);
+                    },
+                    end(event) { document.body.classList.remove('interaction-active'); document.querySelectorAll('.interacting').forEach(el => el.classList.remove('interacting')); }
+                };
+
+                interact('.interactive-target').draggable({ listeners: interactionListeners });
+
+                interact('.interactive-target').resizable({
+                    edges: { top: true, left: true, bottom: true, right: true },
+                    listeners: {
+                        start: interactionListeners.start,
+                        move(event) {
+                            const card = state.scriptCards.find(c => c.id === state.selectedCardId); if (!card) return;
+                            const layoutKey = event.target.dataset.layoutKey; const layout = card.layout[layoutKey];
+                            layout.x += event.deltaRect.left; layout.y += event.deltaRect.top;
+                            // scale is now managed by css object-fit, so we don't change scale on resize
+                            Object.assign(event.target.style, { width: `${event.rect.width}px`, height: `${event.rect.height}px` });
+                            render.applyTransform(event.target, layout);
+                        },
+                        end: interactionListeners.end
+                    },
+                    modifiers: [ interact.modifiers.aspectRatio({ ratio: 'preserve' }) ],
+                    inertia: true
+                });
+
+                UI.previewContent.addEventListener('click', (e) => {
+                    if (!e.target.closest('.interactive-target')) {
+                        interaction.deactivateAllInteractive();
+                    }
+                });
+            }
+        };
+
+        // --- 10. 초기화 (Initialization) ---
+        async function initialize() {
+            try {
+                const response = await fetch('https://sunsaktool-final.netlify.app/sfx-list.json');
+                if (!response.ok) throw new Error('Network response was not ok');
+                state.sfxList = await response.json();
+            } catch (e) {
+                console.error("효과음 목록(sfx-list.json)을 불러오는 데 실패했습니다.", e);
+                state.sfxList = [{ name: "효과음 목록 로딩 실패", url: "" }];
             }
 
-            async function initialize() { 
-                await (async function() { try { const response = await fetch('./sfx-list.json'); if (!response.ok) throw new Error('Network response was not ok'); SFX_LIST = await response.json(); } catch (e) { console.error("효과음 목록(sfx-list.json)을 불러오는 데 실패했습니다.", e); SFX_LIST = [{ name: "효과음 목록 로딩 실패", url: "" }]; } })();
-                
-                renderGlobalControls(); 
-                bindGlobalEventListeners();
-                
-                setupGptsModal(); 
-                setupExportButton(); 
-                setupImagePaste(); 
-                setupSequenceFeature();
-                
-                sfxFileInput.addEventListener('change', (e) => { if (!e.target.files || e.target.files.length === 0) return; const file = e.target.files[0]; const url = URL.createObjectURL(file); const newSfx = { name: file.name, url }; if (!SFX_LIST.find(item => item.url === url)) { SFX_LIST.push(newSfx); } const cardToUpdate = scriptCards.find(c => c.id === sfxUploadTargetCardId); if (cardToUpdate) { cardToUpdate.sfxUrl = url; } recentlyUsedSfx = [newSfx, ...recentlyUsedSfx.filter(item => item.url !== url)].slice(0, 5); updateAllSfxSelects(); const cardEl = document.querySelector(`.st-card[data-id="${sfxUploadTargetCardId}"]`); if(cardEl) { cardEl.querySelector('.st-sfx-select').value = url; } });
-                bgmFileInput.addEventListener('change', (e) => { if (!e.target.files || e.target.files.length === 0) return; const file = e.target.files[0]; const url = URL.createObjectURL(file); let uploadOption = document.getElementById('st-setting-global-bgm').querySelector('option[value="uploaded-bgm"]'); if (!uploadOption) { uploadOption = document.createElement('option'); uploadOption.value = 'uploaded-bgm'; document.getElementById('st-setting-global-bgm').add(uploadOption, 1); } uploadOption.textContent = `(업로드) ${file.name}`; uploadOption.dataset.url = url; document.getElementById('st-setting-global-bgm').value = 'uploaded-bgm'; openBgmEditor(url, { onConfirm: ({ startTime, endTime }) => { globalBGM = { ...globalBGM, url, startTime, endTime }; if (isPlaying) playBGM(); }, onCancel: () => { document.getElementById('st-setting-global-bgm').value = globalBGM.url || ''; } }); });
-                
-                new Sortable(cardContainer, { animation: 150, handle: '.st-card-drag-handle', onEnd: function(evt) { const { oldIndex, newIndex } = evt; const [movedItem] = scriptCards.splice(oldIndex, 1); scriptCards.splice(newIndex, 0, movedItem); updateCardNumbers(); } }); 
-                initializeInteract(); 
-                
-                addScriptCard('');
-                updatePreviewDisplay();
-            }
-            initialize();
-        });
+            render.globalControls();
+            
+            // 전역 이벤트 리스너 바인딩
+            UI.addCardBtn.addEventListener('click', () => handlers.addScriptCard(''));
+            UI.newProjectBtn.addEventListener('click', () => { if(confirm('정말로 새 프로젝트를 시작하시겠습니까? 모든 작업 내용이 사라집니다.')) { location.reload(); } });
+            UI.playAllBtn.addEventListener('click', playback.togglePlay);
+            UI.globalSettingsPanel.addEventListener('input', (e) => { if (e.target.id.startsWith('st-setting-')) handlers.updateProjectSettings(); });
+            document.getElementById('st-btn-upload-bgm').addEventListener('click', () => UI.bgmFileInput.click());
+            document.getElementById('st-btn-header-logo').addEventListener('click', () => document.getElementById('st-header-logo-file').click());
+            // ... 기타 모달, 파일 업로드 등 이벤트...
+            
+            interaction.initialize();
+            
+            new Sortable(UI.cardContainer, { 
+                animation: 150, 
+                handle: '.st-card-drag-handle',
+                onEnd: function(evt) {
+                    const { oldIndex, newIndex } = evt;
+                    const [movedItem] = state.scriptCards.splice(oldIndex, 1);
+                    state.scriptCards.splice(newIndex, 0, movedItem);
+                    render.updateCardNumbers();
+                }
+            });
+
+            // 초기 카드 추가
+            handlers.addScriptCard('순삭툴에 오신 것을 환영합니다!');
+            render.updatePreviewDisplay();
+        }
+
+        // DOM 로드 후 애플리케이션 시작
+        document.addEventListener('DOMContentLoaded', initialize);
+
+    })(); // 즉시 실행 함수 종료
     </script>
 </body>
 </html>
