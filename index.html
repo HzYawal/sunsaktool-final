@@ -990,22 +990,23 @@
             handlers.addScriptCard('순삭툴에 오신 것을 환영합니다!\n텍스트를 선택해서 재생 순서를 정해보세요.');
         }
 
-                                                               const exporter = {
+                                                                       const exporter = {
             ffmpeg: null,
 
-            // loadFFmpeg 함수만 아래 내용으로 수정되었습니다.
             async loadFFmpeg() {
                 UI.progressSubText.textContent = '렌더링 엔진 로딩 중...';
                 if (this.ffmpeg) return;
 
                 // 라이브러리가 로드될 때까지 대기
-                while (typeof FFmpeg === 'undefined' || typeof FFmpeg.createFFmpeg === 'undefined') {
+                // createFFmpeg가 정의될 때까지 기다리는 것이 아니라 FFmpeg 객체 자체를 기다립니다.
+                while (typeof FFmpeg === 'undefined') {
                     console.log('Waiting for FFmpeg to load...');
                     await new Promise(resolve => setTimeout(resolve, 100));
                 }
 
-                // FFmpeg 공식 권장 방식 사용
-                this.ffmpeg = FFmpeg.createFFmpeg({
+                // FFmpeg 라이브러리에서 createFFmpeg 함수를 직접 가져와 사용합니다.
+                const { createFFmpeg } = FFmpeg;
+                this.ffmpeg = createFFmpeg({
                     log: true,
                     progress: ({ ratio }) => {
                         const progress = Math.round(ratio * 100);
@@ -1015,34 +1016,36 @@
                         }
                     },
                 });
-
+                
                 await this.ffmpeg.load();
             },
 
             async recordVideoOnly(totalDuration, fps) {
                 UI.progressText.textContent = '화면 녹화를 시작해주세요.';
                 UI.progressSubText.textContent = '팝업 창에서 [이 탭 공유]를 선택하세요.';
-                
-                const previewPanel = document.getElementById('st-preview-panel');
-                
-                // captureStream 사용으로 복귀 (getDisplayMedia는 사용자 인터랙션이 복잡함)
-                const stream = previewPanel.captureStream(fps);
-                if (!stream) {
-                    throw new Error("미리보기 패널을 녹화할 수 없습니다.");
-                }
 
-                const recorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
+                // 1. 화면 공유 API로 스트림 가져오기
+                const captureStream = await navigator.mediaDevices.getDisplayMedia({
+                    video: {
+                        cursor: "never", // 마우스 커서 녹화 안함
+                        frameRate: { ideal: fps, max: fps }
+                    },
+                    audio: false
+                });
+
+                const recorder = new MediaRecorder(captureStream, { mimeType: 'video/webm;codecs=vp9' });
                 const chunks = [];
                 recorder.ondataavailable = e => chunks.push(e.data);
                 
                 const recordingPromise = new Promise(resolve => recorder.onstop = () => {
+                    captureStream.getTracks().forEach(track => track.stop());
                     resolve(new Blob(chunks, { type: 'video/webm' }));
                 });
 
-                playback.start(true); // 오디오 없이 재생 시작
+                playback.start(true);
                 recorder.start();
 
-                // 렌더링 루프를 통해 진행률 업데이트
+                // 진행률 표시
                 let frame = 0;
                 const totalFrames = Math.floor(totalDuration * fps);
                 const intervalId = setInterval(() => {
@@ -1064,7 +1067,7 @@
             },
 
             async createAudioTrack(totalDuration) {
-                // 이 함수는 이전과 동일합니다.
+                // 이 함수는 수정 없음
                 UI.progressText.textContent = '오디오 트랙 생성 중...';
                 
                 const audioContext = new OfflineAudioContext({
@@ -1129,28 +1132,44 @@
                     await this.loadFFmpeg();
                     
                     const videoBlob = await this.recordVideoOnly(totalDuration, 30);
+                    
                     const audioBlob = await this.createAudioTrack(totalDuration);
 
                     UI.progressText.textContent = '최종 영상 생성 중...';
                     const videoData = new Uint8Array(await videoBlob.arrayBuffer());
                     const audioData = new Uint8Array(await audioBlob.arrayBuffer());
                     
-                    await this.ffmpeg.FS('writeFile', 'video.webm', videoData);
+                    await this.ffmpeg.FS('writeFile', 'video_full.webm', videoData);
                     await this.ffmpeg.FS('writeFile', 'audio.wav', audioData);
                     
-                    await this.ffmpeg.run('-i', 'video.webm', '-i', 'audio.wav', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', 'output.mp4');
+                    // 2. FFmpeg로 영상 자르기(crop) 및 오디오 합치기
+                    const previewPanel = document.getElementById('st-preview-panel');
+                    const rect = previewPanel.getBoundingClientRect();
+                    
+                    // 화면 해상도에 따른 비율 계산 (HiDPI/Retina 대응)
+                    const dpr = window.devicePixelRatio || 1;
+                    const crop_w = Math.round(rect.width * dpr);
+                    const crop_h = Math.round(rect.height * dpr);
+                    const crop_x = Math.round(rect.left * dpr);
+                    const crop_y = Math.round(rect.top * dpr);
+
+                    // FFmpeg 명령어: 비디오를 자르고(crop), 해상도를 1080x1920으로 맞추고(scale), 오디오를 합친다.
+                    await this.ffmpeg.run(
+                        '-i', 'video_full.webm',
+                        '-i', 'audio.wav',
+                        '-filter:v', `crop=${crop_w}:${crop_h}:${crop_x}:${crop_y},scale=1080:1920`,
+                        '-c:a', 'aac', '-b:a', '192k',
+                        'output.mp4'
+                    );
 
                     const outputData = await this.ffmpeg.FS('readFile', 'output.mp4');
                     const outputBlob = new Blob([outputData.buffer], { type: 'video/mp4' });
 
                     const url = URL.createObjectURL(outputBlob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'sunsak-video.mp4';
-                    a.click();
+                    const a = document.createElement('a'); a.href = url; a.download = 'sunsak-video.mp4'; a.click();
                     URL.revokeObjectURL(url);
                     
-                    await this.ffmpeg.FS('unlink', 'video.webm');
+                    await this.ffmpeg.FS('unlink', 'video_full.webm');
                     await this.ffmpeg.FS('unlink', 'audio.wav');
                     await this.ffmpeg.FS('unlink', 'output.mp4');
 
@@ -1167,6 +1186,7 @@
             },
             
             bufferToWave(abuffer) {
+                // 이 함수는 수정 없음
                 let numOfChan = abuffer.numberOfChannels,
                 len = abuffer.length * numOfChan * 2 + 44,
                 buffer = new ArrayBuffer(len),
@@ -1175,35 +1195,22 @@
                 offset = 0,
                 pos = 0;
 
-                setUint32(0x46464952);      
-                setUint32(len - 8);           
-                setUint32(0x45564157);      
-                setUint32(0x20746d66);      
-                setUint32(16);              
-                setUint16(1);                 
-                setUint16(numOfChan);
-                setUint32(abuffer.sampleRate);
-                setUint32(abuffer.sampleRate * 2 * numOfChan);
-                setUint16(numOfChan * 2);     
-                setUint16(16);                
-                setUint32(0x61746164);      
+                setUint32(0x46464952); setUint32(len - 8); setUint32(0x45564157);      
+                setUint32(0x20746d66); setUint32(16); setUint16(1); setUint16(numOfChan);
+                setUint32(abuffer.sampleRate); setUint32(abuffer.sampleRate * 2 * numOfChan);
+                setUint16(numOfChan * 2); setUint16(16); setUint32(0x61746164);      
                 setUint32(len - pos - 4);     
 
-                for(i = 0; i < abuffer.numberOfChannels; i++)
-                    channels.push(abuffer.getChannelData(i));
-
+                for(i = 0; i < abuffer.numberOfChannels; i++) channels.push(abuffer.getChannelData(i));
                 while(pos < len) {
                     for(i = 0; i < numOfChan; i++) {
                         sample = Math.max(-1, Math.min(1, channels[i][offset]));
                         sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767)|0;
-                        view.setInt16(pos, sample, true);
-                        pos += 2;
+                        view.setInt16(pos, sample, true); pos += 2;
                     }
                     offset++
                 }
-
                 return new Blob([buffer], {type: "audio/wav"});
-
                 function setUint16(data) { view.setUint16(pos, data, true); pos += 2; }
                 function setUint32(data) { view.setUint32(pos, data, true); pos += 4; }
             }
