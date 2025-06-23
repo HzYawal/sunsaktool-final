@@ -52,7 +52,7 @@
         .st-script-display { flex-grow: 1; display: flex; flex-direction: column; align-items: center; text-align: center; }
         .interactive-target { position: relative; width: 100%; touch-action: none; transform-origin: center center; cursor: move; }
         #st-preview-media-container-wrapper { margin-top: 8px; }
-        #st-preview-image, #st-preview-video { max-width: 100%; max-height: 100%; object-fit: contain; }
+        #st-preview-image, #st-preview-video { max-width: 100%; max-height: 100%; }
         .interactive-target.interactive-active { outline: 2px dashed var(--st-interact-color); z-index: 100; }
         #st-preview-text { width: 100%; font-size: 24px; color: #000; white-space: pre-wrap; flex-shrink: 0; }
         .st-timeline-controls { width: 100%; max-width: 380px; display: flex; align-items: center; gap: 10px; margin-top: 15px;}
@@ -113,6 +113,7 @@
         #st-sequence-menu li { padding: 8px 15px; cursor: pointer; }
         #st-sequence-menu li:hover { background-color: var(--st-accent-color); color: white; }
         #st-sequence-menu hr { border: none; border-top: 1px solid var(--st-border-color); margin: 5px 0; }
+        .tts-settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     </style>
 </head>
 <body>
@@ -225,22 +226,39 @@
         };
         const helpers = {
             debounce: (callback, delay) => { let timeout; return (...args) => { clearTimeout(timeout); timeout = setTimeout(() => callback(...args), delay); }; },
-            getAudioDuration: (url) => new Promise(resolve => { const audio = new Audio(); audio.onloadedmetadata = () => resolve(audio.duration); audio.onerror = () => resolve(0.5); audio.src = url; }),
+            getAudioDuration: (url, playbackRate = 1.0) => new Promise(resolve => { const audio = new Audio(); audio.onloadedmetadata = () => resolve(audio.duration / playbackRate); audio.onerror = () => resolve(0.5); audio.src = url; }),
             generateId: (prefix = 'id') => `${prefix}-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
             getGroupKey: (name) => { const keywords = ['물방울','클릭','등장','알림','타격','게임','스윕','넘어가는','넘기는','종이','카툰','폭발','팡파레','스우','깜짝','전자음']; for (const key of keywords) { if (name.includes(key)) return key; } return '기타'; }
         };
-        async function fetchTTS(text, cardId) {
-            text = text.trim(); if (!text) return null;
-            const cacheKey = text;
-            if (state.ttsCache.has(cacheKey)) return state.ttsCache.get(cacheKey);
-            render.showLoadingOnCard(cardId, true, '서버에 요청 중...');
+        async function fetchTTS(cardId) {
+            const cardData = state.scriptCards.find(c => c.id === cardId);
+            if (!cardData || !cardData.text.trim()) return null;
+            
+            const { text } = cardData;
+            const { stability, similarity_boost } = cardData.ttsSettings;
+            const cacheKey = `${text.trim()}-${stability}-${similarity_boost}`;
+
+            if (state.ttsCache.has(cacheKey)) {
+                return state.ttsCache.get(cacheKey);
+            }
+
+            render.showLoadingOnCard(cardId, true, '음성 생성 중...');
             try {
-                const response = await fetch('/.netlify/functions/create-tts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: text }) });
+                const payload = {
+                    text: text.trim(),
+                    voice_settings: {
+                        stability,
+                        similarity_boost
+                    }
+                };
+                const response = await fetch('/.netlify/functions/create-tts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 if (!response.ok) { const errorResult = await response.json(); throw new Error(`[${response.status}] ${errorResult.error || '서버 요청 실패'}`); }
-                const result = await response.json(); const audioUrl = result.audioUrl;
-                const duration = await helpers.getAudioDuration(audioUrl);
-                const ttsData = { audioUrl, duration: duration / 1.5 };
-                state.ttsCache.set(cacheKey, ttsData); return ttsData;
+                const result = await response.json(); 
+                const { audioUrl } = result;
+                const duration = await helpers.getAudioDuration(audioUrl); // Get original duration
+                const ttsData = { audioUrl, duration };
+                state.ttsCache.set(cacheKey, ttsData); 
+                return ttsData;
             } catch (error) {
                 console.error('TTS 생성 오류:', error); alert(`음성 생성 중 오류가 발생했습니다: ${error.message}\n(백엔드 기능이 설정되지 않았을 수 있습니다.)`); return null;
             } finally {
@@ -249,32 +267,35 @@
         }
         const debouncedTTSRequest = helpers.debounce(async (cardId) => {
             const cardData = state.scriptCards.find(c => c.id === cardId); if (!cardData) return;
-            const allLines = cardData.text.split('\n').filter(line => line.trim());
-            const sequencedLines = cardData.animationSequence || [];
-            const remainingLines = allLines.filter(line => line && !sequencedLines.includes(line));
-            const segmentsForTiming = [...sequencedLines, ...remainingLines];
-            const textForTTS = segmentsForTiming.join(' ');
-            if (!textForTTS) {
-                cardData.ttsReady = false; cardData.duration = 0.5; cardData.ttsDuration = 0.5; cardData.segments = [];
-                render.updateCardUI(cardId); handlers.updateTotalDuration(); return;
-            }
-            const ttsData = await fetchTTS(textForTTS, cardId);
+            
+            const ttsData = await fetchTTS(cardId);
+
             if (ttsData && cardData) {
-                cardData.ttsDuration = ttsData.duration;
-                if (!cardData.isDurationManual) { cardData.duration = ttsData.duration; }
-                cardData.audioUrl = ttsData.audioUrl; cardData.ttsReady = true;
-                if(cardData.animationSequence.length > 0) { // 순서가 지정된 경우에만 세그먼트 타이밍 계산
+                const adjustedDuration = ttsData.duration / cardData.ttsSettings.speed;
+                cardData.ttsDuration = adjustedDuration;
+                if (!cardData.isDurationManual) {
+                    cardData.duration = adjustedDuration;
+                }
+                cardData.audioUrl = ttsData.audioUrl; 
+                cardData.ttsReady = true;
+
+                const allLines = cardData.text.split('\n').filter(line => line.trim());
+                const sequencedLines = cardData.animationSequence || [];
+                const remainingLines = allLines.filter(line => line && !sequencedLines.includes(line));
+                const segmentsForTiming = [...sequencedLines, ...remainingLines];
+
+                if(cardData.animationSequence.length > 0) {
                     const totalChars = segmentsForTiming.reduce((sum, s) => sum + s.length, 0);
                     let accumulatedTime = 0;
                     cardData.segments = segmentsForTiming.map(segmentText => {
-                        const segmentDuration = totalChars > 0 ? (segmentText.length / totalChars) * ttsData.duration : 0;
+                        const segmentDuration = totalChars > 0 ? (segmentText.length / totalChars) * adjustedDuration : 0;
                         const segmentTiming = { text: segmentText, startTime: accumulatedTime, duration: segmentDuration };
                         accumulatedTime += segmentDuration; return segmentTiming;
                     });
-                } else { // 순서가 지정되지 않으면 세그먼트 없음 (동시 표시)
+                } else {
                     cardData.segments = [];
                 }
-                if (state.selectedCardId === cardId) { render.updateCardUI(cardId); }
+                render.updateCardUI(cardId);
                 handlers.updateTotalDuration();
             }
         }, 800);
@@ -318,7 +339,7 @@
             cardElement: (cardData) => {
                 const cardEl = document.createElement('div'); cardEl.className = 'st-card'; cardEl.dataset.id = cardData.id;
                 const sfxOptions = render.sfxOptions();
-                cardEl.innerHTML = `<div class="st-card-header st-card-drag-handle"><span class="st-card-number"></span><button class="st-btn-delete-card">🗑️</button></div><div class="st-script-editor" contenteditable="true" spellcheck="false"></div><div class="st-card-footer"><div class="footer-row"><button class="st-play-clip-btn" title="미리듣기" disabled>▶️</button><span class="st-duration-label" title="클릭하여 자동/수동 전환">길이(자동)</span><input type="number" class="st-duration-input" min="0.1" step="0.1" value="${cardData.duration}" title="길이(초)" style="display: none;"><label class="st-action-btn" for="${cardData.id}-file">미디어 추가</label><input type="file" id="${cardData.id}-file" accept="image/*,video/*"></div><div class="footer-row media-controls" style="display: none;"><span>미디어 표시:</span><select class="media-timing-select"></select><span>지속 시간:</span><select class="media-persist-select"></select></div><div class="footer-row media-controls" style="display: none;"><span>미디어 맞춤:</span><label class="media-fit-label"><input type="radio" name="media-fit-${cardData.id}" value="cover">꽉 채우기</label><label class="media-fit-label"><input type="radio" name="media-fit-${cardData.id}" value="contain" checked>안에 맞추기</label><label class="media-fit-label"><input type="radio" name="media-fit-${cardData.id}" value="fill">늘리기</label></div><div class="footer-row"><label>TTS</label><div class="st-flex-group"><input type="range" class="st-volume-slider tts-volume" data-type="tts-volume" data-target-id="${cardData.id}" min="0" max="1" step="0.01" value="${cardData.ttsVolume}"><input type="number" class="value-input" data-type="tts-volume" data-target-id="${cardData.id}" value="${Math.round(cardData.ttsVolume * 100)}"></div></div><div class="footer-row"><label>효과음</label><div class="st-flex-group"><input type="range" class="st-volume-slider sfx-volume" data-type="sfx-volume" data-target-id="${cardData.id}" min="0" max="1" step="0.01" value="${cardData.sfxVolume}"><input type="number" class="value-input" data-type="sfx-volume" data-target-id="${cardData.id}" value="${Math.round(cardData.sfxVolume * 100)}"></div></div><div class="footer-row"><select class="st-sfx-select" style="flex-grow: 1;">${sfxOptions}</select></div></div><div class="st-card-loading" style="display: none;"></div>`;
+                cardEl.innerHTML = `<div class="st-card-header st-card-drag-handle"><span class="st-card-number"></span><button class="st-btn-delete-card">🗑️</button></div><div class="st-script-editor" contenteditable="true" spellcheck="false"></div><div class="st-card-footer"><div class="footer-row"><button class="st-play-clip-btn" title="미리듣기" disabled>▶️</button><span class="st-duration-label" title="클릭하여 자동/수동 전환">길이(자동)</span><input type="number" class="st-duration-input" min="0.1" step="0.1" value="${cardData.duration}" title="길이(초)" style="display: none;"><label class="st-action-btn" for="${cardData.id}-file">미디어 추가</label><input type="file" id="${cardData.id}-file" accept="image/*,video/*"></div><div class="footer-row media-controls" style="display: none;"><span>미디어 표시:</span><select class="media-timing-select"></select><span>지속 시간:</span><select class="media-persist-select"></select></div><div class="footer-row media-controls" style="display: none;"><span>미디어 맞춤:</span><label class="media-fit-label"><input type="radio" name="media-fit-${cardData.id}" value="cover">꽉 채우기</label><label class="media-fit-label"><input type="radio" name="media-fit-${cardData.id}" value="contain" checked>안에 맞추기</label><label class="media-fit-label"><input type="radio" name="media-fit-${cardData.id}" value="fill">늘리기</label></div><div class="footer-row tts-controls"><h4>TTS 설정</h4></div><div class="footer-row tts-controls"><label>볼륨</label><div class="st-flex-group"><input type="range" class="st-volume-slider tts-volume" data-type="tts-volume" data-target-id="${cardData.id}" min="0" max="1" step="0.01" value="${cardData.ttsVolume}"><input type="number" class="value-input" data-type="tts-volume" data-target-id="${cardData.id}" value="${Math.round(cardData.ttsVolume * 100)}"></div></div><div class="footer-row tts-controls"><label>속도</label><div class="st-flex-group"><input type="range" class="tts-speed-slider" data-target-id="${cardData.id}" min="0.5" max="2" step="0.05" value="${cardData.ttsSettings.speed}"><input type="number" class="value-input tts-speed-input" data-target-id="${cardData.id}" value="${cardData.ttsSettings.speed}" step="0.1"></div></div><div class="footer-row tts-controls tts-settings-grid"><div><label>안정성</label><input type="range" class="tts-stability-slider" data-target-id="${cardData.id}" min="0" max="1" step="0.01" value="${cardData.ttsSettings.stability}"></div><div><label>유사성</label><input type="range" class="tts-similarity-slider" data-target-id="${cardData.id}" min="0" max="1" step="0.01" value="${cardData.ttsSettings.similarity_boost}"></div></div><div class="footer-row"><label>효과음</label><div class="st-flex-group"><input type="range" class="st-volume-slider sfx-volume" data-type="sfx-volume" data-target-id="${cardData.id}" min="0" max="1" step="0.01" value="${cardData.sfxVolume}"><input type="number" class="value-input" data-type="sfx-volume" data-target-id="${cardData.id}" value="${Math.round(cardData.sfxVolume * 100)}"></div></div><div class="footer-row"><select class="st-sfx-select" style="flex-grow: 1;">${sfxOptions}</select></div></div><div class="st-card-loading" style="display: none;"></div>`;
                 cardEl.querySelector('.st-sfx-select').value = cardData.sfxUrl || '';
                 return cardEl;
             },
@@ -331,16 +352,28 @@
                 const cardData = state.scriptCards.find(c => c.id === cardId);
                 const cardEl = document.querySelector(`.st-card[data-id="${cardId}"]`);
                 if (!cardData || !cardEl) return;
+
                 cardEl.querySelector('.st-play-clip-btn').disabled = !cardData.ttsReady;
                 cardEl.querySelector('.tts-volume').value = cardData.ttsVolume;
-                cardEl.querySelector('.sfx-volume').value = cardData.sfxVolume;
                 cardEl.querySelector('.value-input[data-type="tts-volume"]').value = Math.round(cardData.ttsVolume*100);
+
+                cardEl.querySelector('.tts-speed-slider').value = cardData.ttsSettings.speed;
+                cardEl.querySelector('.tts-speed-input').value = cardData.ttsSettings.speed.toFixed(2);
+                cardEl.querySelector('.tts-stability-slider').value = cardData.ttsSettings.stability;
+                cardEl.querySelector('.tts-similarity-slider').value = cardData.ttsSettings.similarity_boost;
+
+                cardEl.querySelector('.sfx-volume').value = cardData.sfxVolume;
                 cardEl.querySelector('.value-input[data-type="sfx-volume"]').value = Math.round(cardData.sfxVolume*100);
+                
                 const durationLabel = cardEl.querySelector('.st-duration-label');
                 const durationInput = cardEl.querySelector('.st-duration-input');
                 durationInput.value = (cardData.duration || 0).toFixed(2);
                 durationInput.style.display = cardData.isDurationManual ? 'inline-block' : 'none';
                 durationLabel.textContent = `길이(${cardData.isDurationManual ? '수동' : '자동'})`;
+                
+                const ttsControls = cardEl.querySelectorAll('.tts-controls');
+                ttsControls.forEach(el => el.style.display = cardData.text.trim() ? 'flex' : 'none');
+
                 render.updateMediaControls(cardId);
             },
             updateMediaControls(cardId) {
@@ -405,7 +438,14 @@
                 const mediaWrapper = document.getElementById('st-preview-media-container-wrapper');
                 const previewImage = document.getElementById('st-preview-image');
                 const previewVideo = document.getElementById('st-preview-video');
-                if (!card) { textWrapper.style.display = 'none'; mediaWrapper.style.display = 'none'; return; }
+                
+                if (!card) {
+                    textWrapper.style.display = 'none'; 
+                    mediaWrapper.style.display = 'none'; 
+                    previewImage.style.display = 'none';
+                    previewVideo.style.display = 'none';
+                    return; 
+                }
                 
                 textWrapper.style.display = 'block';
                 mediaWrapper.style.display = card.media.url ? 'block' : 'none';
@@ -417,12 +457,21 @@
                 linesToDisplay.forEach(line => { const p = document.createElement('p'); p.className = 'preview-text-segment highlight'; p.textContent = line || ' '; p.style.margin = 0; previewText.appendChild(p); });
                 
                 if (card.media.url) {
-                    const targetEl = card.media.type === 'video' ? previewVideo : previewImage;
-                    const otherEl = card.media.type === 'video' ? previewImage : video;
-                    targetEl.style.display = 'block'; otherEl.style.display = 'none';
-                    if (targetEl.src !== card.media.url) targetEl.src = card.media.url;
-                    targetEl.style.objectFit = card.media.fit;
-                    if (card.media.type === 'video') { previewVideo.currentTime = card.media.startTime || 0; }
+                    if (card.media.type === 'image') {
+                        previewImage.style.display = 'block';
+                        previewVideo.style.display = 'none';
+                        if (previewImage.src !== card.media.url) previewImage.src = card.media.url;
+                        previewImage.style.objectFit = card.media.fit;
+                    } else if (card.media.type === 'video') {
+                        previewVideo.style.display = 'block';
+                        previewImage.style.display = 'none';
+                        if (previewVideo.src !== card.media.url) previewVideo.src = card.media.url;
+                        previewVideo.style.objectFit = card.media.fit;
+                        previewVideo.currentTime = card.media.startTime || 0;
+                    }
+                } else {
+                    previewImage.style.display = 'none';
+                    previewVideo.style.display = 'none';
                 }
             },
         };
@@ -430,7 +479,7 @@
             togglePlay: () => { state.isPlaying ? playback.stop() : playback.start(); },
             start: () => {
                 interaction.deactivateAllInteractive();
-                const unready = state.scriptCards.some(c => !c.ttsReady && c.text.trim());
+                const unready = state.scriptCards.some(c => c.text.trim() && !c.ttsReady);
                 if (unready) return alert('아직 음성 생성이 완료되지 않은 스크립트가 있습니다.');
                 if (state.scriptCards.length === 0) return;
                 state.isPlaying = true; UI.playAllBtn.textContent = '❚❚';
@@ -510,8 +559,17 @@
                      });
                 }
                 
-                if (card.audioUrl) { UI.ttsPlayer.src = card.audioUrl; UI.ttsPlayer.volume = card.ttsVolume; UI.ttsPlayer.playbackRate = 1.5; UI.ttsPlayer.play(); }
-                if (card.sfxUrl) { UI.sfxPlayer.src = card.sfxUrl; UI.sfxPlayer.volume = card.sfxVolume; UI.sfxPlayer.play(); }
+                if (card.audioUrl) { 
+                    UI.ttsPlayer.src = card.audioUrl; 
+                    UI.ttsPlayer.volume = card.ttsVolume; 
+                    UI.ttsPlayer.playbackRate = card.ttsSettings.speed; 
+                    UI.ttsPlayer.play(); 
+                }
+                if (card.sfxUrl) { 
+                    UI.sfxPlayer.src = card.sfxUrl; 
+                    UI.sfxPlayer.volume = card.sfxVolume; 
+                    UI.sfxPlayer.play(); 
+                }
                 
                 state.playbackTimeoutId = setTimeout(() => { if (state.isPlaying) playback.playCardByIndex(index + 1); }, card.duration * 1000);
             }
@@ -565,7 +623,9 @@
                     id: cardId, text, segments: [], animationSequence: [], duration: 0.5, ttsDuration: 0.5, isDurationManual: false,
                     media: { url: null, type: null, fit: 'contain', showOnSegment: 1, persistUntilCardId: null, startTime: 0, endTime: null },
                     style: { ...state.projectSettings.defaultStyle, fontSize: state.projectSettings.defaultStyle.fontSize + 'px', letterSpacing: state.projectSettings.defaultStyle.letterSpacing + 'px' },
-                    audioUrl: null, ttsReady: false, ttsVolume: 0.8, sfxUrl: null, sfxVolume: 0.8,
+                    audioUrl: null, ttsReady: false, ttsVolume: 0.8, 
+                    ttsSettings: { speed: 1.3, stability: 0.75, similarity_boost: 0.75 },
+                    sfxUrl: null, sfxVolume: 0.8,
                     layout: { text: { x: 0, y: 0, scale: 1, angle: 0 }, media: { x: 0, y: 0, scale: 1, angle: 0 } },
                     animations: { text: { in: { name: 'fadeIn', duration: 0.5 }, out: { name: 'fadeOut', duration: 0.5 } }, media: { in: { name: 'fadeIn', duration: 0.5 }, out: { name: 'fadeOut', duration: 0.5 } } }
                 };
@@ -581,32 +641,26 @@
                 render.updateCardNumbers();
                 render.updateCardUI(cardId);
             },
-            // ================== KEY BUG FIX AREA ==================
             bindCardEvents(cardEl) {
+                const cardId = cardEl.dataset.id;
                 const editor = cardEl.querySelector('.st-script-editor');
-
-                // ***FIX***: The most critical fix is here.
-                // We now get the card's ID from the DOM element inside the event listener,
-                // instead of relying on a potentially incorrect closure variable.
+                
                 editor.addEventListener('input', () => {
                     const parentCardEl = editor.closest('.st-card');
                     if (!parentCardEl) return;
-                    
                     const currentCardId = parentCardEl.dataset.id;
                     const currentCardData = state.scriptCards.find(c => c.id === currentCardId);
                     if (!currentCardData) return;
-
                     currentCardData.text = Array.from(editor.children).map(child => child.textContent).join('\n');
                     render.updatePreviewDisplay();
+                    render.updateCardUI(currentCardId);
                     debouncedTTSRequest(currentCardId);
                 });
 
-                const cardId = cardEl.dataset.id;
                 const cardData = state.scriptCards.find(c => c.id === cardId);
 
                 new Sortable(editor, { 
-                    animation: 150, 
-                    ghostClass: 'sortable-ghost', 
+                    animation: 150, ghostClass: 'sortable-ghost', 
                     onEnd: () => { 
                         cardData.text = Array.from(editor.children).map(child => child.textContent).join('\n'); 
                         render.updatePreviewDisplay(); 
@@ -623,10 +677,26 @@
                         else { cardData.media.url = url; cardData.media.type = 'image'; render.updateCardUI(cardId); if (state.selectedCardId === cardId) render.updatePreviewDisplay(); }
                     }
                 });
+
                 cardEl.querySelector('.media-timing-select').addEventListener('change', e => cardData.media.showOnSegment = parseInt(e.target.value, 10));
                 cardEl.querySelector('.media-persist-select').addEventListener('change', e => cardData.media.persistUntilCardId = e.target.value || null);
                 cardEl.querySelectorAll(`input[name="media-fit-${cardId}"]`).forEach(radio => { radio.addEventListener('change', e => { cardData.media.fit = e.target.value; if(state.selectedCardId === cardId) render.updatePreviewDisplay(); }); });
-                cardEl.querySelector('.st-play-clip-btn').addEventListener('click', (e) => { e.stopPropagation(); playback.stop(); if (cardData.ttsReady && cardData.audioUrl) { UI.ttsPlayer.src = cardData.audioUrl; UI.ttsPlayer.playbackRate = 1.5; UI.ttsPlayer.volume = cardData.ttsVolume; UI.ttsPlayer.play(); } if (cardData.sfxUrl) { UI.sfxPlayer.src = cardData.sfxUrl; UI.sfxPlayer.volume = cardData.sfxVolume; UI.sfxPlayer.play(); } });
+                cardEl.querySelector('.st-play-clip-btn').addEventListener('click', (e) => { e.stopPropagation(); playback.stop(); if (cardData.ttsReady && cardData.audioUrl) { UI.ttsPlayer.src = cardData.audioUrl; UI.ttsPlayer.playbackRate = cardData.ttsSettings.speed; UI.ttsPlayer.volume = cardData.ttsVolume; UI.ttsPlayer.play(); } if (cardData.sfxUrl) { UI.sfxPlayer.src = cardData.sfxUrl; UI.sfxPlayer.volume = cardData.sfxVolume; UI.sfxPlayer.play(); } });
+                
+                const ttsSettingsHandler = () => {
+                    cardData.ttsSettings.speed = parseFloat(cardEl.querySelector('.tts-speed-slider').value);
+                    cardData.ttsSettings.stability = parseFloat(cardEl.querySelector('.tts-stability-slider').value);
+                    cardData.ttsSettings.similarity_boost = parseFloat(cardEl.querySelector('.tts-similarity-slider').value);
+                    debouncedTTSRequest(cardId);
+                };
+                cardEl.querySelector('.tts-speed-slider').addEventListener('change', ttsSettingsHandler);
+                cardEl.querySelector('.tts-stability-slider').addEventListener('change', ttsSettingsHandler);
+                cardEl.querySelector('.tts-similarity-slider').addEventListener('change', ttsSettingsHandler);
+                cardEl.querySelector('.tts-speed-input').addEventListener('change', e => {
+                    const speed = parseFloat(e.target.value);
+                    if (!isNaN(speed)) { cardEl.querySelector('.tts-speed-slider').value = speed; ttsSettingsHandler(); }
+                });
+
                 cardEl.querySelector('.st-sfx-select').addEventListener('change', (e) => {
                     const url = e.target.value;
                     if (url === 'upload-my-own') { state.sfxUploadTargetCardId = cardId; UI.sfxFileInput.value = null; UI.sfxFileInput.click(); e.target.value = cardData.sfxUrl || ''; return; }
@@ -648,7 +718,7 @@
                         const targetCard = state.scriptCards.find(c => c.id === e.target.dataset.targetId);
                         const volumeType = e.target.dataset.type === 'tts-volume' ? 'ttsVolume' : 'sfxVolume';
                         const newValue = parseFloat(e.target.value) / 100;
-                        if(targetCard && !isNaN(newValue)) targetCard[volumeType] = newValue; // Prevent NaN
+                        if(targetCard && !isNaN(newValue)) targetCard[volumeType] = newValue;
                         const slider = cardEl.querySelector(`.st-volume-slider[data-type="${e.target.dataset.type}"]`);
                         if (slider && !isNaN(newValue)) slider.value = newValue;
                     });
@@ -658,7 +728,6 @@
                 cardEl.querySelector('.st-btn-delete-card').addEventListener('click', (e) => { e.stopPropagation(); handlers.deleteCard(cardId); });
                 cardEl.addEventListener('click', () => handlers.selectCard(cardId));
             },
-            // ======================================================
             deleteCard(cardId) {
                 const cardIndex = state.scriptCards.findIndex(c => c.id === cardId); if (cardIndex === -1) return;
                 const cardData = state.scriptCards[cardIndex];
@@ -908,7 +977,7 @@
 
         const exporter = {
             async startExport() {
-                if (state.scriptCards.some(c => !c.ttsReady && c.text.trim())) return alert('아직 음성 생성이 완료되지 않은 스크립트가 있습니다.');
+                if (state.scriptCards.some(c => c.text.trim() && !c.ttsReady)) return alert('아직 음성 생성이 완료되지 않은 스크립트가 있습니다.');
                 if (state.scriptCards.length === 0) return alert('출력할 영상이 없습니다.');
                 UI.exportBtn.disabled = true;
                 UI.progressOverlay.style.display = 'flex';
@@ -981,11 +1050,12 @@
                 }
                 for (const card of state.scriptCards) {
                     if (card.audioUrl) {
+                        const gainNode = audioContext.createGain();
+                        gainNode.gain.value = card.ttsVolume;
+                        gainNode.connect(destination);
                         const sourceNode = audioContext.createBufferSource();
-                        const gainNode = audioContext.createGain(); 
-                        sourceNode.playbackRate.value = 1.5;
-                        gainNode.gain.value = card.ttsVolume; 
-                        sourceNode.connect(gainNode); gainNode.connect(destination);
+                        sourceNode.playbackRate.value = card.ttsSettings.speed;
+                        sourceNode.connect(gainNode);
                         audioPromises.push(fetch(card.audioUrl).then(res => res.arrayBuffer()).then(buffer => audioContext.decodeAudioData(buffer)).then(decoded => { sourceNode.buffer = decoded; sourceNode.start(timeOffset); }).catch(e => console.error('TTS 로딩 에러', e)));
                     }
                     if (card.sfxUrl) {
@@ -1037,36 +1107,40 @@
             },
             calculateAnimationValues(animationSet, cardDuration, timeInCard) {
                 const animIn = animationSet.in; const animOut = animationSet.out;
-                let progress = 1; let animName = 'none'; let opacity = 1, scale = 1, x = 0, y = 0;
+                let progress = 1; let animName = 'none'; let opacity = 1, scaleValue = 1, y = 0;
                 
                 if (timeInCard < animIn.duration) {
                     progress = timeInCard / animIn.duration;
                     animName = animIn.name;
-                } else if (timeInCard > cardDuration - animOut.duration) {
+                } else if (timeInCard > cardDuration - animOut.duration && animOut.duration > 0) {
                     progress = (cardDuration - timeInCard) / animOut.duration;
                     animName = animOut.name;
-                } else { return { opacity: 1, scale: 1, x: 0, y: 0, transform: '' }; }
+                } else { return { opacity: 1, scale: 1, y: 0 }; }
                 
-                const easeOutQuad = t => t * (2 - t); progress = easeOutQuad(progress);
+                const easeOutQuad = t => t * (2 - t); 
+                if (animName.includes('Out')) {
+                     progress = progress; // Use linear for fade out
+                } else {
+                     progress = easeOutQuad(progress);
+                }
                 
                 switch(animName) {
                     case 'fadeIn': opacity = progress; break;
                     case 'fadeOut': opacity = progress; break;
                     case 'slideInUp': opacity = progress; y = 50 * (1 - progress); break;
                     case 'slideOutDown': opacity = progress; y = 50 * (1 - progress); break;
-                    case 'zoomIn': opacity = progress; scale = 0.8 + 0.2 * progress; break;
-                    case 'zoomOut': opacity = progress; scale = 0.8 + 0.2 * progress; break;
-                    default: return { opacity: 1, scale: 1, x: 0, y: 0, transform: '' };
+                    case 'zoomIn': opacity = progress; scaleValue = 0.8 + 0.2 * progress; break;
+                    case 'zoomOut': opacity = progress; scaleValue = 0.8 + 0.2 * progress; break;
+                    default: return { opacity: 1, scale: 1, y: 0 };
                 }
-                return { opacity, scale, x, y };
+                return { opacity, scale: scaleValue, y };
             },
             wrapText(context, text, x, y, maxWidth, lineHeight) {
-                const lines = text.split('\n'); let currentY = y;
+                const lines = text.split('\n');
                 context.textBaseline = 'middle';
                 const totalTextHeight = lines.length * lineHeight;
                 let startY = y - totalTextHeight / 2 + lineHeight / 2;
                 for (const line of lines) { context.fillText(line, x, startY); startY += lineHeight; }
-                return totalTextHeight;
             },
             renderFrameToCanvas(ctx, card, scale, timeInCard) {
                 const RENDER_WIDTH = ctx.canvas.width; const RENDER_HEIGHT = ctx.canvas.height;
@@ -1103,8 +1177,9 @@
                     ctx.save();
                     ctx.globalAlpha = textAnim.opacity;
                     const textLayout = card.layout.text; const textStyle = card.style;
-                    ctx.translate(RENDER_WIDTH / 2 + textLayout.x * scale, (contentStartY + (RENDER_HEIGHT - contentStartY) / 2) + textLayout.y * scale);
-                    ctx.translate(textAnim.x * scale, textAnim.y * scale);
+                    const textCenterX = RENDER_WIDTH / 2;
+                    const textCenterY = contentStartY + (RENDER_HEIGHT - contentStartY) / 2;
+                    ctx.translate(textCenterX + textLayout.x * scale, textCenterY + textLayout.y * scale + textAnim.y * scale);
                     ctx.rotate(textLayout.angle * Math.PI / 180); 
                     ctx.scale(textLayout.scale * textAnim.scale, textLayout.scale * textAnim.scale);
                     ctx.font = `${parseInt(textStyle.fontSize) * scale}px ${textStyle.fontFamily}`;
@@ -1120,8 +1195,9 @@
                     const mediaEl = state.mediaElementCache.get(card.media.url);
                     if (mediaEl) {
                         const mediaLayout = card.layout.media;
-                        ctx.translate(RENDER_WIDTH / 2 + mediaLayout.x * scale, (contentStartY + (RENDER_HEIGHT - contentStartY) / 2) + mediaLayout.y * scale);
-                        ctx.translate(mediaAnim.x * scale, mediaAnim.y * scale);
+                        const mediaCenterX = RENDER_WIDTH / 2;
+                        const mediaCenterY = contentStartY + (RENDER_HEIGHT - contentStartY) / 2;
+                        ctx.translate(mediaCenterX + mediaLayout.x * scale, mediaCenterY + mediaLayout.y * scale + mediaAnim.y * scale);
                         ctx.rotate(mediaLayout.angle * Math.PI / 180); 
                         ctx.scale(mediaLayout.scale * mediaAnim.scale, mediaLayout.scale * mediaAnim.scale);
                         
@@ -1129,17 +1205,18 @@
                         const mediaAspect = elW / elH;
                         
                         let drawW, drawH;
-                        const containerW = (380 - 40) * scale;
-                        const availableHeight = RENDER_HEIGHT - contentStartY - 20 * scale;
+                        const containerW = RENDER_WIDTH - (40 * scale);
+                        const containerH = RENDER_HEIGHT - contentStartY - (20 * scale);
+                        const containerAspect = containerW / containerH;
 
                         if (card.media.fit === 'cover') {
-                            drawW = containerW; drawH = containerW / mediaAspect;
-                            if (drawH < availableHeight) { drawH = availableHeight; drawW = availableHeight * mediaAspect; }
+                            if (mediaAspect > containerAspect) { drawH = containerH; drawW = elH * mediaAspect; } 
+                            else { drawW = containerW; drawH = elW / mediaAspect; }
                         } else if (card.media.fit === 'fill') {
-                            drawW = containerW; drawH = availableHeight;
+                            drawW = containerW; drawH = containerH;
                         } else { // contain
-                            drawW = containerW; drawH = containerW / mediaAspect;
-                            if (drawH > availableHeight) { drawH = availableHeight; drawW = availableHeight * mediaAspect; }
+                            if (mediaAspect > containerAspect) { drawW = containerW; drawH = containerW / mediaAspect; } 
+                            else { drawH = containerH; drawW = containerH * mediaAspect; }
                         }
                         ctx.drawImage(mediaEl, -drawW / 2, -drawH / 2, drawW, drawH);
                     }
