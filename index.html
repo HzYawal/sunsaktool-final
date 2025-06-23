@@ -35,8 +35,8 @@
         .st-project-info .title { font-size: 22px; color: black; font-weight: bold; margin-bottom: 5px; }
         .st-script-display { flex-grow: 1; position: relative; }
         .interactive-target { position: absolute; text-align: center; cursor: move; }
-        #st-preview-text-container-wrapper { top: 0; left: 50%; transform: translateX(-50%); z-index: 10; }
-        #st-preview-media-container-wrapper { top: 100px; left: 50%; transform: translateX(-50%); z-index: 5; }
+        #st-preview-text-container-wrapper { top: 0; left: 50%; transform: translateX(-50%); z-index: 10; padding: 10px; }
+        #st-preview-media-container-wrapper { top: 120px; left: 50%; transform: translateX(-50%); z-index: 5; }
         #st-preview-image, #st-preview-video { width: 100%; height: 100%; object-fit: contain; }
         .interactive-target.interactive-active { outline: 2px dashed var(--st-interact-color); z-index: 100; }
         .resize-handle { position: absolute; width: 12px; height: 12px; background: white; border-radius: 50%; border: 2px solid var(--st-interact-color); z-index: 101; display: none; }
@@ -81,14 +81,16 @@
         .st-modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.7); display: none; justify-content: center; align-items: center; z-index: 1000; }
         .st-modal-overlay.visible { display: flex; }
         .st-modal-dialog { background-color: var(--st-panel-color); padding: 24px; border-radius: 8px; width: 90%; max-width: 600px; border: 1px solid var(--st-border-color); display: flex; flex-direction: column; max-height: 90vh; }
-        .st-modal-dialog .st-modal-content { overflow-y: auto; }
+        .st-modal-dialog .st-modal-content { overflow-y: auto; flex-grow: 1; }
         .st-modal-dialog textarea#st-gpts-textarea { width: 100%; min-height: 200px; background-color: #333; border-color: var(--st-border-color); color: var(--st-text-color); padding: 8px; border-radius: 4px; }
         .st-modal-dialog .st-modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; flex-shrink: 0; }
-        .waveform-container { width: 100%; height: 128px; background-color: #1e1e1e; }
+        .waveform-container { width: 100%; height: 128px; background-color: #1e1e1e; position: relative; }
         #st-video-trim-preview { width: 100%; max-height: 300px; background-color: #000; margin-bottom: 15px; }
         #st-video-trim-preview video { width: 100%; height: 100%; object-fit: contain; }
         .waveform-loading { text-align: center; padding: 40px; color: var(--st-subtext-color); }
-        .waveform-controls { display: flex; justify-content: space-around; align-items: center; margin-top: 10px; }
+        .waveform-controls { display: flex; justify-content: space-around; align-items: center; margin-top: 10px; flex-shrink: 0; }
+        .frame-controls { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 10px; flex-shrink: 0; }
+        .frame-controls button { font-size: 18px; padding: 2px 10px; background-color: #444; line-height: 1; }
         #st-export-progress-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; color: white; display: none; flex-direction: column; justify-content: center; align-items: center; font-size: 24px; }
         #st-export-progress-text { font-weight: bold; margin-bottom: 10px; }
         #st-export-progress-subtext { font-size: 16px; color: var(--st-subtext-color); }
@@ -104,15 +106,9 @@
     </style>
 </head>
 <body>
-    <div class="st-panel st-sidebar" id="st-sidebar-container">
-        <div id="st-global-settings-panel"></div>
-        <div id="st-animation-settings-panel" style="display: none;"></div>
-    </div>
+    <div class="st-panel st-sidebar" id="st-sidebar-container"> <div id="st-global-settings-panel"></div> <div id="st-animation-settings-panel" style="display: none;"></div> </div>
     <div class="st-main-container">
-        <div class="st-top-header">
-            <div class="st-logo">SunsakTool</div>
-            <button id="st-btn-export-video">🎬 영상 저장</button>
-        </div>
+        <div class="st-top-header"> <div class="st-logo">SunsakTool</div> <button id="st-btn-export-video">🎬 영상 저장</button> </div>
         <div class="st-main-content">
             <div class="st-panel st-preview-area">
                 <div class="st-preview-panel" id="st-preview-panel">
@@ -128,31 +124,20 @@
                          </div>
                      </div>
                 </div>
-                <div class="st-timeline-controls">
-                    <button class="st-play-all-btn" id="st-btn-play-all">▶</button>
-                    <input type="range" id="st-timeline-slider" value="0" step="0.1">
-                </div>
+                <div class="st-timeline-controls"> <button class="st-play-all-btn" id="st-btn-play-all">▶</button> <input type="range" id="st-timeline-slider" value="0" step="0.1"> </div>
             </div>
             <div class="st-panel st-editor-area">
-                <div class="st-editor-header">
-                    <h3>스크립트 & 타임라인</h3>
-                    <div class="button-group">
-                        <button id="st-btn-add-project" style="background-color: #555;">+ 새 프로젝트</button>
-                        <button id="st-btn-add-gpts" style="background-color: #3e3e3e;">✨ 자동 스크립트 생성 (AI 활용)</button>
-                        <button id="st-btn-add-card">+ 수동 추가</button>
-                    </div>
-                </div>
+                <div class="st-editor-header"> <h3>스크립트 & 타임라인</h3> <div class="button-group"> <button id="st-btn-add-project" style="background-color: #555;">+ 새 프로젝트</button> <button id="st-btn-add-gpts" style="background-color: #3e3e3e;">✨ 자동 스크립트 생성 (AI 활용)</button> <button id="st-btn-add-card">+ 수동 추가</button> </div> </div>
                 <div class="st-editor-tip">💡 Tip: 스크립트의 글을 드래그하여 영상에 나오는 순서를 정할 수 있습니다!</div>
                 <div id="st-card-container"></div>
             </div>
         </div>
     </div>
     <div class="st-app-footer">Pro-Tip: 웹의 이미지를 복사(Ctrl+C)한 후, 카드를 클릭하고 붙여넣기(Ctrl+V) 해보세요!</div>
-    
     <ul id="st-sequence-menu" style="display: none;"></ul>
     <div id="st-modal-gpts" class="st-modal-overlay"> <div class="st-modal-dialog"> <div class="st-modal-content"> <h2>AI 대본 붙여넣기</h2> <p>AI 툴(ChatGPT, Claude 등)에서 생성된 스크립트를 입력하세요. 빈 줄로 구분하여 여러 스크립트를 한번에 추가할 수 있습니다.</p> <textarea id="st-gpts-textarea" placeholder="여기에 AI 스크립트를 입력하세요..."></textarea> </div> <div class="st-modal-actions"> <button id="st-btn-gpts-cancel" class="cancel">취소</button> <button id="st-btn-gpts-confirm">확인</button> </div> </div> </div>
-    <div id="st-modal-bgm" class="st-modal-overlay"> <div class="st-modal-dialog"> <div class="st-modal-content"> <h2>BGM 구간 설정</h2> <p>오디오 파형 위에서 원하는 구간을 드래그하여 선택하세요.</p> <div id="st-waveform-container-bgm" class="waveform-container"> <div class="waveform-loading">BGM 로딩 중...</div> </div> </div> <div class="waveform-controls"> <button id="st-btn-bgm-play-pause">재생/일시정지</button> <button id="st-btn-bgm-play-region">선택 구간 미리듣기</button> <span id="st-bgm-time-display">0.00s - 0.00s</span> </div> <div class="st-modal-actions"> <button id="st-btn-bgm-cancel" class="cancel">취소</button> <button id="st-btn-bgm-confirm">확인</button> </div> </div> </div>
-    <div id="st-modal-video-trim" class="st-modal-overlay"> <div class="st-modal-dialog"> <div class="st-modal-content"> <h2>비디오 구간 선택</h2> <div id="st-video-trim-preview"><video controls></video></div> <p>오디오 파형 위에서 사용할 구간을 드래그하여 선택하세요.</p> <div id="st-waveform-container-video" class="waveform-container"> <div class="waveform-loading">비디오 로딩 중...</div> </div> </div> <div class="waveform-controls"> <button id="st-btn-video-play-region">선택 구간 미리보기</button> <span id="st-video-time-display">0.00s - 0.00s</span> </div> <div class="st-modal-actions"> <button id="st-btn-video-cancel" class="cancel">취소</button> <button id="st-btn-video-confirm">확인</button> </div> </div> </div>
+    <div id="st-modal-bgm" class="st-modal-overlay"> <div class="st-modal-dialog"> <div class="st-modal-content"> <h2>BGM 구간 설정</h2> <p>타임라인 위에서 원하는 구간을 드래그하여 선택하세요.</p> <div id="st-waveform-container-bgm" class="waveform-container"> <div class="waveform-loading">BGM 로딩 중...</div> </div> </div> <div class="waveform-controls"> <button id="st-btn-bgm-play-pause">재생/일시정지</button> <button id="st-btn-bgm-play-region">선택 구간 미리듣기</button> <span id="st-bgm-time-display">0.00s - 0.00s</span> </div> <div class="st-modal-actions"> <button id="st-btn-bgm-cancel" class="cancel">취소</button> <button id="st-btn-bgm-confirm">확인</button> </div> </div> </div>
+    <div id="st-modal-video-trim" class="st-modal-overlay"> <div class="st-modal-dialog"> <div class="st-modal-content"> <h2>비디오 구간 선택</h2> <div id="st-video-trim-preview"><video controls></video></div> <p>타임라인 위에서 사용할 구간을 드래그하거나, 양 끝을 조절하세요.</p> <div id="st-waveform-container-video" class="waveform-container"> <div class="waveform-loading">비디오 로딩 중...</div> </div> </div> <div class="frame-controls"> <button id="st-btn-video-frame-prev" title="한 프레임 뒤로">&lt;</button> <span>프레임 이동</span> <button id="st-btn-video-frame-next" title="한 프레임 앞으로">&gt;</button> </div> <div class="waveform-controls"> <button id="st-btn-video-play-region">선택 구간 미리보기</button> <span id="st-video-time-display">0.00s - 0.00s</span> </div> <div class="st-modal-actions"> <button id="st-btn-video-cancel" class="cancel">취소</button> <button id="st-btn-video-confirm">확인</button> </div> </div> </div>
     <div id="st-export-progress-overlay"> <div id="st-export-progress-text">영상 생성 중...</div> <div id="st-export-progress-subtext"></div> <div id="st-export-progress-bar"><div id="st-export-progress-bar-inner"></div></div> </div>
     <canvas id="st-render-canvas" style="display: none;"></canvas>
     <audio id="st-tts-player" style="display:none;"></audio>
@@ -163,7 +148,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/6.4.0/wavesurfer.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/6.4.0/plugin/wavesurfer.regions.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-    
     <script>
     (function SunsakTool() {
         'use strict';
@@ -172,7 +156,6 @@
             FONT_LIST: [ { name: '프리텐다드 (본문용 추천)', value: 'Pretendard' }, { name: 'Noto Sans KR (기본 고딕)', value: "'Noto Sans KR', sans-serif" }, { name: 'G마켓 산스 (개성있는 제목)', value: 'GmarketSans' }, { name: 'IBM Plex Sans KR (모던한 고딕)', value: "'IBM Plex Sans KR', sans-serif" }, { name: 'Do Hyeon (레트로 제목)', value: "'Do Hyeon', sans-serif" }, { name: '나눔명조 (감성적인 본문)', value: "'Nanum Myeongjo', serif" }, { name: '고운 바탕 (부드러운 명조)', value: "'Gowun Batang', serif" }, { name: 'Black Han Sans (강력한 제목)', value: "'Black Han Sans', sans-serif" }, { name: '개구 (귀여운 손글씨)', value: "'Gaegu', cursive" }, { name: 'Hi Melody (아기자기 손글씨)', value: "'Hi Melody', cursive" }, { name: 'Noto Serif KR (정갈한 명조)', value: "'Noto Serif KR', serif" }, { name: '스포카 한 산스 네오 (깔끔한 본문)', value: "'Spoqa Han Sans Neo', sans-serif" }, { name: '독도 (거친 붓글씨)', value: "'Dokdo', cursive" }, ],
             BGM_LIST: [ { name: '선택 안함', url: '' }, { name: 'big-cafe', url: 'https://sunsaktool-final.netlify.app/big-cafe.mp3' }, { name: 'blue-jacket', url: 'https://sunsaktool-final.netlify.app/blue-jacket.mp3' }, { name: 'cute-puppy', url: 'https://sunsaktool-final.netlify.app/cute-puppy.mp3' }, { name: 'laughter-in-the-breeze', url: 'https://sunsaktool-final.netlify.app/laughter-in-the-breeze-_happy_.mp3' }, { name: 'murder-in-my-mind', url: 'https://sunsaktool-final.netlify.app/murder-in-my-mind.mp3' }, { name: 'smiley-composure', url: 'https://sunsaktool-final.netlify.app/smiley-composure.mp3' }, { name: 'spider', url: 'https://sunsaktool-final.netlify.app/spider.mp3' }, { name: 'white-color', url: 'https://sunsaktool-final.netlify.app/white-color.mp3' } ]
         };
-
         const state = {
             sfxList: [{ name: "효과음 목록 로딩 중...", url: "" }],
             recentlyUsedSfx: [],
@@ -199,10 +182,9 @@
             activeBgmRegion: null,
             activeVideoRegion: null,
             bgmEditorContext: { onConfirm: null, onCancel: null },
-            videoTrimmerContext: { cardId: null, url: null },
+            videoTrimmerContext: { cardId: null, url: null, activeHandle: 'end' },
             mediaElementCache: new Map()
         };
-        
         const UI = {
             cardContainer: document.getElementById('st-card-container'),
             playAllBtn: document.getElementById('st-btn-play-all'),
@@ -232,17 +214,12 @@
             progressBarInner: document.getElementById('st-export-progress-bar-inner'),
             renderCanvas: document.getElementById('st-render-canvas')
         };
-        
         const helpers = {
             debounce: (callback, delay) => { let timeout; return (...args) => { clearTimeout(timeout); timeout = setTimeout(() => callback(...args), delay); }; },
             getAudioDuration: (url) => new Promise(resolve => { const audio = new Audio(); audio.onloadedmetadata = () => resolve(audio.duration); audio.onerror = () => resolve(0.5); audio.src = url; }),
             generateId: (prefix = 'id') => `${prefix}-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
-            getGroupKey: (name) => {
-                const keywords = ['물방울','클릭','등장','알림','타격','게임','스윕','넘어가는','넘기는','종이','카툰','폭발','팡파레','스우','깜짝','전자음'];
-                for (const key of keywords) { if (name.includes(key)) return key; } return '기타';
-            }
+            getGroupKey: (name) => { const keywords = ['물방울','클릭','등장','알림','타격','게임','스윕','넘어가는','넘기는','종이','카툰','폭발','팡파레','스우','깜짝','전자음']; for (const key of keywords) { if (name.includes(key)) return key; } return '기타'; }
         };
-
         async function fetchTTS(text, cardId) {
             text = text.trim(); if (!text) return null;
             const cacheKey = text;
@@ -260,7 +237,6 @@
                 render.showLoadingOnCard(cardId, false);
             }
         }
-        
         const debouncedTTSRequest = helpers.debounce(async (cardId) => {
             const cardData = state.scriptCards.find(c => c.id === cardId); if (!cardData) return;
             const allLines = cardData.text.split('\n').filter(line => line.trim());
@@ -288,25 +264,18 @@
                 handlers.updateTotalDuration();
             }
         }, 800);
-
         const render = {
             showPanel(panelToShow) {
                 UI.globalSettingsPanel.style.display = 'none'; UI.animationSettingsPanel.style.display = 'none';
                 if (panelToShow === 'global') UI.globalSettingsPanel.style.display = 'block';
                 else if (panelToShow === 'animation') UI.animationSettingsPanel.style.display = 'block';
             },
-            
             globalControls() {
-                const createSelectWithOptions = (id, selectedValue, fontList = C.FONT_LIST) => {
-                    let select = `<select id="${id}">`;
-                    fontList.forEach(font => { select += `<option value="${font.value}" ${selectedValue === font.value ? 'selected' : ''}>${font.name}</option>`; });
-                    return select + `</select>`;
-                };
+                const createSelectWithOptions = (id, selectedValue, fontList = C.FONT_LIST) => { let select = `<select id="${id}">`; fontList.forEach(font => { select += `<option value="${font.value}" ${selectedValue === font.value ? 'selected' : ''}>${font.name}</option>`; }); return select + `</select>`; };
                 const bgmOptions = C.BGM_LIST.map(bgm => `<option value="${bgm.url}">${bgm.name}</option>`).join('');
                 UI.globalSettingsPanel.innerHTML = `<div class="st-accordion-item active"><div class="st-accordion-header">영상 설정</div><div class="st-accordion-content"><div class="st-control-group"><h4>상단 헤더</h4><label>헤더 텍스트</label><input type="text" id="st-setting-header-text" value="${state.projectSettings.header.text}"><div class="st-flex-group" style="margin-top: 8px;"><div><label>배경 색상</label><input type="color" id="st-setting-header-bg" value="${state.projectSettings.header.backgroundColor}"></div><div><label>글자 색상</label><input type="color" id="st-setting-header-color" value="${state.projectSettings.header.color}"></div></div><div class="st-flex-group" style="margin-top: 8px;"><div><label>폰트</label>${createSelectWithOptions('st-setting-header-font', state.projectSettings.header.fontFamily)}</div><div><label>크기</label><input type="number" id="st-setting-header-size" value="${state.projectSettings.header.fontSize}"></div></div><div style="margin-top: 8px;"><label>왼쪽 아이콘</label><select id="st-setting-header-icon"><option value="none">없음</option><option value="back">뒤로가기</option><option value="menu">메뉴</option></select></div><div style="margin-top: 8px;"><label>오른쪽 로고</label><div class="st-flex-group"><button id="st-btn-header-logo" style="width: auto; flex-grow: 1;">로고 추가/변경</button><input type="file" id="st-header-logo-file" accept="image/*" style="display:none;"></div><div class="st-flex-group" style="margin-top: 4px;"><label>로고 크기:</label><input type="range" id="st-setting-header-logo-size" min="20" max="60" value="${state.projectSettings.header.logo.size}"><input type="number" class="value-input" data-target="st-setting-header-logo-size" value="${state.projectSettings.header.logo.size}" style="width: 70px;"></div></div></div><div class="st-control-group"><h4>콘텐츠 정보</h4><label>프로젝트 제목</label><input type="text" id="st-setting-project-title" value="${state.projectSettings.project.title}"><div class="st-flex-group" style="margin-top: 8px;"><div><label>폰트</label>${createSelectWithOptions('st-setting-project-font', state.projectSettings.project.titleFontFamily)}</div><div><label>크기</label><input type="number" id="st-setting-project-size" value="${state.projectSettings.project.titleFontSize}"></div></div><div style="margin-top: 8px;"><label>작성자</label><input type="text" id="st-setting-project-author" value="${state.projectSettings.project.author}"></div><div style="margin-top: 8px;"><label>조회수</label><input type="number" id="st-setting-project-views" value="${state.projectSettings.project.views}"></div><div class="st-flex-group" style="margin-top: 8px;"><div><label>제목 색상</label><input type="color" id="st-setting-title-color" value="${state.projectSettings.project.titleColor}"></div><div><label>정보 색상</label><input type="color" id="st-setting-meta-color" value="${state.projectSettings.project.metaColor}"></div></div><hr style="border-color: var(--st-border-color); margin: 15px 0;"><label>기본 스크립트 스타일</label><div class="st-flex-group" style="margin-top: 8px;"><div><label>폰트</label>${createSelectWithOptions('st-setting-script-font', state.projectSettings.defaultStyle.fontFamily)}</div><div><label>크기</label><input type="number" id="st-setting-script-size" value="${state.projectSettings.defaultStyle.fontSize}"></div></div><div style="margin-top: 8px;"><label>색상</label><input type="color" id="st-setting-script-color" value="${state.projectSettings.defaultStyle.color}"></div><div class="st-flex-group" style="margin-top: 8px;"><label>줄 간격</label><input type="range" id="st-setting-line-height" min="1" max="2.5" step="0.1" value="${state.projectSettings.defaultStyle.lineHeight}"><input type="number" class="value-input" data-target="st-setting-line-height" value="${state.projectSettings.defaultStyle.lineHeight}" step="0.1"></div><div class="st-flex-group" style="margin-top: 8px;"><label>자간</label><input type="range" id="st-setting-letter-spacing" min="-2" max="5" step="0.1" value="${state.projectSettings.defaultStyle.letterSpacing}"><input type="number" class="value-input" data-target="st-setting-letter-spacing" value="${state.projectSettings.defaultStyle.letterSpacing}" step="0.1"></div></div><div class="st-control-group"><h4>배경음악</h4><label>전체 BGM 선택</label><select id="st-setting-global-bgm">${bgmOptions}</select><button id="st-btn-upload-bgm" style="width:100%; margin-top: 8px; background-color: #3e3e3e;">내 BGM 업로드</button><div class="st-flex-group" style="margin-top: 8px;"><label>BGM 볼륨</label><input type="range" id="st-setting-global-bgm-volume" min="0" max="1" step="0.01" value="${state.globalBGM.volume}"><input type="number" class="value-input" data-target="st-setting-global-bgm-volume" value="${Math.round(state.globalBGM.volume * 100)}"></div></div></div></div>`;
                 UI.globalSettingsPanel.querySelector('.st-accordion-header').addEventListener('click', (e) => e.currentTarget.parentElement.classList.toggle('active'));
             },
-
             animationControls(element) {
                 if (!state.selectedCardId || !element) return;
                 const card = state.scriptCards.find(c => c.id === state.selectedCardId);
@@ -321,36 +290,18 @@
                 document.getElementById('anim-out-duration').addEventListener('input', e => { anims.out.duration = parseFloat(e.target.value) || 0.3; });
                 this.showPanel('animation');
             },
-            
             sfxOptions: () => {
                 const groups = {};
-                state.sfxList.slice(1).filter(sfx => !state.recentlyUsedSfx.find(recent => recent.url === sfx.url)).forEach(sfx => {
-                    const groupKey = helpers.getGroupKey(sfx.name);
-                    if (!groups[groupKey]) groups[groupKey] = []; groups[groupKey].push(sfx);
-                });
+                state.sfxList.slice(1).filter(sfx => !state.recentlyUsedSfx.find(recent => recent.url === sfx.url)).forEach(sfx => { const groupKey = helpers.getGroupKey(sfx.name); if (!groups[groupKey]) groups[groupKey] = []; groups[groupKey].push(sfx); });
                 let optionsHtml = '<option value="">효과음 없음</option><option value="upload-my-own">--- 내 효과음 업로드 ---</option>';
-                if (state.recentlyUsedSfx.length > 0) {
-                    optionsHtml += '<optgroup label="최근 사용">';
-                    state.recentlyUsedSfx.forEach(sfx => { optionsHtml += `<option value="${sfx.url}">${sfx.name}</option>`; });
-                    optionsHtml += '</optgroup>';
-                }
-                Object.keys(groups).sort().forEach(groupName => {
-                    optionsHtml += `<optgroup label="${groupName}">`;
-                    groups[groupName].forEach(sfx => { optionsHtml += `<option value="${sfx.url}">${sfx.name}</option>`; });
-                    optionsHtml += '</optgroup>';
-                });
+                if (state.recentlyUsedSfx.length > 0) { optionsHtml += '<optgroup label="최근 사용">'; state.recentlyUsedSfx.forEach(sfx => { optionsHtml += `<option value="${sfx.url}">${sfx.name}</option>`; }); optionsHtml += '</optgroup>'; }
+                Object.keys(groups).sort().forEach(groupName => { optionsHtml += `<optgroup label="${groupName}">`; groups[groupName].forEach(sfx => { optionsHtml += `<option value="${sfx.url}">${sfx.name}</option>`; }); optionsHtml += '</optgroup>'; });
                 return optionsHtml;
             },
-            
             allSfxSelects: () => {
                 const newOptions = render.sfxOptions();
-                document.querySelectorAll('.st-card').forEach(cardEl => {
-                    const id = cardEl.dataset.id; const cardData = state.scriptCards.find(c => c.id === id);
-                    const selectEl = cardEl.querySelector('.st-sfx-select');
-                    if (selectEl && cardData) { selectEl.innerHTML = newOptions; selectEl.value = cardData.sfxUrl || ''; }
-                });
+                document.querySelectorAll('.st-card').forEach(cardEl => { const id = cardEl.dataset.id; const cardData = state.scriptCards.find(c => c.id === id); const selectEl = cardEl.querySelector('.st-sfx-select'); if (selectEl && cardData) { selectEl.innerHTML = newOptions; selectEl.value = cardData.sfxUrl || ''; } });
             },
-
             cardElement: (cardData) => {
                 const cardEl = document.createElement('div'); cardEl.className = 'st-card'; cardEl.dataset.id = cardData.id;
                 const sfxOptions = render.sfxOptions();
@@ -358,13 +309,11 @@
                 cardEl.querySelector('.st-sfx-select').value = cardData.sfxUrl || '';
                 return cardEl;
             },
-            
             segmentsInEditor: (editorEl, text) => {
                 editorEl.innerHTML = ''; const lines = text.split('\n');
                 if (lines.length === 1 && lines[0] === '') { editorEl.innerHTML = '<p class="script-segment"><br></p>'; } 
                 else { lines.forEach(line => { const p = document.createElement('p'); p.className = 'script-segment'; p.textContent = line || ' '; editorEl.appendChild(p); }); }
             },
-            
             updateCardUI: (cardId) => {
                 const cardData = state.scriptCards.find(c => c.id === cardId);
                 const cardEl = document.querySelector(`.st-card[data-id="${cardId}"]`);
@@ -381,7 +330,6 @@
                 durationLabel.textContent = `길이(${cardData.isDurationManual ? '수동' : '자동'})`;
                 render.updateMediaControls(cardId);
             },
-            
             updateMediaControls(cardId) {
                 const cardData = state.scriptCards.find(c => c.id === cardId);
                 const cardEl = document.querySelector(`.st-card[data-id="${cardId}"]`);
@@ -404,31 +352,18 @@
                     mediaControls.forEach(el => el.style.display = 'none');
                 }
             },
-            
             updateCardNumbers: () => {
                 const allCardElements = UI.cardContainer.querySelectorAll('.st-card');
-                state.scriptCards.forEach((cardData, index) => {
-                    const cardEl = Array.from(allCardElements).find(el => el.dataset.id === cardData.id);
-                    if (cardEl) cardEl.querySelector('.st-card-number').textContent = index + 1;
-                });
+                state.scriptCards.forEach((cardData, index) => { const cardEl = Array.from(allCardElements).find(el => el.dataset.id === cardData.id); if (cardEl) cardEl.querySelector('.st-card-number').textContent = index + 1; });
                 state.scriptCards.forEach(card => render.updateMediaControls(card.id));
             },
-            
             showLoadingOnCard: (cardId, show, message = '') => {
                 const cardEl = document.querySelector(`.st-card[data-id="${cardId}"]`);
                 if (!cardEl) return; let overlay = cardEl.querySelector('.st-card-loading');
-                if (show) {
-                    if (!overlay) { overlay = document.createElement('div'); overlay.className = 'st-card-loading'; cardEl.appendChild(overlay); }
-                    overlay.style.display = 'flex'; overlay.textContent = message;
-                } else { if (overlay) overlay.style.display = 'none'; }
+                if (show) { if (!overlay) { overlay = document.createElement('div'); overlay.className = 'st-card-loading'; cardEl.appendChild(overlay); } overlay.style.display = 'flex'; overlay.textContent = message; } 
+                else { if (overlay) overlay.style.display = 'none'; }
             },
-
-            applyTransform: (el, layout) => {
-                if (el && layout) {
-                    el.style.transform = `translate(calc(-50% + ${layout.x || 0}px), ${layout.y || 0}px) rotate(${layout.angle || 0}deg) scale(${layout.scale || 1})`;
-                }
-            },
-            
+            applyTransform: (el, layout) => { if (el && layout) { el.style.transform = `translate(calc(-50% + ${layout.x || 0}px), ${layout.y || 0}px) rotate(${layout.angle || 0}deg) scale(${layout.scale || 1})`; } },
             updatePreviewDisplay: () => {
                 const headerEl = document.querySelector('.st-preview-header');
                 const headerIconEl = headerEl.querySelector('.header-icon');
@@ -439,19 +374,10 @@
                 headerEl.style.color = state.projectSettings.header.color;
                 headerEl.style.fontFamily = state.projectSettings.header.fontFamily;
                 headerTitleEl.style.fontSize = state.projectSettings.header.fontSize + 'px';
-                const iconSVG = {
-                    back: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${state.projectSettings.header.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>`,
-                    menu: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${state.projectSettings.header.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>`
-                };
+                const iconSVG = { back: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${state.projectSettings.header.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>`, menu: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${state.projectSettings.header.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>` };
                 headerIconEl.innerHTML = iconSVG[state.projectSettings.header.icon] || '';
-                if (state.projectSettings.header.logo.url) {
-                    headerLogoEl.src = state.projectSettings.header.logo.url;
-                    headerLogoEl.style.width = state.projectSettings.header.logo.size + 'px';
-                    headerLogoEl.style.height = state.projectSettings.header.logo.size + 'px';
-                    headerLogoEl.style.display = 'block';
-                } else {
-                    headerLogoEl.style.display = 'none';
-                }
+                if (state.projectSettings.header.logo.url) { headerLogoEl.src = state.projectSettings.header.logo.url; headerLogoEl.style.width = state.projectSettings.header.logo.size + 'px'; headerLogoEl.style.height = state.projectSettings.header.logo.size + 'px'; headerLogoEl.style.display = 'block'; } 
+                else { headerLogoEl.style.display = 'none'; }
                 const titleEl = document.querySelector('.st-project-info .title');
                 titleEl.textContent = state.projectSettings.project.title;
                 titleEl.style.color = state.projectSettings.project.titleColor;
@@ -460,49 +386,32 @@
                 const metaEl = document.querySelector('.st-project-info span');
                 metaEl.textContent = `${state.projectSettings.project.author || ''} | 조회수 ${Number(state.projectSettings.project.views || 0).toLocaleString()}`;
                 metaEl.style.color = state.projectSettings.project.metaColor;
-
                 const card = state.scriptCards.find(c => c.id === state.selectedCardId);
                 const textWrapper = document.getElementById('st-preview-text-container-wrapper');
                 const previewText = document.getElementById('st-preview-text');
                 const mediaWrapper = document.getElementById('st-preview-media-container-wrapper');
                 const previewImage = document.getElementById('st-preview-image');
                 const previewVideo = document.getElementById('st-preview-video');
-                
-                if (!card) {
-                    textWrapper.style.display = 'none'; mediaWrapper.style.display = 'none';
-                    return;
-                }
-
+                if (!card) { textWrapper.style.display = 'none'; mediaWrapper.style.display = 'none'; return; }
                 textWrapper.style.display = 'block';
                 mediaWrapper.style.display = card.media.url ? 'block' : 'none';
-
                 render.applyTransform(textWrapper, card.layout.text);
                 Object.assign(textWrapper.style, { width: card.layout.text.width + 'px', height: 'auto' });
-                
                 render.applyTransform(mediaWrapper, card.layout.media);
                 Object.assign(mediaWrapper.style, { width: card.layout.media.width + 'px', height: card.layout.media.height + 'px' });
-
                 Object.assign(previewText.style, card.style);
                 previewText.innerHTML = '';
-                card.text.split('\n').forEach(line => {
-                    const p = document.createElement('p'); p.className = 'preview-text-segment highlight';
-                    p.textContent = line || ' '; p.style.margin = 0;
-                    previewText.appendChild(p);
-                });
-                
+                card.text.split('\n').forEach(line => { const p = document.createElement('p'); p.className = 'preview-text-segment highlight'; p.textContent = line || ' '; p.style.margin = 0; previewText.appendChild(p); });
                 if (card.media.url) {
                     const targetEl = card.media.type === 'video' ? previewVideo : previewImage;
                     const otherEl = card.media.type === 'video' ? previewImage : previewVideo;
                     targetEl.style.display = 'block'; otherEl.style.display = 'none';
                     if (targetEl.src !== card.media.url) targetEl.src = card.media.url;
                     targetEl.className = `fit-${card.media.fit}`;
-                    if (card.media.type === 'video') {
-                        previewVideo.currentTime = card.media.startTime || 0;
-                    }
+                    if (card.media.type === 'video') { previewVideo.currentTime = card.media.startTime || 0; }
                 }
             },
         };
-        
         const playback = {
             togglePlay: () => { state.isPlaying ? playback.stop() : playback.start(); },
             start: () => {
@@ -528,14 +437,11 @@
                     UI.bgmPlayer.volume = state.globalBGM.volume; 
                     UI.bgmPlayer.currentTime = bgmData.startTime || 0;
                     UI.bgmPlayer.play().catch(e => console.error("BGM Playback Error:", e));
-                    if (bgmData.endTime) {
-                       UI.bgmPlayer.ontimeupdate = () => {
-                           if (UI.bgmPlayer.currentTime >= bgmData.endTime) { UI.bgmPlayer.currentTime = bgmData.startTime || 0; }
-                       };
-                    } else { UI.bgmPlayer.ontimeupdate = null; }
+                    if (bgmData.endTime) { UI.bgmPlayer.ontimeupdate = () => { if (UI.bgmPlayer.currentTime >= bgmData.endTime) { UI.bgmPlayer.currentTime = bgmData.startTime || 0; } }; } 
+                    else { UI.bgmPlayer.ontimeupdate = null; }
                 } else { UI.bgmPlayer.pause(); }
             },
-            playCardByIndex: (index) => {
+            playCardByIndex(index) {
                 if (index >= state.scriptCards.length || !state.isPlaying) { playback.stop(); return; }
                 state.playbackCurrentIndex = index;
                 const card = state.scriptCards[index];
@@ -546,29 +452,36 @@
                 previewTextEl.innerHTML = '';
                 if (card.segments && card.segments.length > 0) {
                     const segmentElements = card.segments.map(segment => {
-                        const p = document.createElement('p'); p.className = 'preview-text-segment';
-                        p.textContent = segment.text || ' '; p.style.margin = 0;
-                        previewTextEl.appendChild(p); return p;
+                        const p = document.createElement('p');
+                        p.className = 'preview-text-segment';
+                        p.textContent = segment.text || ' ';
+                        p.style.margin = 0;
+                        previewTextEl.appendChild(p);
+                        return p;
                     });
                     card.segments.forEach((segment, segIndex) => {
-                        setTimeout(() => { if (state.isPlaying && state.playbackCurrentIndex === index && segmentElements[segIndex]) { segmentElements[segIndex].classList.add('highlight'); } }, segment.startTime * 1000);
+                        setTimeout(() => {
+                            if (state.isPlaying && state.playbackCurrentIndex === index && segmentElements[segIndex]) {
+                                segmentElements[segIndex].classList.add('highlight');
+                            }
+                        }, segment.startTime * 1000);
                     });
                 } else {
-                     const p = document.createElement('p'); p.className = 'preview-text-segment highlight';
-                     p.textContent = card.text || ' '; p.style.margin = 0; previewTextEl.appendChild(p);
+                    const p = document.createElement('p'); p.className = 'preview-text-segment highlight';
+                    p.textContent = card.text || ' '; p.style.margin = 0; previewTextEl.appendChild(p);
                 }
                 if (card.media.url && card.media.persistUntilCardId) { state.currentPersistentMedia = { ...card.media, startCardId: card.id }; }
                 let activeMedia = state.currentPersistentMedia || (card.media.url ? card.media : null);
                 mediaWrapper.style.visibility = 'hidden';
-                if(activeMedia) {
+                if (activeMedia) {
                     const showMedia = () => {
                         if (!state.isPlaying || state.playbackCurrentIndex !== index) return;
                         mediaWrapper.style.visibility = 'visible';
                         if (activeMedia.type === 'video') {
                             previewVideo.currentTime = activeMedia.startTime || 0;
-                            previewVideo.play().catch(()=>{});
+                            previewVideo.play().catch(() => {});
                             const clipDuration = (activeMedia.endTime || previewVideo.duration) - (activeMedia.startTime || 0);
-                            setTimeout(() => { if(state.isPlaying) previewVideo.pause(); }, clipDuration * 1000);
+                            setTimeout(() => { if (state.isPlaying) previewVideo.pause(); }, clipDuration * 1000);
                         }
                     };
                     let delay = 0;
@@ -581,7 +494,6 @@
                 state.playbackTimeoutId = setTimeout(() => { if (state.isPlaying) playback.playCardByIndex(index + 1); }, card.duration * 1000);
             }
         };
-
         const handlers = {
             updateProjectSettings() {
                 state.projectSettings.header.text = document.getElementById('st-setting-header-text').value;
@@ -608,7 +520,6 @@
                 handlers.applyScriptStylesToSelectedCard();
                 render.updatePreviewDisplay();
             },
-            
             updateScriptStyleControls() {
                 const card = state.scriptCards.find(c => c.id === state.selectedCardId); if (!card) return;
                 document.getElementById('st-setting-script-color').value = card.style?.color || state.projectSettings.defaultStyle.color;
@@ -617,7 +528,6 @@
                 document.getElementById('st-setting-line-height').value = card.style?.lineHeight || state.projectSettings.defaultStyle.lineHeight;
                 document.getElementById('st-setting-letter-spacing').value = (card.style?.letterSpacing || state.projectSettings.defaultStyle.letterSpacing).replace('px','');
             },
-
             applyScriptStylesToSelectedCard() {
                 const card = state.scriptCards.find(c => c.id === state.selectedCardId); if (!card) return;
                 card.style.color = document.getElementById('st-setting-script-color').value;
@@ -627,7 +537,6 @@
                 card.style.letterSpacing = document.getElementById('st-setting-letter-spacing').value + 'px';
                 render.updatePreviewDisplay();
             },
-
             addScriptCard(text = '') {
                 const cardId = helpers.generateId('card');
                 const cardData = {
@@ -635,11 +544,7 @@
                     media: { url: null, type: null, fit: 'contain', showOnSegment: 1, persistUntilCardId: null, startTime: 0, endTime: null },
                     style: { ...state.projectSettings.defaultStyle, fontSize: state.projectSettings.defaultStyle.fontSize + 'px', letterSpacing: state.projectSettings.defaultStyle.letterSpacing + 'px' },
                     audioUrl: null, ttsReady: false, ttsVolume: 0.8, sfxUrl: null, sfxVolume: 0.8,
-                    // [수정] 표본코드와 유사한 레이아웃을 위한 초기값 조정
-                    layout: { 
-                        text: { x: 0, y: 0, scale: 1, angle: 0, width: 340 },
-                        media: { x: 0, y: 0, scale: 1, angle: 0, width: 320, height: 180 } 
-                    },
+                    layout: { text: { x: 0, y: 0, scale: 1, angle: 0, width: 340 }, media: { x: 0, y: 120, scale: 1, angle: 0, width: 320, height: 180 } },
                     animations: { text: { in: { name: 'none', duration: 0.3 }, out: { name: 'none', duration: 0.3 } }, media: { in: { name: 'none', duration: 0.3 }, out: { name: 'none', duration: 0.3 } } }
                 };
                 state.scriptCards.push(cardData);
@@ -654,7 +559,6 @@
                 render.updateCardNumbers();
                 render.updateCardUI(cardId);
             },
-            
             bindCardEvents(cardId) {
                 const cardEl = document.querySelector(`.st-card[data-id="${cardId}"]`);
                 const cardData = state.scriptCards.find(c => c.id === cardId);
@@ -675,17 +579,9 @@
                 cardEl.querySelector('.st-play-clip-btn').addEventListener('click', (e) => { e.stopPropagation(); playback.stop(); if (cardData.ttsReady && cardData.audioUrl) { UI.ttsPlayer.volume = cardData.ttsVolume; UI.ttsPlayer.src = cardData.audioUrl; UI.ttsPlayer.play(); } if (cardData.sfxUrl) { UI.sfxPlayer.volume = cardData.sfxVolume; UI.sfxPlayer.src = cardData.sfxUrl; UI.sfxPlayer.play(); } });
                 cardEl.querySelector('.st-sfx-select').addEventListener('change', (e) => {
                     const url = e.target.value;
-                    if (url === 'upload-my-own') {
-                        state.sfxUploadTargetCardId = cardId;
-                        UI.sfxFileInput.value = null; UI.sfxFileInput.click();
-                        e.target.value = cardData.sfxUrl || ''; return;
-                    }
+                    if (url === 'upload-my-own') { state.sfxUploadTargetCardId = cardId; UI.sfxFileInput.value = null; UI.sfxFileInput.click(); e.target.value = cardData.sfxUrl || ''; return; }
                     cardData.sfxUrl = url || null;
-                    if (url) {
-                        UI.sfxPlayer.src = url; UI.sfxPlayer.volume = cardData.sfxVolume; UI.sfxPlayer.play();
-                        const sfxItem = state.sfxList.find(item => item.url === url);
-                        if (sfxItem) { state.recentlyUsedSfx = [sfxItem, ...state.recentlyUsedSfx.filter(item => item.url !== url)].slice(0, 5); render.allSfxSelects(); }
-                    }
+                    if (url) { UI.sfxPlayer.src = url; UI.sfxPlayer.volume = cardData.sfxVolume; UI.sfxPlayer.play(); const sfxItem = state.sfxList.find(item => item.url === url); if (sfxItem) { state.recentlyUsedSfx = [sfxItem, ...state.recentlyUsedSfx.filter(item => item.url !== url)].slice(0, 5); render.allSfxSelects(); } }
                 });
                 cardEl.querySelectorAll('.st-volume-slider').forEach(slider => {
                     slider.addEventListener('input', e => {
@@ -697,7 +593,7 @@
                         if(numberInput) numberInput.value = Math.round(newValue * 100);
                     });
                 });
-                 cardEl.querySelectorAll('.value-input').forEach(input => {
+                cardEl.querySelectorAll('.value-input').forEach(input => {
                     input.addEventListener('input', e => {
                         const targetCard = state.scriptCards.find(c => c.id === e.target.dataset.targetId);
                         const volumeType = e.target.dataset.type === 'tts-volume' ? 'ttsVolume' : 'sfxVolume';
@@ -712,7 +608,6 @@
                 cardEl.querySelector('.st-btn-delete-card').addEventListener('click', (e) => { e.stopPropagation(); handlers.deleteCard(cardId); });
                 cardEl.addEventListener('click', () => handlers.selectCard(cardId));
             },
-
             deleteCard(cardId) {
                 const cardIndex = state.scriptCards.findIndex(c => c.id === cardId); if (cardIndex === -1) return;
                 const cardData = state.scriptCards[cardIndex];
@@ -721,16 +616,12 @@
                 document.querySelector(`.st-card[data-id="${cardId}"]`).remove();
                 if (state.selectedCardId === cardId) {
                     state.selectedCardId = null;
-                    if (state.scriptCards.length > 0) {
-                        const nextIndex = Math.max(0, cardIndex - 1);
-                        if (state.scriptCards[nextIndex]) handlers.selectCard(state.scriptCards[nextIndex].id);
-                    } else { render.updatePreviewDisplay(); }
+                    if (state.scriptCards.length > 0) { const nextIndex = Math.max(0, cardIndex - 1); if (state.scriptCards[nextIndex]) handlers.selectCard(state.scriptCards[nextIndex].id); } 
+                    else { render.updatePreviewDisplay(); }
                 }
                 handlers.updateTotalDuration(); render.updateCardNumbers(); interaction.deactivateAllInteractive();
             },
-            
             updateTotalDuration() { const total = state.scriptCards.reduce((sum, card) => sum + (card.duration || 0.5), 0); if (UI.timelineSlider) UI.timelineSlider.max = total; },
-            
             selectCard(cardId, fromPlayback = false) {
                 if (state.isPlaying && !fromPlayback) playback.stop();
                 if (state.selectedCardId === cardId) return;
@@ -746,13 +637,9 @@
                 render.updatePreviewDisplay();
             },
         };
-        
         const interaction = {
             deactivateAllInteractive() {
-                document.querySelectorAll('.interactive-target.interactive-active').forEach(el => {
-                    el.classList.remove('interactive-active');
-                    el.querySelectorAll('.resize-handle, .rotation-handle').forEach(h => h.remove());
-                });
+                document.querySelectorAll('.interactive-target.interactive-active').forEach(el => { el.classList.remove('interactive-active'); el.querySelectorAll('.resize-handle, .rotation-handle').forEach(h => h.remove()); });
                 state.activeInteractiveElement = null; render.showPanel('global');
             },
             activateInteractive(target) {
@@ -808,38 +695,14 @@
             },
             initialize() {
                 interact('.interactive-target').on('tap', (event) => { interaction.activateInteractive(event.currentTarget); event.preventDefault(); });
-                interact('.interactive-target').draggable({ listeners: {
-                    move(event) {
-                        const card = state.scriptCards.find(c => c.id === state.selectedCardId); if (!card) return;
-                        const layoutKey = event.target.dataset.layoutKey; const layout = card.layout[layoutKey];
-                        layout.x = (layout.x || 0) + event.dx;
-                        layout.y = (layout.y || 0) + event.dy;
-                        render.applyTransform(event.target, layout);
-                    }
-                }});
-                interact('.interactive-target').resizable({
-                    edges: { top: true, left: true, bottom: true, right: true },
-                    modifiers: [interact.modifiers.aspectRatio({ ratio: 'preserve' })],
-                    listeners: {
-                        move(event) {
-                            const card = state.scriptCards.find(c => c.id === state.selectedCardId); if (!card) return;
-                            const layoutKey = event.target.dataset.layoutKey; const layout = card.layout[layoutKey];
-                            layout.width = event.rect.width;
-                            if (layout.height !== undefined) layout.height = event.rect.height;
-                            Object.assign(event.target.style, { width: `${layout.width}px`, height: layout.height ? `${layout.height}px` : 'auto' });
-                            layout.x = (layout.x || 0) + event.deltaRect.left;
-                            layout.y = (layout.y || 0) + event.deltaRect.top;
-                            render.applyTransform(event.target, layout);
-                        }
-                    },
-                });
+                interact('.interactive-target').draggable({ listeners: { move(event) { const card = state.scriptCards.find(c => c.id === state.selectedCardId); if (!card) return; const layoutKey = event.target.dataset.layoutKey; const layout = card.layout[layoutKey]; layout.x = (layout.x || 0) + event.dx; layout.y = (layout.y || 0) + event.dy; render.applyTransform(event.target, layout); } }});
+                interact('.interactive-target').resizable({ edges: { top: true, left: true, bottom: true, right: true }, modifiers: [interact.modifiers.aspectRatio({ ratio: 'preserve' })], listeners: { move(event) { const card = state.scriptCards.find(c => c.id === state.selectedCardId); if (!card) return; const layoutKey = event.target.dataset.layoutKey; const layout = card.layout[layoutKey]; layout.width = event.rect.width; if (layout.height !== undefined) layout.height = event.rect.height; Object.assign(event.target.style, { width: `${layout.width}px`, height: layout.height ? `${layout.height}px` : 'auto' }); layout.x = (layout.x || 0) + event.deltaRect.left; layout.y = (layout.y || 0) + event.deltaRect.top; render.applyTransform(event.target, layout); } } });
                 UI.previewContent.addEventListener('click', (e) => { if (!e.target.closest('.interactive-target')) interaction.deactivateAllInteractive(); });
                 document.addEventListener('selectionchange', helpers.debounce(interaction.sequence.onSelectionChange, 200));
                 document.addEventListener('mousedown', (e) => { if (!UI.sequenceMenu.contains(e.target) && !e.target.closest('.st-script-editor')) interaction.sequence.hideMenu(); });
                 UI.sequenceMenu.addEventListener('click', interaction.sequence.handleMenuClick);
             }
         };
-
         const modals = {
             openBgmEditor(url, onConfirm) {
                 state.bgmEditorContext = { onConfirm };
@@ -862,7 +725,7 @@
             },
             closeBgmEditor: () => { UI.bgmModal.classList.remove('visible'); if (state.bgmWavesurfer) { state.bgmWavesurfer.destroy(); state.bgmWavesurfer = null; } },
             openVideoTrimmer(url, cardId) {
-                state.videoTrimmerContext = { cardId, url };
+                state.videoTrimmerContext = { cardId, url, activeHandle: 'end' };
                 UI.videoTrimModal.classList.add('visible');
                 const loadingEl = UI.videoTrimModal.querySelector('.waveform-loading');
                 const previewVideo = UI.videoTrimModal.querySelector('video');
@@ -877,6 +740,8 @@
                     const initialEnd = Math.min(10, duration);
                     state.activeVideoRegion = state.videoWavesurfer.addRegion({ start: 0, end: initialEnd, color: 'rgba(232, 44, 67, 0.3)', drag: true, resize: true });
                     document.getElementById('st-video-time-display').textContent = `${state.activeVideoRegion.start.toFixed(2)}s - ${state.activeVideoRegion.end.toFixed(2)}s`;
+                    state.videoWavesurfer.on('region-in', (region) => { state.videoTrimmerContext.activeHandle = 'start'; });
+                    state.videoWavesurfer.on('region-out', (region) => { state.videoTrimmerContext.activeHandle = 'end'; });
                 });
                 state.videoWavesurfer.on('region-updated', (region) => { state.activeVideoRegion = region; document.getElementById('st-video-time-display').textContent = `${region.start.toFixed(2)}s - ${region.end.toFixed(2)}s`; if(!previewVideo.paused) previewVideo.pause(); previewVideo.currentTime = region.start; });
                 state.videoWavesurfer.on('error', (e) => { console.error("Wavesurfer error:", e); alert("비디오 파일을 로드하는 중 오류가 발생했습니다. 다른 파일을 시도해보세요."); modals.closeVideoTrimmer(); })
@@ -887,7 +752,22 @@
                 if (state.videoWavesurfer) { state.videoWavesurfer.destroy(); state.videoWavesurfer = null; }
                 if (previewVideo) { previewVideo.pause(); previewVideo.removeAttribute('src'); previewVideo.load(); }
                 if (state.videoTrimmerContext.url && state.videoTrimmerContext.url.startsWith('blob:')) { URL.revokeObjectURL(state.videoTrimmerContext.url); }
-                state.videoTrimmerContext = { cardId: null, url: null };
+                state.videoTrimmerContext = { cardId: null, url: null, activeHandle: 'end' };
+            },
+            adjustVideoRegionByFrames(frames) {
+                if (!state.activeVideoRegion || !state.videoWavesurfer) return;
+                const region = state.activeVideoRegion;
+                const totalDuration = state.videoWavesurfer.getDuration();
+                const timeChange = frames / 30.0;
+                let { start, end } = region;
+                if (state.videoTrimmerContext.activeHandle === 'start') {
+                    start = Math.max(0, start + timeChange);
+                    if (start >= end) start = end - 0.01;
+                } else {
+                    end = Math.min(totalDuration, end + timeChange);
+                    if (end <= start) end = start + 0.01;
+                }
+                region.update({ start, end });
             },
             initialize() {
                 document.getElementById('st-btn-bgm-play-pause').addEventListener('click', () => state.bgmWavesurfer?.playPause());
@@ -906,26 +786,17 @@
                 document.getElementById('st-btn-video-confirm').addEventListener('click', () => {
                     const { cardId, url } = state.videoTrimmerContext;
                     const cardData = state.scriptCards.find(c => c.id === cardId);
-                    if (cardData && state.activeVideoRegion) {
-                        cardData.media.url = url; cardData.media.type = 'video';
-                        cardData.media.startTime = state.activeVideoRegion.start;
-                        cardData.media.endTime = state.activeVideoRegion.end;
-                        render.updateCardUI(cardId);
-                        if (state.selectedCardId === cardId) render.updatePreviewDisplay();
-                    }
+                    if (cardData && state.activeVideoRegion) { cardData.media.url = url; cardData.media.type = 'video'; cardData.media.startTime = state.activeVideoRegion.start; cardData.media.endTime = state.activeVideoRegion.end; render.updateCardUI(cardId); if (state.selectedCardId === cardId) render.updatePreviewDisplay(); }
                     UI.videoTrimModal.classList.remove('visible');
                     if (state.videoWavesurfer) { state.videoWavesurfer.destroy(); state.videoWavesurfer = null; }
                 });
                 document.getElementById('st-btn-video-cancel').addEventListener('click', modals.closeVideoTrimmer);
+                document.getElementById('st-btn-video-frame-prev').addEventListener('click', () => modals.adjustVideoRegionByFrames(-1));
+                document.getElementById('st-btn-video-frame-next').addEventListener('click', () => modals.adjustVideoRegionByFrames(1));
             }
         };
-
         async function initialize() {
-            try {
-                const response = await fetch('https://sunsaktool-final.netlify.app/sfx-list.json');
-                if (!response.ok) throw new Error('Network response was not ok');
-                state.sfxList = await response.json();
-            } catch (e) { console.error("효과음 목록(sfx-list.json)을 불러오는 데 실패했습니다.", e); state.sfxList = [{ name: "효과음 목록 로딩 실패", url: "" }]; }
+            try { const response = await fetch('https://sunsaktool-final.netlify.app/sfx-list.json'); if (!response.ok) throw new Error('Network response was not ok'); state.sfxList = await response.json(); } catch (e) { console.error("효과음 목록(sfx-list.json)을 불러오는 데 실패했습니다.", e); state.sfxList = [{ name: "효과음 목록 로딩 실패", url: "" }]; }
             render.globalControls();
             UI.addCardBtn.addEventListener('click', () => handlers.addScriptCard(''));
             UI.newProjectBtn.addEventListener('click', () => { if(confirm('정말로 새 프로젝트를 시작하시겠습니까? 모든 작업 내용이 사라집니다.')) { location.reload(); } });
@@ -933,45 +804,23 @@
             UI.globalSettingsPanel.addEventListener('input', (e) => {
                 const target = e.target;
                 if (target.id.startsWith('st-setting-')) {
-                    if (target.type === 'range') {
-                        const numberInput = document.querySelector(`.value-input[data-target="${target.id}"]`);
-                        if (numberInput) { numberInput.value = target.id.includes('volume') ? Math.round(target.value * 100) : target.value; }
-                    }
+                    if (target.type === 'range') { const numberInput = document.querySelector(`.value-input[data-target="${target.id}"]`); if (numberInput) { numberInput.value = target.id.includes('volume') ? Math.round(target.value * 100) : target.value; } }
                     handlers.updateProjectSettings();
-                } else if (target.classList.contains('value-input')) {
-                    const slider = document.getElementById(target.dataset.target);
-                    if (slider) { slider.value = slider.id.includes('volume') ? parseFloat(target.value) / 100 : target.value; handlers.updateProjectSettings(); }
-                }
-             });
+                } else if (target.classList.contains('value-input')) { const slider = document.getElementById(target.dataset.target); if (slider) { slider.value = slider.id.includes('volume') ? parseFloat(target.value) / 100 : target.value; handlers.updateProjectSettings(); } }
+            });
             UI.addGptsBtn.addEventListener('click', () => UI.gptsModal.classList.add('visible'));
             const closeGptsModal = () => { UI.gptsModal.classList.remove('visible'); UI.gptsTextarea.value = ''; };
             UI.gptsCancelBtn.addEventListener('click', closeGptsModal);
             UI.gptsModal.addEventListener('click', (e) => { if (e.target === UI.gptsModal) closeGptsModal(); });
-            UI.gptsConfirmBtn.addEventListener('click', () => {
-                const lines = UI.gptsTextarea.value.trim().split(/\n\s*\n/).filter(line => line.trim() !== '');
-                lines.forEach(line => handlers.addScriptCard(line.trim()));
-                closeGptsModal();
-                if(lines.length > 0 && state.scriptCards.length > 0) handlers.selectCard(state.scriptCards[state.scriptCards.length - lines.length].id);
-            });
+            UI.gptsConfirmBtn.addEventListener('click', () => { const lines = UI.gptsTextarea.value.trim().split(/\n\s*\n/).filter(line => line.trim() !== ''); lines.forEach(line => handlers.addScriptCard(line.trim())); closeGptsModal(); if(lines.length > 0 && state.scriptCards.length > 0) handlers.selectCard(state.scriptCards[state.scriptCards.length - lines.length].id); });
             document.getElementById('st-setting-global-bgm').addEventListener('change', (e) => {
                 const url = e.target.value;
-                if (url) {
-                    modals.openBgmEditor(url, ({ startTime, endTime }) => {
-                        state.globalBGM = { ...state.globalBGM, url, startTime, endTime };
-                        document.getElementById('st-setting-global-bgm').value = url;
-                        if (state.isPlaying) playback.playBGM();
-                    });
-                } else { state.globalBGM.url = null; if (state.isPlaying) UI.bgmPlayer.pause(); }
+                if (url) { modals.openBgmEditor(url, ({ startTime, endTime }) => { state.globalBGM = { ...state.globalBGM, url, startTime, endTime }; document.getElementById('st-setting-global-bgm').value = url; if (state.isPlaying) playback.playBGM(); }); } 
+                else { state.globalBGM.url = null; if (state.isPlaying) UI.bgmPlayer.pause(); }
             });
             document.getElementById('st-btn-upload-bgm').addEventListener('click', () => UI.bgmFileInput.click());
             document.getElementById('st-btn-header-logo').addEventListener('click', () => document.getElementById('st-header-logo-file').click());
-            document.getElementById('st-header-logo-file').addEventListener('change', (e) => {
-                if (e.target.files && e.target.files[0]) {
-                    const reader = new FileReader();
-                    reader.onload = (event) => { state.projectSettings.header.logo.url = event.target.result; render.updatePreviewDisplay(); };
-                    reader.readAsDataURL(e.target.files[0]);
-                }
-            });
+            document.getElementById('st-header-logo-file').addEventListener('change', (e) => { if (e.target.files && e.target.files[0]) { const reader = new FileReader(); reader.onload = (event) => { state.projectSettings.header.logo.url = event.target.result; render.updatePreviewDisplay(); }; reader.readAsDataURL(e.target.files[0]); } });
             UI.sfxFileInput.addEventListener('change', (e) => {
                 if (!e.target.files || e.target.files.length === 0) return;
                 const file = e.target.files[0]; const url = URL.createObjectURL(file); const newSfx = { name: file.name, url };
@@ -983,13 +832,7 @@
                 const cardEl = document.querySelector(`.st-card[data-id="${state.sfxUploadTargetCardId}"]`);
                 if(cardEl) cardEl.querySelector('.st-sfx-select').value = url;
             });
-            UI.bgmFileInput.addEventListener('change', (e) => {
-                 if (e.target.files && e.target.files[0]) {
-                    const file = e.target.files[0];
-                    const url = URL.createObjectURL(file);
-                    modals.openBgmEditor(url, ({ startTime, endTime }) => { state.globalBGM = { ...state.globalBGM, url, startTime, endTime }; if (state.isPlaying) playback.playBGM(); });
-                 }
-            });
+            UI.bgmFileInput.addEventListener('change', (e) => { if (e.target.files && e.target.files[0]) { const file = e.target.files[0]; const url = URL.createObjectURL(file); modals.openBgmEditor(url, ({ startTime, endTime }) => { state.globalBGM = { ...state.globalBGM, url, startTime, endTime }; if (state.isPlaying) playback.playBGM(); }); } });
             document.addEventListener('paste', (event) => {
                 if (!state.selectedCardId) return;
                 const card = state.scriptCards.find(c => c.id === state.selectedCardId); if (!card) return;
@@ -1010,32 +853,21 @@
             UI.exportBtn.addEventListener('click', () => exporter.startExport());
             handlers.addScriptCard('순삭툴에 오신 것을 환영합니다!\n텍스트를 선택해서 재생 순서를 정해보세요.');
         }
-        
         const exporter = {
             async startExport() {
                 if (state.scriptCards.some(c => !c.ttsReady && c.text.trim())) return alert('아직 음성 생성이 완료되지 않은 스크립트가 있습니다.');
                 if (state.scriptCards.length === 0) return alert('출력할 영상이 없습니다.');
-
                 UI.exportBtn.disabled = true;
                 UI.progressOverlay.style.display = 'flex';
-                
-                const RENDER_WIDTH = 1080;
-                const RENDER_HEIGHT = 1920;
-                const FPS = 30;
-                const PREVIEW_PANEL_WIDTH = 380;
-                const SCALE = RENDER_WIDTH / PREVIEW_PANEL_WIDTH;
-
+                const RENDER_WIDTH = 1080; const RENDER_HEIGHT = 1920; const FPS = 30; const PREVIEW_PANEL_WIDTH = 380; const SCALE = RENDER_WIDTH / PREVIEW_PANEL_WIDTH;
                 try {
                     UI.progressText.textContent = '자원 로딩 중...';
                     await this.preloadResources();
-                    
                     UI.progressText.textContent = '오디오 트랙 생성 중...';
                     const { audioContext, destination, totalDuration } = await this.setupAudio();
-
                     const canvasStream = UI.renderCanvas.captureStream(FPS);
                     const combinedStream = new MediaStream([...canvasStream.getVideoTracks(), ...destination.stream.getAudioTracks()]);
                     const recorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm;codecs=vp9,opus' });
-                    
                     const chunks = [];
                     recorder.ondataavailable = e => chunks.push(e.data);
                     recorder.onstop = () => {
@@ -1049,12 +881,9 @@
                         UI.progressOverlay.style.display = 'none';
                         if (state.scriptCards.length > 0) handlers.selectCard(state.scriptCards[0].id);
                     };
-                    
                     recorder.start();
-                    
                     UI.progressText.textContent = '프레임 렌더링 중...';
                     await this.renderVideoFrames(recorder, totalDuration, FPS, SCALE);
-
                 } catch (error) {
                     console.error("영상 생성 오류:", error);
                     alert(`영상 생성 중 치명적인 오류가 발생했습니다: ${error.message}`);
@@ -1062,38 +891,30 @@
                     UI.progressOverlay.style.display = 'none';
                 }
             },
-
             async preloadResources() {
                 UI.progressSubText.textContent = '폰트 로딩...';
                 await document.fonts.ready;
-
                 const mediaPromises = [];
                 UI.progressSubText.textContent = '미디어 파일 로딩...';
-
                 for (const card of state.scriptCards) {
                     if (!card.media.url) continue;
-
                     if (card.media.type === 'image' && !state.imageCache.has(card.media.url)) {
                         mediaPromises.push(new Promise(resolve => {
-                            const img = new Image();
-                            img.crossOrigin = 'anonymous';
-                            img.src = card.media.url;
+                            const img = new Image(); img.crossOrigin = 'anonymous'; img.src = card.media.url;
                             img.onload = () => { state.imageCache.set(card.media.url, img); resolve(); };
                             img.onerror = () => { console.error(`이미지 로드 실패: ${card.media.url}`); resolve(); };
                         }));
                     } else if (card.media.type === 'video' && !state.videoFrameCache.has(card.media.url)) {
                         mediaPromises.push(new Promise(resolve => {
-                            const video = document.createElement('video');
-                            video.crossOrigin = 'anonymous';
-                            video.src = card.media.url;
-                            video.currentTime = card.media.startTime || 0;
-                            video.onseeked = () => {
-                                const canvas = document.createElement('canvas');
-                                canvas.width = video.videoWidth;
-                                canvas.height = video.videoHeight;
-                                canvas.getContext('2d').drawImage(video, 0, 0);
-                                state.videoFrameCache.set(card.media.url, canvas);
-                                resolve();
+                            const video = document.createElement('video'); video.crossOrigin = 'anonymous'; video.src = card.media.url;
+                            video.onloadeddata = () => {
+                                video.currentTime = card.media.startTime || 0;
+                                video.onseeked = () => {
+                                    const canvas = document.createElement('canvas'); canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+                                    canvas.getContext('2d').drawImage(video, 0, 0);
+                                    state.videoFrameCache.set(card.media.url, canvas);
+                                    resolve();
+                                };
                             };
                             video.onerror = () => { console.error(`비디오 프레임 캡쳐 실패: ${card.media.url}`); resolve(); };
                         }));
@@ -1101,44 +922,29 @@
                 }
                 await Promise.all(mediaPromises);
             },
-
             async setupAudio() {
                 const audioContext = new AudioContext();
                 const destination = audioContext.createMediaStreamDestination();
                 const audioPromises = [];
                 let timeOffset = 0;
-
                 if (state.globalBGM.url) {
-                    const gainNode = audioContext.createGain();
-                    gainNode.gain.value = state.globalBGM.volume;
-                    gainNode.connect(destination);
-                    const bgmPromise = fetch(state.globalBGM.url).then(res => res.arrayBuffer()).then(buffer => audioContext.decodeAudioData(buffer)).then(decoded => {
-                        const source = audioContext.createBufferSource();
-                        source.buffer = decoded; source.loop = true;
-                        source.connect(gainNode); source.start(0, state.globalBGM.startTime || 0);
-                    }).catch(e => console.error('BGM 로딩 에러', e));
-                    audioPromises.push(bgmPromise);
+                    const gainNode = audioContext.createGain(); gainNode.gain.value = state.globalBGM.volume; gainNode.connect(destination);
+                    audioPromises.push(fetch(state.globalBGM.url).then(res => res.arrayBuffer()).then(buffer => audioContext.decodeAudioData(buffer)).then(decoded => { const source = audioContext.createBufferSource(); source.buffer = decoded; source.loop = true; source.connect(gainNode); source.start(0, state.globalBGM.startTime || 0); }).catch(e => console.error('BGM 로딩 에러', e)));
                 }
-
                 for (const card of state.scriptCards) {
                     if (card.audioUrl) {
                         const gainNode = audioContext.createGain(); gainNode.gain.value = card.ttsVolume; gainNode.connect(destination);
-                        audioPromises.push(fetch(card.audioUrl).then(res => res.arrayBuffer()).then(buffer => audioContext.decodeAudioData(buffer)).then(decoded => {
-                            const source = audioContext.createBufferSource(); source.buffer = decoded; source.connect(gainNode); source.start(timeOffset);
-                        }).catch(e => console.error('TTS 로딩 에러', e)));
+                        audioPromises.push(fetch(card.audioUrl).then(res => res.arrayBuffer()).then(buffer => audioContext.decodeAudioData(buffer)).then(decoded => { const source = audioContext.createBufferSource(); source.buffer = decoded; source.connect(gainNode); source.start(timeOffset); }).catch(e => console.error('TTS 로딩 에러', e)));
                     }
                     if (card.sfxUrl) {
                         const gainNode = audioContext.createGain(); gainNode.gain.value = card.sfxVolume; gainNode.connect(destination);
-                        audioPromises.push(fetch(card.sfxUrl).then(res => res.arrayBuffer()).then(buffer => audioContext.decodeAudioData(buffer)).then(decoded => {
-                           const source = audioContext.createBufferSource(); source.buffer = decoded; source.connect(gainNode); source.start(timeOffset);
-                        }).catch(e => console.error('SFX 로딩 에러', e)));
+                        audioPromises.push(fetch(card.sfxUrl).then(res => res.arrayBuffer()).then(buffer => audioContext.decodeAudioData(buffer)).then(decoded => { const source = audioContext.createBufferSource(); source.buffer = decoded; source.connect(gainNode); source.start(timeOffset); }).catch(e => console.error('SFX 로딩 에러', e)));
                     }
                     timeOffset += card.duration;
                 }
                 await Promise.all(audioPromises);
                 return { audioContext, destination, totalDuration: timeOffset };
             },
-
             renderVideoFrames(recorder, totalDuration, fps, scale) {
                 return new Promise(resolve => {
                     let currentFrame = 0;
@@ -1147,132 +953,90 @@
                     let currentCardIndex = 0;
                     const ctx = UI.renderCanvas.getContext('2d');
                     UI.renderCanvas.width = 1080; UI.renderCanvas.height = 1920;
-
                     const renderLoop = () => {
-                        if (currentFrame >= totalFrames) {
-                            if (recorder.state === 'recording') recorder.stop();
-                            resolve();
-                            return;
-                        }
-
+                        if (currentFrame >= totalFrames) { if (recorder.state === 'recording') recorder.stop(); resolve(); return; }
                         const elapsedTime = currentFrame / fps;
-                        if (currentCardIndex < state.scriptCards.length - 1 && elapsedTime >= currentTimeTally + state.scriptCards[currentCardIndex].duration) {
-                            currentTimeTally += state.scriptCards[currentCardIndex].duration;
-                            currentCardIndex++;
-                        }
+                        if (currentCardIndex < state.scriptCards.length - 1 && elapsedTime >= currentTimeTally + state.scriptCards[currentCardIndex].duration) { currentTimeTally += state.scriptCards[currentCardIndex].duration; currentCardIndex++; }
                         const card = state.scriptCards[currentCardIndex];
-                        
-                        this.renderFrameToCanvas(ctx, card, scale);
-                        
+                        this.renderFrameToCanvas(ctx, card, scale, elapsedTime - currentTimeTally);
                         const progress = Math.min(100, (currentFrame / totalFrames) * 100);
                         UI.progressSubText.textContent = `프레임 ${currentFrame} / ${totalFrames}`;
                         UI.progressBarInner.style.width = `${progress}%`;
-
                         currentFrame++;
                         requestAnimationFrame(renderLoop);
                     };
                     requestAnimationFrame(renderLoop);
                 });
             },
-
             wrapText(context, text, x, y, maxWidth, lineHeight) {
                 const lines = text.split('\n');
                 let currentY = y;
                 context.textBaseline = 'top';
-
                 for (const line of lines) {
                     let words = line.split(' ');
                     let currentLine = words[0] || '';
                     for (let i = 1; i < words.length; i++) {
                         let testLine = currentLine + ' ' + words[i];
-                        if (context.measureText(testLine).width > maxWidth && currentLine.length > 0) {
-                            context.fillText(currentLine, x, currentY);
-                            currentLine = words[i];
-                            currentY += lineHeight;
-                        } else {
-                            currentLine = testLine;
-                        }
+                        if (context.measureText(testLine).width > maxWidth && currentLine.length > 0) { context.fillText(currentLine, x, currentY); currentLine = words[i]; currentY += lineHeight; } 
+                        else { currentLine = testLine; }
                     }
                     context.fillText(currentLine, x, currentY);
                     currentY += lineHeight;
                 }
             },
-
-            renderFrameToCanvas(ctx, card, scale) {
-                const RENDER_WIDTH = ctx.canvas.width;
-                const RENDER_HEIGHT = ctx.canvas.height;
-                
-                ctx.fillStyle = '#FFFFFF';
-                ctx.fillRect(0, 0, RENDER_WIDTH, RENDER_HEIGHT);
-
+            renderFrameToCanvas(ctx, card, scale, timeInCard) {
+                const RENDER_WIDTH = ctx.canvas.width; const RENDER_HEIGHT = ctx.canvas.height;
+                ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, RENDER_WIDTH, RENDER_HEIGHT);
                 const headerHeight = 65 * scale;
-                ctx.fillStyle = state.projectSettings.header.backgroundColor;
-                ctx.fillRect(0, 0, RENDER_WIDTH, headerHeight);
+                ctx.fillStyle = state.projectSettings.header.backgroundColor; ctx.fillRect(0, 0, RENDER_WIDTH, headerHeight);
                 ctx.font = `bold ${state.projectSettings.header.fontSize * scale}px ${state.projectSettings.header.fontFamily}`;
-                ctx.fillStyle = state.projectSettings.header.color;
-                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillStyle = state.projectSettings.header.color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
                 ctx.fillText(state.projectSettings.header.text, RENDER_WIDTH / 2, headerHeight / 2);
-
                 const infoPadding = 10 * scale;
                 let currentY = headerHeight + infoPadding * 2;
-                
                 ctx.font = `bold ${state.projectSettings.project.titleFontSize * scale}px ${state.projectSettings.project.titleFontFamily}`;
-                ctx.fillStyle = state.projectSettings.project.titleColor;
-                ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+                ctx.fillStyle = state.projectSettings.project.titleColor; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
                 ctx.fillText(state.projectSettings.project.title, infoPadding, currentY);
                 currentY += state.projectSettings.project.titleFontSize * scale * 1.2;
-
-                ctx.font = `${13 * scale}px 'Noto Sans KR'`;
-                ctx.fillStyle = state.projectSettings.project.metaColor;
+                ctx.font = `${13 * scale}px 'Noto Sans KR'`; ctx.fillStyle = state.projectSettings.project.metaColor;
                 const metaText = `${state.projectSettings.project.author} | 조회수 ${Number(state.projectSettings.project.views).toLocaleString()}`;
                 ctx.fillText(metaText, infoPadding, currentY);
                 currentY += 13 * scale * 2.5;
-                
-                ctx.strokeStyle = '#eeeeee'; ctx.lineWidth = 1;
-                ctx.beginPath(); ctx.moveTo(0, currentY); ctx.lineTo(RENDER_WIDTH, currentY); ctx.stroke();
-                
+                ctx.strokeStyle = '#eeeeee'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, currentY); ctx.lineTo(RENDER_WIDTH, currentY); ctx.stroke();
                 const contentStartY = currentY;
-
-                // 텍스트 그리기
                 ctx.save();
-                const textLayout = card.layout.text;
-                const textStyle = card.style;
-                const textCenterX = RENDER_WIDTH / 2;
-                const textInitialY = contentStartY + (parseInt(textStyle.fontSize) * scale); // 텍스트 시작 Y 위치 조정
-                
+                ctx.rect(0, contentStartY, RENDER_WIDTH, RENDER_HEIGHT - contentStartY); ctx.clip();
+                const textLayout = card.layout.text; const textStyle = card.style;
+                const textCenterX = RENDER_WIDTH / 2; const textInitialY = contentStartY + (parseInt(textStyle.fontSize) * scale);
                 ctx.translate(textCenterX + textLayout.x * scale, textInitialY + textLayout.y * scale);
-                ctx.rotate(textLayout.angle * Math.PI / 180);
-                ctx.scale(textLayout.scale, textLayout.scale);
+                ctx.rotate(textLayout.angle * Math.PI / 180); ctx.scale(textLayout.scale, textLayout.scale);
                 ctx.font = `${parseInt(textStyle.fontSize) * scale}px ${textStyle.fontFamily}`;
-                ctx.fillStyle = textStyle.color;
-                ctx.textAlign = 'center';
+                ctx.fillStyle = textStyle.color; ctx.textAlign = 'center';
                 const lineHeight = parseInt(textStyle.fontSize) * scale * parseFloat(textStyle.lineHeight);
-                this.wrapText(ctx, card.text, 0, 0, textLayout.width * scale, lineHeight);
+                let textToRender = '';
+                if(card.segments && card.segments.length > 0) {
+                    card.segments.forEach(segment => { if(timeInCard >= segment.startTime) { textToRender += segment.text + '\n'; } });
+                    textToRender = textToRender.trim();
+                } else { textToRender = card.text; }
+                this.wrapText(ctx, textToRender, 0, 0, textLayout.width * scale, lineHeight);
                 ctx.restore();
-                
-                // 미디어 그리기
                 if (card.media.url) {
                     ctx.save();
                     const mediaLayout = card.layout.media;
                     let mediaToDraw = null;
                     if (card.media.type === 'image') { mediaToDraw = state.imageCache.get(card.media.url); } 
                     else if (card.media.type === 'video') { mediaToDraw = state.videoFrameCache.get(card.media.url); }
-                    
                     if (mediaToDraw) {
-                        const mediaCenterX = RENDER_WIDTH / 2;
-                        const mediaInitialY = contentStartY + 100 * scale; // 미디어 시작 Y 위치 조정
+                        const mediaCenterX = RENDER_WIDTH / 2; const mediaInitialY = contentStartY + 20 * scale;
                         ctx.translate(mediaCenterX + mediaLayout.x * scale, mediaInitialY + mediaLayout.y * scale);
-                        ctx.rotate(mediaLayout.angle * Math.PI / 180);
-                        ctx.scale(mediaLayout.scale, mediaLayout.scale);
-                        const w = mediaLayout.width * scale;
-                        const h = mediaLayout.height * scale;
+                        ctx.rotate(mediaLayout.angle * Math.PI / 180); ctx.scale(mediaLayout.scale, mediaLayout.scale);
+                        const w = mediaLayout.width * scale; const h = mediaLayout.height * scale;
                         ctx.drawImage(mediaToDraw, -w / 2, -h / 2, w, h);
                     }
                     ctx.restore();
                 }
             },
         };
-
         document.addEventListener('DOMContentLoaded', initialize);
     })();
     </script>
