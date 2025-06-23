@@ -80,13 +80,19 @@
         .st-accordion-item.active .st-accordion-content { display: block; }
         .st-control-group { margin-bottom: 15px; }
         .st-control-group h4 { margin-top: 0; margin-bottom: 10px; color: var(--st-subtext-color); border-bottom: 1px solid var(--st-border-color); padding-bottom: 8px; }
+        .st-control-group label { display: block; margin-bottom: 4px; font-size: 14px; }
         input, select { width: 100%; padding: 8px; background-color: #1e1e1e; border: 1px solid var(--st-border-color); color: var(--st-text-color); }
-        .st-flex-group { display: flex; gap: 10px; }
+        .st-flex-group { display: flex; gap: 10px; align-items: center;}
+        .st-flex-group label { margin-bottom: 0; }
+        .st-flex-group .value-label { color: var(--st-subtext-color); min-width: 30px; text-align: right;}
         .st-modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.7); display: none; justify-content: center; align-items: center; z-index: 1000; }
         .st-modal-overlay.visible { display: flex; }
         .st-modal-dialog { background-color: var(--st-panel-color); padding: 24px; border-radius: 8px; width: 90%; max-width: 600px; border: 1px solid var(--st-border-color); }
+        .st-modal-dialog textarea#st-gpts-textarea { width: 100%; min-height: 150px; background-color: #333; border-color: var(--st-border-color); color: var(--st-text-color); padding: 8px; }
         .st-modal-dialog .st-modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
         .waveform-container { width: 100%; height: 128px; background-color: #1e1e1e; }
+        #st-video-trim-preview { width: 100%; max-height: 200px; background-color: #000; margin-bottom: 15px; }
+        #st-video-trim-preview video { width: 100%; height: 100%; object-fit: contain; }
         .waveform-loading { text-align: center; padding: 40px; color: var(--st-subtext-color); }
         .waveform-controls { display: flex; justify-content: space-around; align-items: center; margin-top: 10px; }
         #st-export-progress-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; color: white; display: none; flex-direction: column; justify-content: center; align-items: center; font-size: 24px; }
@@ -142,11 +148,11 @@
                     <h3>스크립트 & 타임라인</h3>
                     <div class="button-group">
                         <button id="st-btn-add-project" style="background-color: #555;">+ 새 프로젝트</button>
-                        <button id="st-btn-add-gpts" style="background-color: #3e3e3e;">✨ AI 대본 생성</button>
+                        <button id="st-btn-add-gpts" style="background-color: #3e3e3e;">✨ 자동 스크립트 생성 (AI 활용)</button>
                         <button id="st-btn-add-card">+ 수동 추가</button>
                     </div>
                 </div>
-                <div class="st-editor-tip">💡 Tip: 모서리를 드래그하여 미디어 비율을 자유롭게 조절하고, '맞춤' 옵션으로 자르거나 맞출 수 있습니다!</div>
+                <div class="st-editor-tip">💡 Tip: 스크립트의 글을 드래그하여 영상에 나오는 순서를 정할 수 있습니다!</div>
                 <div id="st-card-container"></div>
             </div>
         </div>
@@ -156,7 +162,7 @@
     <ul id="st-sequence-menu" style="display: none;"></ul>
     <div id="st-modal-gpts" class="st-modal-overlay"> <div class="st-modal-dialog"> <h2>AI 대본 붙여넣기</h2> <p>AI 툴(ChatGPT, Claude 등)에서 생성된 스크립트를 입력하세요. 빈 줄로 구분하여 여러 스크립트를 한번에 추가할 수 있습니다.</p> <textarea id="st-gpts-textarea" placeholder="여기에 AI 스크립트를 입력하세요..."></textarea> <div class="st-modal-actions"> <button id="st-btn-gpts-cancel" class="cancel">취소</button> <button id="st-btn-gpts-confirm">확인</button> </div> </div> </div>
     <div id="st-modal-bgm" class="st-modal-overlay"> <div class="st-modal-dialog"> <h2>BGM 구간 설정</h2> <p>오디오 파형 위에서 원하는 구간을 드래그하여 선택하세요.</p> <div id="st-waveform-container-bgm" class="waveform-container"> <div class="waveform-loading">BGM 로딩 중...</div> </div> <div class="waveform-controls"> <button id="st-btn-bgm-play-pause">재생/일시정지</button> <button id="st-btn-bgm-play-region">선택 구간 미리듣기</button> <span id="st-bgm-time-display">0.00s - 0.00s</span> </div> <div class="st-modal-actions"> <button id="st-btn-bgm-cancel" class="cancel">취소</button> <button id="st-btn-bgm-confirm">확인</button> </div> </div> </div>
-    <div id="st-modal-video-trim" class="st-modal-overlay"> <div class="st-modal-dialog"> <h2>비디오 구간 선택</h2> <p>오디오 파형 위에서 사용할 구간을 드래그하여 선택하세요.</p> <div id="st-waveform-container-video" class="waveform-container"> <div class="waveform-loading">비디오 로딩 중...</div> </div> <div class="waveform-controls"> <button id="st-btn-video-play-pause">재생/일시정지</button> <button id="st-btn-video-play-region">선택 구간 미리듣기</button> <span id="st-video-time-display">0.00s - 0.00s</span> </div> <div class="st-modal-actions"> <button id="st-btn-video-cancel" class="cancel">취소</button> <button id="st-btn-video-confirm">확인</button> </div> </div> </div>
+    <div id="st-modal-video-trim" class="st-modal-overlay"> <div class="st-modal-dialog"> <h2>비디오 구간 선택</h2> <div id="st-video-trim-preview"><video controls></video></div> <p>오디오 파형 위에서 사용할 구간을 드래그하여 선택하세요.</p> <div id="st-waveform-container-video" class="waveform-container"> <div class="waveform-loading">비디오 로딩 중...</div> </div> <div class="waveform-controls"> <button id="st-btn-video-play-region">선택 구간 미리보기</button> <span id="st-video-time-display">0.00s - 0.00s</span> </div> <div class="st-modal-actions"> <button id="st-btn-video-cancel" class="cancel">취소</button> <button id="st-btn-video-confirm">확인</button> </div> </div> </div>
     <div id="st-export-progress-overlay">
         <div id="st-export-progress-text">영상 생성 중...</div>
         <div id="st-export-progress-subtext"></div>
@@ -166,12 +172,12 @@
     <audio id="st-tts-player" style="display:none;"></audio>
     <audio id="st-bgm-player" style="display:none;" loop></audio>
     <audio id="st-sfx-player" style="display:none;"></audio>
-    <audio id="st-trim-player" style="display:none;"></audio>
     <input type="file" id="st-sfx-file-upload" accept="audio/*" style="display: none;">
     <input type="file" id="st-bgm-file-upload" accept="audio/*" style="display: none;">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/6.4.0/wavesurfer.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/6.4.0/plugin/wavesurfer.regions.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
     (function SunsakTool() {
         'use strict';
@@ -189,7 +195,7 @@
             globalBGM: { url: null, volume: 0.3, startTime: 0, endTime: null },
             projectSettings: { 
                 header: { text: '채널 이름', backgroundColor: '#e82c43', color: '#ffffff', fontFamily: 'GmarketSans', fontSize: 24, icon: 'none', logo: { url: null, size: 40 } }, 
-                project: { title: '제목을 입력해주세요', author: 'ㅇㅇ', views: 0, titleColor: '#000000', metaColor: '#555555' },
+                project: { title: '제목을 입력해주세요', author: 'ㅇㅇ', views: 0, titleColor: '#000000', metaColor: '#555555', titleFontFamily: "'Noto Sans KR', sans-serif", titleFontSize: 22 },
                 defaultStyle: { color: '#000000', fontFamily: "'Noto Sans KR', sans-serif", fontSize: '24', lineHeight: '1.5', letterSpacing: '0' }
             },
             scriptCards: [],
@@ -217,7 +223,6 @@
             ttsPlayer: document.getElementById('st-tts-player'),
             bgmPlayer: document.getElementById('st-bgm-player'),
             sfxPlayer: document.getElementById('st-sfx-player'),
-            trimPlayer: document.getElementById('st-trim-player'),
             globalSettingsPanel: document.getElementById('st-global-settings-panel'),
             animationSettingsPanel: document.getElementById('st-animation-settings-panel'),
             addCardBtn: document.getElementById('st-btn-add-card'),
@@ -307,9 +312,27 @@
             },
             
             globalControls() {
-                const fontOptions = C.FONT_LIST.map(font => `<option value="${font.value}" ${state.projectSettings.defaultStyle.fontFamily === font.value ? 'selected' : ''}>${font.name}</option>`).join('');
+                const fontOptions = C.FONT_LIST.map(font => `<option value="${font.value}">${font.name}</option>`).join('');
                 const bgmOptions = C.BGM_LIST.map(bgm => `<option value="${bgm.url}">${bgm.name}</option>`).join('');
-                UI.globalSettingsPanel.innerHTML = `<div class="st-accordion-item active"><div class="st-accordion-header">영상 설정</div><div class="st-accordion-content"><div class="st-control-group"><h4>상단 헤더</h4><label>헤더 텍스트</label><input type="text" id="st-setting-header-text" value="${state.projectSettings.header.text}"><div class="st-flex-group" style="margin-top: 8px;"><div><label>배경 색상</label><input type="color" id="st-setting-header-bg" value="${state.projectSettings.header.backgroundColor}"></div><div><label>글자 색상</label><input type="color" id="st-setting-header-color" value="${state.projectSettings.header.color}"></div></div><div class="st-flex-group" style="margin-top: 8px;"><div><label>폰트</label><select id="st-setting-header-font">${fontOptions.replace(`value="${state.projectSettings.header.fontFamily}"`, `value="${state.projectSettings.header.fontFamily}" selected`)}</select></div><div><label>크기</label><input type="number" id="st-setting-header-size" value="${state.projectSettings.header.fontSize}"></div></div><div style="margin-top: 8px;"><label>왼쪽 아이콘</label><select id="st-setting-header-icon"><option value="none">없음</option><option value="back">뒤로가기</option><option value="menu">메뉴</option></select></div><div style="margin-top: 8px;"><label>오른쪽 로고</label><div class="st-flex-group"><button id="st-btn-header-logo" style="width: auto; flex-grow: 1;">로고 추가/변경</button><input type="file" id="st-header-logo-file" accept="image/*" style="display:none;"></div><label style="margin-top: 4px; display: block;">로고 크기: <span id="st-header-logo-size-label">${state.projectSettings.header.logo.size}</span>px</label><input type="range" id="st-setting-header-logo-size" min="20" max="60" value="${state.projectSettings.header.logo.size}"></div></div><div class="st-control-group"><h4>콘텐츠 정보</h4><label>프로젝트 제목</label><input type="text" id="st-setting-project-title" value="${state.projectSettings.project.title}"><div style="margin-top: 8px;"><label>작성자</label><input type="text" id="st-setting-project-author" value="${state.projectSettings.project.author}"></div><div style="margin-top: 8px;"><label>조회수</label><input type="number" id="st-setting-project-views" value="${state.projectSettings.project.views}"></div><div class="st-flex-group" style="margin-top: 8px;"><div><label>제목 색상</label><input type="color" id="st-setting-title-color" value="${state.projectSettings.project.titleColor}"></div><div><label>정보 색상</label><input type="color" id="st-setting-meta-color" value="${state.projectSettings.project.metaColor}"></div></div><hr style="border-color: var(--st-border-color); margin: 15px 0;"><label>기본 스크립트 스타일</label><div class="st-flex-group" style="margin-top: 8px;"><div><label>폰트</label><select id="st-setting-script-font">${fontOptions}</select></div><div><label>크기</label><input type="number" id="st-setting-script-size" value="${state.projectSettings.defaultStyle.fontSize}"></div></div><div style="margin-top: 8px;"><label>색상</label><input type="color" id="st-setting-script-color" value="${state.projectSettings.defaultStyle.color}"></div><div style="margin-top: 8px;"><label>줄 간격</label><input type="range" id="st-setting-line-height" min="1" max="2.5" step="0.1" value="${state.projectSettings.defaultStyle.lineHeight}"></div><div style="margin-top: 8px;"><label>자간</label><input type="range" id="st-setting-letter-spacing" min="-2" max="5" step="0.1" value="${state.projectSettings.defaultStyle.letterSpacing}"></div></div><div class="st-control-group"><h4>배경음악</h4><label>전체 BGM 선택</label><select id="st-setting-global-bgm">${bgmOptions}</select><button id="st-btn-upload-bgm" style="width:100%; margin-top: 8px; background-color: #3e3e3e;">내 BGM 업로드</button><div style="margin-top: 8px;"><label>BGM 볼륨</label><input type="range" id="st-setting-global-bgm-volume" min="0" max="1" step="0.01" value="${state.globalBGM.volume}"></div></div></div></div>`;
+                
+                const createSelectWithOptions = (id, selectedValue) => {
+                    let select = `<select id="${id}">`;
+                    C.FONT_LIST.forEach(font => {
+                        select += `<option value="${font.value}" ${selectedValue === font.value ? 'selected' : ''}>${font.name}</option>`;
+                    });
+                    select += `</select>`;
+                    return select;
+                };
+
+                UI.globalSettingsPanel.innerHTML = `
+                    <div class="st-accordion-item active">
+                        <div class="st-accordion-header">영상 설정</div>
+                        <div class="st-accordion-content">
+                            <div class="st-control-group"><h4>상단 헤더</h4><label>헤더 텍스트</label><input type="text" id="st-setting-header-text" value="${state.projectSettings.header.text}"><div class="st-flex-group" style="margin-top: 8px;"><div><label>배경 색상</label><input type="color" id="st-setting-header-bg" value="${state.projectSettings.header.backgroundColor}"></div><div><label>글자 색상</label><input type="color" id="st-setting-header-color" value="${state.projectSettings.header.color}"></div></div><div class="st-flex-group" style="margin-top: 8px;"><div><label>폰트</label>${createSelectWithOptions('st-setting-header-font', state.projectSettings.header.fontFamily)}</div><div><label>크기</label><input type="number" id="st-setting-header-size" value="${state.projectSettings.header.fontSize}"></div></div><div style="margin-top: 8px;"><label>왼쪽 아이콘</label><select id="st-setting-header-icon"><option value="none">없음</option><option value="back">뒤로가기</option><option value="menu">메뉴</option></select></div><div style="margin-top: 8px;"><label>오른쪽 로고</label><div class="st-flex-group"><button id="st-btn-header-logo" style="width: auto; flex-grow: 1;">로고 추가/변경</button><input type="file" id="st-header-logo-file" accept="image/*" style="display:none;"></div><div class="st-flex-group" style="margin-top: 4px;"><label>로고 크기:</label><input type="range" id="st-setting-header-logo-size" min="20" max="60" value="${state.projectSettings.header.logo.size}"><span class="value-label">${state.projectSettings.header.logo.size}px</span></div></div></div>
+                            <div class="st-control-group"><h4>콘텐츠 정보</h4><label>프로젝트 제목</label><input type="text" id="st-setting-project-title" value="${state.projectSettings.project.title}"><div class="st-flex-group" style="margin-top: 8px;"><div><label>폰트</label>${createSelectWithOptions('st-setting-project-font', state.projectSettings.project.titleFontFamily)}</div><div><label>크기</label><input type="number" id="st-setting-project-size" value="${state.projectSettings.project.titleFontSize}"></div></div><div style="margin-top: 8px;"><label>작성자</label><input type="text" id="st-setting-project-author" value="${state.projectSettings.project.author}"></div><div style="margin-top: 8px;"><label>조회수</label><input type="number" id="st-setting-project-views" value="${state.projectSettings.project.views}"></div><div class="st-flex-group" style="margin-top: 8px;"><div><label>제목 색상</label><input type="color" id="st-setting-title-color" value="${state.projectSettings.project.titleColor}"></div><div><label>정보 색상</label><input type="color" id="st-setting-meta-color" value="${state.projectSettings.project.metaColor}"></div></div><hr style="border-color: var(--st-border-color); margin: 15px 0;"><label>기본 스크립트 스타일</label><div class="st-flex-group" style="margin-top: 8px;"><div><label>폰트</label>${createSelectWithOptions('st-setting-script-font', state.projectSettings.defaultStyle.fontFamily)}</div><div><label>크기</label><input type="number" id="st-setting-script-size" value="${state.projectSettings.defaultStyle.fontSize}"></div></div><div style="margin-top: 8px;"><label>색상</label><input type="color" id="st-setting-script-color" value="${state.projectSettings.defaultStyle.color}"></div><div class="st-flex-group" style="margin-top: 8px;"><label>줄 간격</label><input type="range" id="st-setting-line-height" min="1" max="2.5" step="0.1" value="${state.projectSettings.defaultStyle.lineHeight}"><span class="value-label">${state.projectSettings.defaultStyle.lineHeight}</span></div><div class="st-flex-group" style="margin-top: 8px;"><label>자간</label><input type="range" id="st-setting-letter-spacing" min="-2" max="5" step="0.1" value="${state.projectSettings.defaultStyle.letterSpacing}"><span class="value-label">${state.projectSettings.defaultStyle.letterSpacing}px</span></div></div>
+                            <div class="st-control-group"><h4>배경음악</h4><label>전체 BGM 선택</label><select id="st-setting-global-bgm">${bgmOptions}</select><button id="st-btn-upload-bgm" style="width:100%; margin-top: 8px; background-color: #3e3e3e;">내 BGM 업로드</button><div style="margin-top: 8px;"><label>BGM 볼륨</label><div class="st-flex-group"><input type="range" class="st-volume-slider" id="st-setting-global-bgm-volume" min="0" max="1" step="0.01" value="${state.globalBGM.volume}"><span class="value-label">${Math.round(state.globalBGM.volume * 100)}</span></div></div></div>
+                        </div>
+                    </div>`;
                 UI.globalSettingsPanel.querySelector('.st-accordion-header').addEventListener('click', (e) => e.currentTarget.parentElement.classList.toggle('active'));
             },
 
@@ -317,8 +340,8 @@
                 if (!state.selectedCardId || !element) return;
                 const card = state.scriptCards.find(c => c.id === state.selectedCardId);
                 const layoutKey = element.dataset.layoutKey; const anims = card.animations[layoutKey];
-                const animOptions = C.ANIMATION_LIST.map(a => `<option value="${a.value}" ${anims.in.name === a.value ? 'selected' : ''}>${a.name}</option>`).join('');
-                const animOptionsOut = C.ANIMATION_LIST.map(a => `<option value="${a.value}" ${anims.out.name === a.value ? 'selected' : ''}>${a.name}</option>`).join('');
+                const animOptions = C.FONT_LIST.map(a => `<option value="${a.value}" ${anims.in.name === a.value ? 'selected' : ''}>${a.name}</option>`).join('');
+                const animOptionsOut = C.FONT_LIST.map(a => `<option value="${a.value}" ${anims.out.name === a.value ? 'selected' : ''}>${a.name}</option>`).join('');
                 const elementType = layoutKey === 'text' ? '텍스트' : '미디어';
                 UI.animationSettingsPanel.innerHTML = `<h3>${elementType} 애니메이션</h3><div class="st-control-group"><label>시작 애니메이션 (In)</label><select id="anim-in-type">${animOptions}</select><label>지속 시간 (초)</label><input type="number" id="anim-in-duration" min="0.1" max="5" step="0.1" value="${anims.in.duration}"></div><div class="st-control-group"><label>종료 애니메이션 (Out)</label><select id="anim-out-type">${animOptionsOut}</select><label>지속 시간 (초)</label><input type="number" id="anim-out-duration" min="0.1" max="5" step="0.1" value="${anims.out.duration}"></div>`;
                 document.getElementById('anim-in-type').addEventListener('input', e => { anims.in.name = e.target.value; });
@@ -360,7 +383,17 @@
             cardElement: (cardData) => {
                 const cardEl = document.createElement('div'); cardEl.className = 'st-card'; cardEl.dataset.id = cardData.id;
                 const sfxOptions = render.sfxOptions();
-                cardEl.innerHTML = `<div class="st-card-header st-card-drag-handle"><span class="st-card-number"></span><button class="st-btn-delete-card">🗑️</button></div><div class="st-script-editor" contenteditable="true" spellcheck="false"></div><div class="st-card-footer"><div class="footer-row"><button class="st-play-clip-btn" title="미리듣기" disabled>▶️</button><span class="st-duration-label" title="클릭하여 자동/수동 전환">길이(자동)</span><input type="number" class="st-duration-input" min="0.1" step="0.1" value="${cardData.duration}" title="길이(초)" style="display: none;"><label class="st-action-btn" for="${cardData.id}-file">미디어 추가</label><input type="file" id="${cardData.id}-file" accept="image/*,video/*"></div><div class="footer-row media-controls" style="display: none;"><span>미디어 표시:</span><select class="media-timing-select"></select><span>지속 시간:</span><select class="media-persist-select"></select></div><div class="footer-row media-controls" style="display: none;"><span>미디어 맞춤:</span><label class="media-fit-label"><input type="radio" name="media-fit-${cardData.id}" value="cover">꽉 채우기</label><label class="media-fit-label"><input type="radio" name="media-fit-${cardData.id}" value="contain" checked>안에 맞추기</label><label class="media-fit-label"><input type="radio" name="media-fit-${cardData.id}" value="fill">늘리기</label></div><div class="footer-row"><span>TTS 소리</span><input type="range" class="st-volume-slider tts-volume" min="0" max="1" step="0.05" value="${cardData.ttsVolume}"><span style="margin-left:10px;">효과음 소리</span><input type="range" class="st-volume-slider sfx-volume" min="0" max="1" step="0.05" value="${cardData.sfxVolume}"></div><div class="footer-row"><select class="st-sfx-select" style="flex-grow: 1;">${sfxOptions}</select></div></div>`;
+                cardEl.innerHTML = `
+                    <div class="st-card-header st-card-drag-handle"><span class="st-card-number"></span><button class="st-btn-delete-card">🗑️</button></div>
+                    <div class="st-script-editor" contenteditable="true" spellcheck="false"></div>
+                    <div class="st-card-footer">
+                        <div class="footer-row"><button class="st-play-clip-btn" title="미리듣기" disabled>▶️</button><span class="st-duration-label" title="클릭하여 자동/수동 전환">길이(자동)</span><input type="number" class="st-duration-input" min="0.1" step="0.1" value="${cardData.duration}" title="길이(초)" style="display: none;"><label class="st-action-btn" for="${cardData.id}-file">미디어 추가</label><input type="file" id="${cardData.id}-file" accept="image/*,video/*"></div>
+                        <div class="footer-row media-controls" style="display: none;"><span>미디어 표시:</span><select class="media-timing-select"></select><span>지속 시간:</span><select class="media-persist-select"></select></div>
+                        <div class="footer-row media-controls" style="display: none;"><span>미디어 맞춤:</span><label class="media-fit-label"><input type="radio" name="media-fit-${cardData.id}" value="cover">꽉 채우기</label><label class="media-fit-label"><input type="radio" name="media-fit-${cardData.id}" value="contain" checked>안에 맞추기</label><label class="media-fit-label"><input type="radio" name="media-fit-${cardData.id}" value="fill">늘리기</label></div>
+                        <div class="footer-row"><label>TTS</label><div class="st-flex-group"><input type="range" class="st-volume-slider tts-volume" min="0" max="1" step="0.01" value="${cardData.ttsVolume}"><span class="value-label">${Math.round(cardData.ttsVolume * 100)}</span></div></div>
+                        <div class="footer-row"><label>효과음</label><div class="st-flex-group"><input type="range" class="st-volume-slider sfx-volume" min="0" max="1" step="0.01" value="${cardData.sfxVolume}"><span class="value-label">${Math.round(cardData.sfxVolume * 100)}</span></div></div>
+                        <div class="footer-row"><select class="st-sfx-select" style="flex-grow: 1;">${sfxOptions}</select></div>
+                    </div>`;
                 cardEl.querySelector('.st-sfx-select').value = cardData.sfxUrl || '';
                 return cardEl;
             },
@@ -458,6 +491,9 @@
                 const titleEl = document.querySelector('.st-project-info .title');
                 titleEl.textContent = state.projectSettings.project.title;
                 titleEl.style.color = state.projectSettings.project.titleColor;
+                titleEl.style.fontFamily = state.projectSettings.project.titleFontFamily;
+                titleEl.style.fontSize = state.projectSettings.project.titleFontSize + 'px';
+
                 const metaEl = document.querySelector('.st-project-info span');
                 metaEl.textContent = `${state.projectSettings.project.author || ''} | 조회수 ${Number(state.projectSettings.project.views || 0).toLocaleString()}`;
                 metaEl.style.color = state.projectSettings.project.metaColor;
@@ -565,6 +601,7 @@
                 mediaWrapper.style.visibility = 'hidden';
                 if(activeMedia) {
                     const showMedia = () => {
+                        if (!state.isPlaying || state.playbackCurrentIndex !== index) return;
                         mediaWrapper.style.visibility = 'visible';
                         if (activeMedia.type === 'video') {
                             previewVideo.currentTime = activeMedia.startTime || 0;
@@ -598,7 +635,10 @@
                 state.projectSettings.header.fontFamily = document.getElementById('st-setting-header-font').value;
                 state.projectSettings.header.fontSize = document.getElementById('st-setting-header-size').value;
                 state.projectSettings.header.icon = document.getElementById('st-setting-header-icon').value;
+                state.projectSettings.header.logo.size = document.getElementById('st-setting-header-logo-size').value;
                 state.projectSettings.project.title = document.getElementById('st-setting-project-title').value;
+                state.projectSettings.project.titleFontFamily = document.getElementById('st-setting-project-font').value;
+                state.projectSettings.project.titleFontSize = document.getElementById('st-setting-project-size').value;
                 state.projectSettings.project.author = document.getElementById('st-setting-project-author').value;
                 state.projectSettings.project.views = document.getElementById('st-setting-project-views').value;
                 state.projectSettings.project.titleColor = document.getElementById('st-setting-title-color').value;
@@ -718,8 +758,14 @@
                         }
                     }
                 });
-                cardEl.querySelector('.tts-volume').addEventListener('input', e => { cardData.ttsVolume = parseFloat(e.target.value); });
-                cardEl.querySelector('.sfx-volume').addEventListener('input', e => { cardData.sfxVolume = parseFloat(e.target.value); });
+                cardEl.querySelector('.tts-volume').addEventListener('input', e => { 
+                    cardData.ttsVolume = parseFloat(e.target.value);
+                    e.target.nextElementSibling.textContent = Math.round(e.target.value * 100);
+                });
+                cardEl.querySelector('.sfx-volume').addEventListener('input', e => {
+                    cardData.sfxVolume = parseFloat(e.target.value);
+                    e.target.nextElementSibling.textContent = Math.round(e.target.value * 100);
+                });
                 cardEl.querySelector('.st-duration-label').addEventListener('click', () => {
                     cardData.isDurationManual = !cardData.isDurationManual;
                     if (!cardData.isDurationManual) { cardData.duration = cardData.ttsDuration; }
@@ -845,6 +891,7 @@
                 interact('.interactive-target').draggable({ listeners: dragListeners });
                 interact('.interactive-target').resizable({
                     edges: { top: true, left: true, bottom: true, right: true },
+                    modifiers: [ interact.modifiers.aspectRatio({ ratio: 'preserve', equalDelta: true }) ],
                     listeners: {
                         start: dragListeners.start,
                         move(event) {
@@ -873,6 +920,8 @@
                 state.videoTrimmerContext = { cardId, url };
                 UI.videoTrimModal.classList.add('visible');
                 const loadingEl = UI.videoTrimModal.querySelector('.waveform-loading');
+                const previewVideo = UI.videoTrimModal.querySelector('video');
+                previewVideo.src = url;
                 loadingEl.style.display = 'block';
 
                 if (state.videoWavesurfer) state.videoWavesurfer.destroy();
@@ -880,12 +929,9 @@
                 state.videoWavesurfer = WaveSurfer.create({
                     container: '#st-waveform-container-video', waveColor: '#ddd', progressColor: '#e82c43',
                     cursorColor: '#fff', barWidth: 2, barRadius: 3,
-                    // 로딩 속도 최적화: 낮은 품질의 파형을 미리 렌더링
-                    backend: 'MediaElement', partialRender: true,
+                    backend: 'MediaElement', media: previewVideo,
                     plugins: [ WaveSurfer.regions.create({ dragSelection: { slop: 5 } }) ]
                 });
-
-                state.videoWavesurfer.load(url);
 
                 state.videoWavesurfer.on('ready', () => {
                     loadingEl.style.display = 'none';
@@ -899,19 +945,24 @@
                 state.videoWavesurfer.on('region-updated', (region) => {
                     state.activeVideoRegion = region;
                     document.getElementById('st-video-time-display').textContent = `${region.start.toFixed(2)}s - ${region.end.toFixed(2)}s`;
+                    previewVideo.currentTime = region.start;
                 });
             },
             closeVideoTrimmer: () => {
                 UI.videoTrimModal.classList.remove('visible');
                 if (state.videoWavesurfer) { state.videoWavesurfer.destroy(); state.videoWavesurfer = null; }
+                const previewVideo = UI.videoTrimModal.querySelector('video');
+                previewVideo.pause();
+                previewVideo.src = "";
             },
             initialize() {
+                // Video Trimmer Modal Events
                 document.getElementById('st-btn-video-play-region').addEventListener('click', () => {
                     if (state.activeVideoRegion) {
-                        UI.trimPlayer.src = state.videoTrimmerContext.url;
-                        UI.trimPlayer.currentTime = state.activeVideoRegion.start;
-                        UI.trimPlayer.play();
-                        setTimeout(() => UI.trimPlayer.pause(), (state.activeVideoRegion.end - state.activeVideoRegion.start) * 1000);
+                        const previewVideo = UI.videoTrimModal.querySelector('video');
+                        previewVideo.currentTime = state.activeVideoRegion.start;
+                        previewVideo.play();
+                        setTimeout(() => { if (!previewVideo.paused) previewVideo.pause(); }, (state.activeVideoRegion.end - state.activeVideoRegion.start) * 1000);
                     }
                 });
                 document.getElementById('st-btn-video-confirm').addEventListener('click', () => {
@@ -947,7 +998,18 @@
             UI.addCardBtn.addEventListener('click', () => handlers.addScriptCard(''));
             UI.newProjectBtn.addEventListener('click', () => { if(confirm('정말로 새 프로젝트를 시작하시겠습니까? 모든 작업 내용이 사라집니다.')) { location.reload(); } });
             UI.playAllBtn.addEventListener('click', playback.togglePlay);
-            UI.globalSettingsPanel.addEventListener('input', (e) => { if (e.target.id.startsWith('st-setting-')) handlers.updateProjectSettings(); });
+            UI.globalSettingsPanel.addEventListener('input', (e) => { 
+                if (e.target.id.startsWith('st-setting-')) {
+                    handlers.updateProjectSettings();
+                    const valueLabel = e.target.nextElementSibling;
+                    if (valueLabel && valueLabel.classList.contains('value-label')) {
+                        let value = e.target.value;
+                        if (e.target.id.includes('volume')) value = Math.round(value * 100);
+                        if (e.target.id.includes('spacing')) value += 'px';
+                        valueLabel.textContent = value;
+                    }
+                }
+             });
             
             UI.addGptsBtn.addEventListener('click', () => UI.gptsModal.classList.add('visible'));
             const closeGptsModal = () => { UI.gptsModal.classList.remove('visible'); UI.gptsTextarea.value = ''; };
@@ -1012,31 +1074,28 @@
             handlers.addScriptCard('순삭툴에 오신 것을 환영합니다!\n텍스트를 선택해서 재생 순서를 정해보세요.');
         }
         
-        // --- 8. 영상 출력 (Optimized Exporter) ---
+        // --- 8. 영상 출력 (html2canvas Exporter) ---
         const exporter = {
             startExport: async () => {
                 if (state.scriptCards.some(c => !c.ttsReady && c.text.trim())) return alert('아직 음성 생성이 완료되지 않은 스크립트가 있습니다.');
                 if (state.scriptCards.length === 0) return alert('출력할 영상이 없습니다.');
                 UI.exportBtn.disabled = true;
                 UI.progressOverlay.style.display = 'flex';
+                UI.progressText.textContent = '영상 생성 준비 중...';
                 
                 const RENDER_WIDTH = 1080;
                 const RENDER_HEIGHT = 1920;
                 const FPS = 30;
 
                 const canvas = UI.renderCanvas;
-                canvas.width = RENDER_WIDTH;
-                canvas.height = RENDER_HEIGHT;
+                canvas.width = RENDER_WIDTH; canvas.height = RENDER_HEIGHT;
                 const ctx = canvas.getContext('2d');
-
                 const totalDuration = state.scriptCards.reduce((sum, card) => sum + (card.duration || 0.5), 0);
                 
-                // Audio processing
                 const audioContext = new AudioContext();
                 const destination = audioContext.createMediaStreamDestination();
-                // ... (Audio mixing logic would go here)
-                
-                // Video Stream
+                // Audio mixing logic here...
+
                 const canvasStream = canvas.captureStream(FPS);
                 const combinedStream = new MediaStream([...canvasStream.getVideoTracks(), ...destination.stream.getAudioTracks()]);
                 const recorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm;codecs=vp9,opus' });
@@ -1050,92 +1109,79 @@
                     URL.revokeObjectURL(url);
                     UI.exportBtn.disabled = false;
                     UI.progressOverlay.style.display = 'none';
+                    if (state.scriptCards.length > 0) handlers.selectCard(state.scriptCards[0].id);
                 };
                 
                 recorder.start();
                 
-                let startTime = performance.now();
-                let currentCardIndex = -1;
+                const originalSelectedId = state.selectedCardId;
+                let currentFrame = 0;
+                const totalFrames = Math.floor(totalDuration * FPS);
                 let timeTally = 0;
-                let animationFrameId;
+                let currentCardIndex = 0;
 
-                function renderLoop(now) {
-                    const elapsedTime = (now - startTime) / 1000;
-                    if (elapsedTime >= totalDuration) {
+                UI.progressText.textContent = '프레임 렌더링 중...';
+
+                const renderNextFrame = async () => {
+                    if (currentFrame >= totalFrames) {
                         if (recorder.state === 'recording') recorder.stop();
-                        cancelAnimationFrame(animationFrameId);
                         return;
                     }
-                    
-                    if (elapsedTime >= timeTally) {
-                        if (currentCardIndex >= 0) timeTally += state.scriptCards[currentCardIndex].duration;
+
+                    const elapsedTime = currentFrame / FPS;
+                    if (elapsedTime >= timeTally + state.scriptCards[currentCardIndex].duration) {
+                        timeTally += state.scriptCards[currentCardIndex].duration;
                         currentCardIndex++;
                     }
 
                     const card = state.scriptCards[currentCardIndex];
-                    if (card) {
-                        exporter.drawFrame(ctx, card, elapsedTime - timeTally, RENDER_WIDTH, RENDER_HEIGHT);
+                    if (card.id !== state.selectedCardId) {
+                       handlers.selectCard(card.id, true);
+                       await new Promise(r => setTimeout(r, 20)); // Allow DOM to update
                     }
                     
-                    const progress = Math.min(100, (elapsedTime / totalDuration) * 100);
-                    UI.progressSubText.textContent = `${elapsedTime.toFixed(1)}s / ${totalDuration.toFixed(1)}s`;
+                    // Update preview for current frame's time
+                    const previewTextEl = document.getElementById('st-preview-text');
+                    previewTextEl.innerHTML = '';
+                    const timeInCard = elapsedTime - timeTally;
+                    
+                    if (card.segments && card.segments.length > 0) {
+                        card.segments.forEach(segment => {
+                            if (timeInCard >= segment.startTime) {
+                                const p = document.createElement('p');
+                                p.className = 'preview-text-segment highlight';
+                                p.textContent = segment.text || ' ';
+                                p.style.margin = 0;
+                                previewTextEl.appendChild(p);
+                            }
+                        });
+                    } else {
+                        const p = document.createElement('p');
+                        p.className = 'preview-text-segment highlight';
+                        p.textContent = card.text || ' ';
+                        p.style.margin = 0;
+                        previewTextEl.appendChild(p);
+                    }
+                    
+                    const previewPanelEl = document.getElementById('st-preview-panel');
+                    const snapshotCanvas = await html2canvas(previewPanelEl, {
+                        scale: RENDER_WIDTH / previewPanelEl.offsetWidth,
+                        useCORS: true, allowTaint: true, backgroundColor: '#ffffff'
+                    });
+                    
+                    ctx.clearRect(0, 0, RENDER_WIDTH, RENDER_HEIGHT);
+                    ctx.drawImage(snapshotCanvas, 0, 0, RENDER_WIDTH, RENDER_HEIGHT);
+
+                    const progress = Math.min(100, (currentFrame / totalFrames) * 100);
+                    UI.progressSubText.textContent = `프레임 ${currentFrame} / ${totalFrames}`;
                     UI.progressBarInner.style.width = `${progress}%`;
 
-                    animationFrameId = requestAnimationFrame(renderLoop);
-                }
+                    currentFrame++;
+                    requestAnimationFrame(renderNextFrame);
+                };
                 
-                animationFrameId = requestAnimationFrame(renderLoop);
+                requestAnimationFrame(renderNextFrame);
             },
-            drawFrame: (ctx, card, timeInCard, width, height) => {
-                ctx.clearRect(0, 0, width, height);
-                ctx.fillStyle = 'white';
-                ctx.fillRect(0, 0, width, height);
-                
-                // Note: A full implementation would need to handle all CSS properties, animations, etc.
-                // This is a simplified direct-to-canvas renderer for performance.
-
-                // Draw Media
-                if (card.media.url) {
-                    const mediaEl = document.getElementById(card.media.type === 'video' ? 'st-preview-video' : 'st-preview-image');
-                    if (mediaEl && mediaEl.src === card.media.url && (mediaEl.readyState > 2 || mediaEl.complete)) {
-                        ctx.save();
-                        const layout = card.layout.media;
-                        const previewPanelWidth = 380; // The base width of the preview panel
-                        const scale = width / previewPanelWidth;
-
-                        const w = layout.width * scale;
-                        const h = layout.height * scale;
-                        const x = (width / 2) + (layout.x * scale);
-                        const y = (height * 0.6) + (layout.y * scale);
-                        
-                        ctx.translate(x, y);
-                        ctx.rotate(layout.angle * Math.PI / 180);
-                        ctx.drawImage(mediaEl, -w/2, -h/2, w, h);
-                        ctx.restore();
-                    }
-                }
-
-                // Draw Text
-                ctx.save();
-                const textLayout = card.layout.text;
-                const textScale = width / 380;
-                const textX = (width / 2) + (textLayout.x * textScale);
-                const textY = (height * 0.35) + (textLayout.y * textScale);
-                ctx.translate(textX, textY);
-                
-                const style = card.style;
-                ctx.fillStyle = style.color;
-                ctx.font = `${parseInt(style.fontSize, 10) * textScale}px ${style.fontFamily}`;
-                ctx.textAlign = 'center';
-                
-                const lines = card.text.split('\n');
-                const lineHeight = parseInt(style.fontSize, 10) * parseFloat(style.lineHeight) * textScale;
-
-                lines.forEach((line, i) => {
-                    ctx.fillText(line, 0, i * lineHeight);
-                });
-                ctx.restore();
-            }
         };
 
         document.addEventListener('DOMContentLoaded', initialize);
