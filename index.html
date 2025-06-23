@@ -2,6 +2,8 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
+    <!-- 모바일 뷰포트 설정 추가 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SunsakTool (순삭툴)</title>
     <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
@@ -42,7 +44,7 @@
         .st-editor-area { flex-grow: 1; border-left: 1px solid var(--st-border-color); overflow-y: auto; padding: 20px; }
         button { background-color: var(--st-accent-color); color: #fff; font-weight: bold; cursor: pointer; border: none; border-radius: 4px; padding: 8px 12px; }
         button:disabled { background-color: #555; cursor: not-allowed; }
-        .st-preview-panel { width: 100%; max-width: 420px; aspect-ratio: 9 / 16; background-color: #fff; box-shadow: 0 0 20px rgba(0,0,0,0.2); display: flex; flex-direction: column; overflow: hidden; position: relative; }
+        .st-preview-panel { width: 100%; max-width: 420px; aspect-ratio: 9 / 16; background-color: #fff; box-shadow: 0 0 20px rgba(0,0,0,0.2); display: flex; flex-direction: column; overflow: hidden; position: relative; transition: transform 0.3s ease; }
         .st-preview-header { position:relative; display: flex; align-items: center; justify-content: center; font-family: 'GmarketSans', sans-serif; color: white; font-weight: bold; flex-shrink: 0; height: 65px; padding: 0 15px; overflow: hidden; }
         .header-icon { position: absolute; left: 15px; display: flex; align-items: center; }
         .header-title { flex-grow: 1; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 45px; }
@@ -117,6 +119,68 @@
         #st-sequence-menu li:hover { background-color: var(--st-accent-color); color: white; }
         #st-sequence-menu hr { border: none; border-top: 1px solid var(--st-border-color); margin: 5px 0; }
         .tts-settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+        /* ====== 모바일 반응형 CSS ====== */
+        @media (max-width: 768px) {
+            body {
+                overflow-y: auto; 
+                flex-direction: column;
+                height: auto;
+            }
+
+            .st-main-content {
+                flex-direction: column;
+                overflow: visible;
+            }
+
+            .st-sidebar {
+                display: none; 
+            }
+            
+            .st-main-container {
+                height: auto;
+            }
+
+            .st-preview-area {
+                flex-basis: auto;
+                width: 100%;
+                padding: 10px;
+                order: 1; /* 미리보기를 위로 */
+            }
+
+            .st-editor-area {
+                width: 100%;
+                border-left: none;
+                border-top: 2px solid var(--st-border-color);
+                height: auto;
+                min-height: 50vh;
+                order: 2; /* 편집기를 아래로 */
+            }
+
+            .st-top-header .st-logo {
+                display: none;
+            }
+            
+            .st-top-header {
+                justify-content: center;
+            }
+            
+            .st-editor-header .button-group {
+                flex-wrap: wrap;
+                gap: 5px;
+                justify-content: center;
+                margin-top: 10px;
+            }
+
+            .st-editor-header {
+                flex-direction: column;
+            }
+            
+            body.is-rendering .st-preview-panel {
+                 transform: scale(0.3) translate(-110%, -110%) !important;
+                 transform-origin: top left !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -989,7 +1053,6 @@
             ffmpeg: null,
             assetCache: new Map(), // 오디오/비디오 blob 캐시
 
-            // FFmpeg 로드
             async loadFFmpeg() {
                 UI.progressSubText.textContent = '렌더링 엔진 로딩 중...';
                 if (this.ffmpeg) return;
@@ -1006,9 +1069,7 @@
                 UI.progressSubText.textContent = '렌더링 엔진 로딩 완료!';
             },
             
-            // 특정 시간(currentTime)에 맞게 DOM 상태를 업데이트하는 함수
             async renderDOMForTime(currentTime) {
-                // 모든 애니메이션 클래스 초기화
                 document.querySelectorAll('.is-animating').forEach(el => {
                     el.classList.remove('is-animating', ...C.ANIMATIONS.map(a => a.value));
                     el.style.animation = '';
@@ -1028,23 +1089,21 @@
                     accumulatedTime += card.duration;
                 }
 
-                if (!currentCard) { // 영상 끝부분 처리
+                if (!currentCard) {
                     if (state.scriptCards.length > 0) {
                          currentCard = state.scriptCards[state.scriptCards.length-1];
                          timeInCard = currentCard.duration;
                     } else {
-                         return; // 카드가 없으면 아무것도 안함
+                         return;
                     }
                 }
 
-                // 현재 카드 선택 및 미리보기 업데이트 (기존 로직 활용)
                 handlers.selectCard(currentCard.id, true);
 
                 const textWrapper = document.getElementById('st-preview-text-container-wrapper');
                 const mediaWrapper = document.getElementById('st-preview-media-container-wrapper');
                 const previewVideo = document.getElementById('st-preview-video');
                 
-                // 애니메이션 상태 계산 및 적용
                 const applyAnimationState = (el, animIn, animOut, duration) => {
                     const inDuration = animIn.duration;
                     const outStartTime = duration - animOut.duration;
@@ -1054,18 +1113,17 @@
 
                     let progress = 0;
 
-                    if (timeInCard < inDuration) { // In Animation
+                    if (timeInCard < inDuration) {
                         progress = timeInCard / inDuration;
                         const easedValue = exporter.getEasing(animIn.name)(progress);
                         exporter.applyAnimProps(el, animIn.name, easedValue, true);
-                    } else if (timeInCard > outStartTime) { // Out Animation
-                        progress = (timeInCard - outStartTime) / animOut.duration;
+                    } else if (timeInCard >= outStartTime && duration > animOut.duration) { // outStartTime이 0보다 커야 함
+                        progress = Math.max(0, Math.min(1, (timeInCard - outStartTime) / animOut.duration));
                         const easedValue = exporter.getEasing(animOut.name)(progress);
                         exporter.applyAnimProps(el, animOut.name, easedValue, false);
                     }
                 };
                 
-                // 미리보기 레이아웃을 위해 데이터 속성에 위치 저장
                 textWrapper.dataset.x = currentCard.layout.text.x || 0;
                 textWrapper.dataset.y = currentCard.layout.text.y || 0;
                 textWrapper.dataset.scale = currentCard.layout.text.scale || 1;
@@ -1080,7 +1138,6 @@
                     applyAnimationState(mediaWrapper, currentCard.animations.media.in, currentCard.animations.media.out, currentCard.duration);
                 }
 
-                // 텍스트 순차 등장 처리
                 const previewTextEl = document.getElementById('st-preview-text');
                 previewTextEl.innerHTML = '';
                 if (currentCard.animationSequence.length > 0) {
@@ -1095,29 +1152,24 @@
                      });
                 }
                 
-                // 비디오 프레임 처리
                 if (currentCard.media.type === 'video' && previewVideo.style.display !== 'none') {
                     const videoTime = timeInCard + (currentCard.media.startTime || 0);
                     if (previewVideo.currentTime !== videoTime) {
                         previewVideo.currentTime = videoTime;
-                        // 'seeked' 이벤트를 기다려 정확한 프레임을 보장
                         await new Promise(resolve => {
                             const onSeeked = () => {
                                 previewVideo.removeEventListener('seeked', onSeeked);
                                 resolve();
                             };
                             previewVideo.addEventListener('seeked', onSeeked);
-                            // 타임아웃 fallback
                             setTimeout(resolve, 100); 
                         });
                     }
                 }
             },
 
-            // 애니메이션 타입에 따른 보간 값 (0 -> 1)
-            getEasing: (type) => (t) => t, // 간단한 Linear easing, 필요시 복잡한 함수로 교체 가능
+            getEasing: (type) => (t) => t,
 
-            // 계산된 애니메이션 속성을 DOM 요소에 직접 적용
             applyAnimProps: (el, type, progress, isIntro) => {
                 const initialTransform = `translate(${el.dataset.x || 0}px, ${el.dataset.y || 0}px) scale(${el.dataset.scale || 1}) rotate(${el.dataset.angle || 0}deg)`;
                 let newTransform = initialTransform;
@@ -1145,7 +1197,6 @@
                 el.style.transform = newTransform;
             },
             
-            // 오디오 트랙 합성
             async createAudioTrack() {
                 const totalDuration = state.scriptCards.reduce((sum, c) => sum + c.duration, 0);
                 const audioContext = new OfflineAudioContext({ numberOfChannels: 2, length: Math.ceil((totalDuration + 1) * 44100), sampleRate: 44100 });
@@ -1160,7 +1211,7 @@
                 };
 
                 const audioTracks = [];
-                if (state.globalBGM.url) { audioTracks.push({ ...state.globalBGM, startTime: 0, isBGM: true }); }
+                if (state.globalBGM.url) { audioTracks.push({ ...state.globalBGM, url: state.globalBGM.url, startTime: 0, isBGM: true }); }
                 let globalTime = 0;
                 state.scriptCards.forEach(card => {
                     if (card.audioUrl) audioTracks.push({ url: card.audioUrl, startTime: globalTime, volume: card.ttsVolume, speed: card.ttsSettings.speed });
@@ -1195,26 +1246,40 @@
                 return this.bufferToWave(renderedBuffer);
             },
 
-            // 최종 내보내기 실행
             async startExport() {
                 if (state.scriptCards.some(c => c.text.trim() && !c.ttsReady)) return alert('아직 음성 생성이 완료되지 않은 스크립트가 있습니다.');
                 if (state.scriptCards.length === 0) return alert('출력할 영상이 없습니다.');
+
+                const isMobile = window.innerWidth <= 768;
+                let renderWidth = 1080;
+                let renderHeight = 1920;
+                let fps = 30;
+
+                if (isMobile) {
+                    if (!confirm("모바일 환경에서는 영상 렌더링이 매우 느리거나 실패할 수 있습니다. 저화질(360p)로 진행하시겠습니까?")) {
+                        return;
+                    }
+                    renderWidth = 360;
+                    renderHeight = 640;
+                    fps = 24;
+                }
                 
-                playback.stop(); // 재생 중지
+                playback.stop();
                 UI.exportBtn.disabled = true;
                 UI.progressOverlay.style.display = 'flex';
                 this.assetCache.clear();
 
-                // 미리보기 패널을 최종 렌더링 크기로 일시적 변경
                 const previewPanel = document.getElementById('st-preview-panel');
                 const originalStyle = { width: previewPanel.style.width, height: previewPanel.style.height, transform: previewPanel.style.transform, transformOrigin: previewPanel.style.transformOrigin };
+                
+                document.body.classList.add('is-rendering');
+
                 Object.assign(previewPanel.style, {
-                    width: '1080px',
-                    height: '1920px',
-                    transform: 'scale(0.35) translate(-85%, -85%)', // 화면에 보이도록 축소/이동
+                    width: `${renderWidth}px`,
+                    height: `${renderHeight}px`,
+                    transform: 'scale(0.35) translate(-85%, -85%)',
                     transformOrigin: 'top left',
                 });
-
 
                 try {
                     await this.loadFFmpeg();
@@ -1222,7 +1287,6 @@
                     const audioBlob = await this.createAudioTrack();
                     this.ffmpeg.FS('writeFile', 'audio.wav', new Uint8Array(await audioBlob.arrayBuffer()));
                     
-                    const fps = 30;
                     const totalDuration = state.scriptCards.reduce((sum, c) => sum + c.duration, 0);
                     const totalFrames = Math.floor(totalDuration * fps);
                     
@@ -1232,21 +1296,17 @@
                         UI.progressSubText.textContent = `시간: ${currentTime.toFixed(2)}s`;
                         UI.progressBarInner.style.width = `${((i + 1) / totalFrames) * 100}%`;
                         
-                        // 1. 현재 시간에 맞게 DOM 상태 업데이트
                         await this.renderDOMForTime(currentTime);
 
-                        // 2. DOM을 이미지로 캡처
                         const dataUrl = await htmlToImage.toPng(previewPanel, {
-                            width: 1080,
-                            height: 1920,
-                            // 폰트가 깨지지 않도록 외부 폰트 포함
+                            width: renderWidth,
+                            height: renderHeight,
                             fontEmbedCSS: Array.from(document.styleSheets)
                                 .map(s => s.href)
                                 .filter(Boolean)
                                 .join('\n'),
                         });
                         
-                        // 3. 캡처한 이미지를 FFmpeg에 저장
                         const frameData = await (await fetch(dataUrl)).arrayBuffer();
                         const frameNumber = String(i).padStart(5, '0');
                         this.ffmpeg.FS('writeFile', `frame-${frameNumber}.png`, new Uint8Array(frameData));
@@ -1260,7 +1320,9 @@
                     const a = document.createElement('a');
                     a.href = URL.createObjectURL(new Blob([outputData.buffer], { type: 'video/mp4' }));
                     a.download = `${state.projectSettings.project.title || 'sunsak-video'}.mp4`;
+                    document.body.appendChild(a);
                     a.click();
+                    document.body.removeChild(a);
                     URL.revokeObjectURL(a.href);
 
                     UI.progressSubText.textContent = '파일 정리 중...';
@@ -1271,40 +1333,22 @@
                     console.error("영상 생성 오류:", error);
                     alert(`영상 생성 중 치명적인 오류가 발생했습니다: ${error.message}`);
                 } finally {
-                    // 미리보기 패널 스타일 원상복구
+                    document.body.classList.remove('is-rendering');
                     Object.assign(previewPanel.style, originalStyle);
                     UI.exportBtn.disabled = false;
                     UI.progressOverlay.style.display = 'none';
                     this.assetCache.clear();
-                    // 마지막 카드 상태로 미리보기 복원
                     if (state.selectedCardId) handlers.selectCard(state.selectedCardId);
                 }
+            
             },
 
-            // WAV 변환 헬퍼 함수
             bufferToWave(abuffer) {
                 let numOfChan = abuffer.numberOfChannels, len = abuffer.length * numOfChan * 2 + 44, buffer = new ArrayBuffer(len), view = new DataView(buffer), channels = [], i, sample, offset = 0, pos = 0;
-                setUint32(0x46464952); // "RIFF"
-                setUint32(len - 8); // file length - 8
-                setUint32(0x45564157); // "WAVE"
-                setUint32(0x20746d66); // "fmt " chunk
-                setUint32(16); // length of fmt data
-                setUint16(1); // PCM - integer samples
-                setUint16(numOfChan); // two channels
-                setUint32(abuffer.sampleRate); // samples per second
-                setUint32(abuffer.sampleRate * 2 * numOfChan); // avg bytes per second
-                setUint16(numOfChan * 2); // block-align
-                setUint16(16); // 16-bit samples
-                setUint32(0x61746164); // "data" - chunk
-                setUint32(len - pos - 4); // chunk length
+                setUint32(0x46464952); setUint32(len - 8); setUint32(0x45564157); setUint32(0x20746d66); setUint32(16); setUint16(1); setUint16(numOfChan); setUint32(abuffer.sampleRate); setUint32(abuffer.sampleRate * 2 * numOfChan); setUint16(numOfChan * 2); setUint16(16); setUint32(0x61746164); setUint32(len - pos - 4);
                 for(i = 0; i < abuffer.numberOfChannels; i++) channels.push(abuffer.getChannelData(i));
                 while(pos < len) {
-                    for(i = 0; i < numOfChan; i++) {
-                        sample = Math.max(-1, Math.min(1, channels[i][offset]));
-                        sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767)|0;
-                        view.setInt16(pos, sample, true);
-                        pos += 2;
-                    }
+                    for(i = 0; i < numOfChan; i++) { sample = Math.max(-1, Math.min(1, channels[i][offset])); sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767)|0; view.setInt16(pos, sample, true); pos += 2; }
                     offset++;
                 }
                 return new Blob([buffer], {type: "audio/wav"});
