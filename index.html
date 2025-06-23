@@ -38,9 +38,6 @@
         #st-preview-text-container-wrapper { top: 35%; z-index: 10; }
         #st-preview-media-container-wrapper { top: 60%; height: 35%; z-index: 5; }
         #st-preview-image, #st-preview-video { width: 100%; height: 100%; }
-        #st-preview-video.fit-contain, #st-preview-image.fit-contain { object-fit: contain; }
-        #st-preview-video.fit-cover, #st-preview-image.fit-cover { object-fit: cover; }
-        #st-preview-video.fit-fill, #st-preview-image.fit-fill { object-fit: fill; }
         .interactive-target.interactive-active { outline: 2px dashed var(--st-interact-color); z-index: 100; }
         .resize-handle { position: absolute; width: 12px; height: 12px; background: white; border-radius: 50%; border: 2px solid var(--st-interact-color); z-index: 101; display: none; }
         .rotation-handle { position: absolute; bottom: -35px; left: 50%; transform: translateX(-50%); width: 24px; height: 24px; background-color: white; border-radius: 50%; border: 1px solid #ccc; cursor: grab; display: none; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 102; }
@@ -79,7 +76,7 @@
         input, select { width: 100%; padding: 8px; background-color: #1e1e1e; border: 1px solid var(--st-border-color); color: var(--st-text-color); border-radius: 4px; }
         .st-flex-group { display: flex; gap: 10px; align-items: center; }
         .st-flex-group label { margin-bottom: 0; }
-        .st-flex-group input[type="number"] { width: 60px; text-align: right; }
+        .st-flex-group input[type="number"].value-input { width: 70px; text-align: right; padding: 4px 8px; }
         .st-modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.7); display: none; justify-content: center; align-items: center; z-index: 1000; }
         .st-modal-overlay.visible { display: flex; }
         .st-modal-dialog { background-color: var(--st-panel-color); padding: 24px; border-radius: 8px; width: 90%; max-width: 600px; border: 1px solid var(--st-border-color); }
@@ -316,7 +313,7 @@
                     <div class="st-accordion-item active">
                         <div class="st-accordion-header">영상 설정</div>
                         <div class="st-accordion-content">
-                            <div class="st-control-group"><h4>상단 헤더</h4><label>헤더 텍스트</label><input type="text" id="st-setting-header-text" value="${state.projectSettings.header.text}"><div class="st-flex-group" style="margin-top: 8px;"><div><label>배경 색상</label><input type="color" id="st-setting-header-bg" value="${state.projectSettings.header.backgroundColor}"></div><div><label>글자 색상</label><input type="color" id="st-setting-header-color" value="${state.projectSettings.header.color}"></div></div><div class="st-flex-group" style="margin-top: 8px;"><div><label>폰트</label>${createSelectWithOptions('st-setting-header-font', state.projectSettings.header.fontFamily)}</div><div><label>크기</label><input type="number" id="st-setting-header-size" value="${state.projectSettings.header.fontSize}"></div></div><div style="margin-top: 8px;"><label>왼쪽 아이콘</label><select id="st-setting-header-icon"><option value="none">없음</option><option value="back">뒤로가기</option><option value="menu">메뉴</option></select></div><div style="margin-top: 8px;"><label>오른쪽 로고</label><div class="st-flex-group"><button id="st-btn-header-logo" style="width: auto; flex-grow: 1;">로고 추가/변경</button><input type="file" id="st-header-logo-file" accept="image/*" style="display:none;"></div><div class="st-flex-group" style="margin-top: 4px;"><label>로고 크기:</label><input type="range" id="st-setting-header-logo-size" min="20" max="60" value="${state.projectSettings.header.logo.size}"><input type="number" class="value-input" data-target="st-setting-header-logo-size" value="${state.projectSettings.header.logo.size}" style="width: 60px;"></div></div></div>
+                            <div class="st-control-group"><h4>상단 헤더</h4><label>헤더 텍스트</label><input type="text" id="st-setting-header-text" value="${state.projectSettings.header.text}"><div class="st-flex-group" style="margin-top: 8px;"><div><label>배경 색상</label><input type="color" id="st-setting-header-bg" value="${state.projectSettings.header.backgroundColor}"></div><div><label>글자 색상</label><input type="color" id="st-setting-header-color" value="${state.projectSettings.header.color}"></div></div><div class="st-flex-group" style="margin-top: 8px;"><div><label>폰트</label>${createSelectWithOptions('st-setting-header-font', state.projectSettings.header.fontFamily)}</div><div><label>크기</label><input type="number" id="st-setting-header-size" value="${state.projectSettings.header.fontSize}"></div></div><div style="margin-top: 8px;"><label>왼쪽 아이콘</label><select id="st-setting-header-icon"><option value="none">없음</option><option value="back">뒤로가기</option><option value="menu">메뉴</option></select></div><div style="margin-top: 8px;"><label>오른쪽 로고</label><div class="st-flex-group"><button id="st-btn-header-logo" style="width: auto; flex-grow: 1;">로고 추가/변경</button><input type="file" id="st-header-logo-file" accept="image/*" style="display:none;"></div><div class="st-flex-group" style="margin-top: 4px;"><label>로고 크기:</label><input type="range" id="st-setting-header-logo-size" min="20" max="60" value="${state.projectSettings.header.logo.size}"><input type="number" class="value-input" data-target="st-setting-header-logo-size" value="${state.projectSettings.header.logo.size}" style="width: 70px;"></div></div></div>
                             <div class="st-control-group"><h4>콘텐츠 정보</h4><label>프로젝트 제목</label><input type="text" id="st-setting-project-title" value="${state.projectSettings.project.title}"><div class="st-flex-group" style="margin-top: 8px;"><div><label>폰트</label>${createSelectWithOptions('st-setting-project-font', state.projectSettings.project.titleFontFamily)}</div><div><label>크기</label><input type="number" id="st-setting-project-size" value="${state.projectSettings.project.titleFontSize}"></div></div><div style="margin-top: 8px;"><label>작성자</label><input type="text" id="st-setting-project-author" value="${state.projectSettings.project.author}"></div><div style="margin-top: 8px;"><label>조회수</label><input type="number" id="st-setting-project-views" value="${state.projectSettings.project.views}"></div><div class="st-flex-group" style="margin-top: 8px;"><div><label>제목 색상</label><input type="color" id="st-setting-title-color" value="${state.projectSettings.project.titleColor}"></div><div><label>정보 색상</label><input type="color" id="st-setting-meta-color" value="${state.projectSettings.project.metaColor}"></div></div><hr style="border-color: var(--st-border-color); margin: 15px 0;"><label>기본 스크립트 스타일</label><div class="st-flex-group" style="margin-top: 8px;"><div><label>폰트</label>${createSelectWithOptions('st-setting-script-font', state.projectSettings.defaultStyle.fontFamily)}</div><div><label>크기</label><input type="number" id="st-setting-script-size" value="${state.projectSettings.defaultStyle.fontSize}"></div></div><div style="margin-top: 8px;"><label>색상</label><input type="color" id="st-setting-script-color" value="${state.projectSettings.defaultStyle.color}"></div><div class="st-flex-group" style="margin-top: 8px;"><label>줄 간격</label><input type="range" id="st-setting-line-height" min="1" max="2.5" step="0.1" value="${state.projectSettings.defaultStyle.lineHeight}"><input type="number" class="value-input" data-target="st-setting-line-height" value="${state.projectSettings.defaultStyle.lineHeight}" step="0.1"></div><div class="st-flex-group" style="margin-top: 8px;"><label>자간</label><input type="range" id="st-setting-letter-spacing" min="-2" max="5" step="0.1" value="${state.projectSettings.defaultStyle.letterSpacing}"><input type="number" class="value-input" data-target="st-setting-letter-spacing" value="${state.projectSettings.defaultStyle.letterSpacing}" step="0.1"></div></div>
                             <div class="st-control-group"><h4>배경음악</h4><label>전체 BGM 선택</label><select id="st-setting-global-bgm">${bgmOptions}</select><button id="st-btn-upload-bgm" style="width:100%; margin-top: 8px; background-color: #3e3e3e;">내 BGM 업로드</button><div class="st-flex-group" style="margin-top: 8px;"><label>BGM 볼륨</label><input type="range" id="st-setting-global-bgm-volume" min="0" max="1" step="0.01" value="${state.globalBGM.volume}"><input type="number" class="value-input" data-target="st-setting-global-bgm-volume" value="${Math.round(state.globalBGM.volume * 100)}"></div></div>
                         </div>
@@ -378,8 +375,8 @@
                         <div class="footer-row"><button class="st-play-clip-btn" title="미리듣기" disabled>▶️</button><span class="st-duration-label" title="클릭하여 자동/수동 전환">길이(자동)</span><input type="number" class="st-duration-input" min="0.1" step="0.1" value="${cardData.duration}" title="길이(초)" style="display: none;"><label class="st-action-btn" for="${cardData.id}-file">미디어 추가</label><input type="file" id="${cardData.id}-file" accept="image/*,video/*"></div>
                         <div class="footer-row media-controls" style="display: none;"><span>미디어 표시:</span><select class="media-timing-select"></select><span>지속 시간:</span><select class="media-persist-select"></select></div>
                         <div class="footer-row media-controls" style="display: none;"><span>미디어 맞춤:</span><label class="media-fit-label"><input type="radio" name="media-fit-${cardData.id}" value="cover">꽉 채우기</label><label class="media-fit-label"><input type="radio" name="media-fit-${cardData.id}" value="contain" checked>안에 맞추기</label><label class="media-fit-label"><input type="radio" name="media-fit-${cardData.id}" value="fill">늘리기</label></div>
-                        <div class="footer-row"><label>TTS</label><div class="st-flex-group"><input type="range" class="st-volume-slider tts-volume" min="0" max="1" step="0.01" value="${cardData.ttsVolume}"><input type="number" class="value-input" data-target-id="${cardId}" data-type="tts-volume" value="${Math.round(cardData.ttsVolume * 100)}"></div></div>
-                        <div class="footer-row"><label>효과음</label><div class="st-flex-group"><input type="range" class="st-volume-slider sfx-volume" min="0" max="1" step="0.01" value="${cardData.sfxVolume}"><input type="number" class="value-input" data-target-id="${cardId}" data-type="sfx-volume" value="${Math.round(cardData.sfxVolume * 100)}"></div></div>
+                        <div class="footer-row"><label>TTS</label><div class="st-flex-group"><input type="range" class="st-volume-slider tts-volume" min="0" max="1" step="0.01" value="${cardData.ttsVolume}"><input type="number" class="value-input" data-target-id="${cardData.id}" data-type="tts-volume" value="${Math.round(cardData.ttsVolume * 100)}"></div></div>
+                        <div class="footer-row"><label>효과음</label><div class="st-flex-group"><input type="range" class="st-volume-slider sfx-volume" min="0" max="1" step="0.01" value="${cardData.sfxVolume}"><input type="number" class="value-input" data-target-id="${cardData.id}" data-type="sfx-volume" value="${Math.round(cardData.sfxVolume * 100)}"></div></div>
                         <div class="footer-row"><select class="st-sfx-select" style="flex-grow: 1;">${sfxOptions}</select></div>
                     </div>`;
                 cardEl.querySelector('.st-sfx-select').value = cardData.sfxUrl || '';
@@ -731,7 +728,7 @@
                 cardEl.querySelector('.st-play-clip-btn').addEventListener('click', (e) => {
                     e.stopPropagation(); playback.stop();
                     if (cardData.ttsReady && cardData.audioUrl) { UI.ttsPlayer.volume = cardData.ttsVolume; UI.ttsPlayer.src = cardData.audioUrl; UI.ttsPlayer.play(); }
-                    if (cardData.sfxUrl) { UI.sfxPlayer.src = cardData.sfxUrl; UI.sfxPlayer.volume = cardData.sfxVolume; UI.sfxPlayer.play(); }
+                    if (cardData.sfxUrl) { UI.sfxPlayer.volume = cardData.sfxVolume; UI.sfxPlayer.src = cardData.sfxUrl; UI.sfxPlayer.play(); }
                 });
                 cardEl.querySelector('.st-sfx-select').addEventListener('change', (e) => {
                     const url = e.target.value;
@@ -752,14 +749,14 @@
                 });
                 cardEl.querySelector('.tts-volume').addEventListener('input', e => { 
                     cardData.ttsVolume = parseFloat(e.target.value);
-                    e.target.nextElementSibling.value = Math.round(e.target.value * 100);
+                    cardEl.querySelector('.value-input[data-type="tts-volume"]').value = Math.round(e.target.value * 100);
                 });
                 cardEl.querySelector('.sfx-volume').addEventListener('input', e => {
                     cardData.sfxVolume = parseFloat(e.target.value);
-                    e.target.nextElementSibling.value = Math.round(e.target.value * 100);
+                    cardEl.querySelector('.value-input[data-type="sfx-volume"]').value = Math.round(e.target.value * 100);
                 });
                  cardEl.querySelectorAll('.value-input').forEach(input => {
-                    input.addEventListener('change', e => {
+                    input.addEventListener('input', e => {
                         const targetSlider = cardEl.querySelector(`.${e.target.dataset.type}`);
                         if (targetSlider) {
                             const newValue = parseFloat(e.target.value) / 100;
@@ -959,7 +956,7 @@
                 previewVideo.src = url;
                 loadingEl.style.display = 'block';
 
-                if (state.videoWavesurfer) { state.videoWavesurfer.destroy(); state.videoWavesurfer = null; }
+                if (state.videoWavesurfer) state.videoWavesurfer.destroy();
                 
                 state.videoWavesurfer = WaveSurfer.create({
                     container: '#st-waveform-container-video', waveColor: '#ddd', progressColor: '#e82c43',
@@ -987,10 +984,15 @@
             },
             closeVideoTrimmer: () => {
                 UI.videoTrimModal.classList.remove('visible');
-                if (state.videoWavesurfer) { state.videoWavesurfer.destroy(); state.videoWavesurfer = null; }
+                if (state.videoWavesurfer) {
+                    state.videoWavesurfer.destroy();
+                    state.videoWavesurfer = null;
+                }
                 const previewVideo = UI.videoTrimModal.querySelector('video');
-                previewVideo.pause();
-                previewVideo.src = "";
+                if (previewVideo) {
+                    previewVideo.pause();
+                    previewVideo.src = "";
+                }
             },
             initialize() {
                 // BGM Modal Events
@@ -1003,6 +1005,7 @@
                     modals.closeBgmEditor();
                 });
                 document.getElementById('st-btn-bgm-cancel').addEventListener('click', modals.closeBgmEditor);
+                
                 // Video Trimmer Modal Events
                 document.getElementById('st-btn-video-play-region').addEventListener('click', () => {
                     if (state.activeVideoRegion) {
@@ -1048,15 +1051,15 @@
             UI.globalSettingsPanel.addEventListener('input', (e) => { 
                 if (e.target.id.startsWith('st-setting-')) {
                     handlers.updateProjectSettings();
-                    const numberInput = e.target.parentElement.querySelector('.value-input');
-                    if(numberInput) {
-                        if (e.target.type === 'range') {
+                    if (e.target.type === 'range') {
+                        const numberInput = e.target.nextElementSibling;
+                        if (numberInput && numberInput.classList.contains('value-input')) {
                             numberInput.value = e.target.id.includes('volume') ? Math.round(e.target.value * 100) : e.target.value;
                         }
                     }
                 }
              });
-             UI.globalSettingsPanel.addEventListener('change', (e) => {
+             UI.globalSettingsPanel.addEventListener('input', (e) => {
                 if (e.target.classList.contains('value-input')) {
                     const slider = document.getElementById(e.target.dataset.target);
                     if (slider) {
@@ -1216,7 +1219,6 @@
                     timeOffset += card.duration;
                 }
                 await Promise.all(audioPromises);
-
 
                 const canvasStream = canvas.captureStream(FPS);
                 const combinedStream = new MediaStream([...canvasStream.getVideoTracks(), ...destination.stream.getAudioTracks()]);
