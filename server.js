@@ -310,7 +310,7 @@ app.post('/render-video', async (req, res) => {
         const totalDuration = projectData.scriptCards.reduce((sum, c) => sum + c.duration, 0);
         
         const durationOpt = hasAudio ? '-shortest' : `-t ${totalDuration}`;
-        const ffmpegCommand = `ffmpeg -y -framerate ${fps} -i "${framesDir}/frame_%06d.png" ${audioInput} -c:v libx264 -pix_fmt yuv420p -c:a aac ${durationOpt} "${outputVideoPath}"`;
+        const ffmpegCommand = `ffmpeg -y -framerate ${fps} -i "${framesDir}/frame_%06d.png" ${audioInput} -c:v libx264 -crf 18 -preset slow -pix_fmt yuv420p -c:a aac ${durationOpt} "${outputVideoPath}"`;
         
         console.log(`[${renderId}] 최종 영상 합성 실행`);
         await new Promise((resolve, reject) => exec(ffmpegCommand, (err, stdout, stderr) => err ? reject(new Error(stderr)) : resolve(stdout)));
