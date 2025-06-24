@@ -286,6 +286,7 @@
             activeVideoRegion: null,
             bgmEditorContext: { onConfirm: null, onCancel: null },
             videoTrimmerContext: { cardId: null, url: null, activeHandle: 'end' },
+            audioContext: null,
         };
         const UI = {
             cardContainer: document.getElementById('st-card-container'),
@@ -572,12 +573,45 @@
             },
         };
         const playback = {
+            // [추가] 오디오 시스템을 활성화하고 재생하는 헬퍼 함수
+            unlockAndPlayAudio(audioElement) {
+                if (!state.audioContext) {
+                    try {
+                        state.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    } catch (e) {
+                        console.error("AudioContext를 지원하지 않는 브라우저입니다.", e);
+                        return;
+                    }
+                }
+                
+                // AudioContext가 잠겨 있으면 풀어줍니다.
+                if (state.audioContext.state === 'suspended') {
+                    state.audioContext.resume();
+                }
+
+                // 오디오 재생
+                audioElement.play().catch(e => console.error("오디오 재생 오류:", e));
+            },
+
             togglePlay: () => { state.isPlaying ? playback.stop() : playback.start(); },
+            
             start: (isMutedForRecord = false) => {
                 interaction.deactivateAllInteractive();
                 const unready = state.scriptCards.some(c => c.text.trim() && !c.ttsReady);
                 if (unready) return alert('아직 음성 생성이 완료되지 않은 스크립트가 있습니다.');
                 if (state.scriptCards.length === 0) return;
+
+                // [수정] 재생 시작 시 오디오 컨텍스트를 활성화합니다.
+                // 사용자가 버튼을 눌렀으므로, 이 시점에 AudioContext를 생성/활성화할 수 있습니다.
+                if (!state.audioContext) {
+                    try {
+                        state.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    } catch (e) { console.error("AudioContext를 지원하지 않는 브라우저입니다.", e); }
+                }
+                if (state.audioContext && state.audioContext.state === 'suspended') {
+                    state.audioContext.resume();
+                }
+
                 state.isPlaying = true; UI.playAllBtn.textContent = '❚❚';
                 
                 if (!isMutedForRecord) {
@@ -586,6 +620,7 @@
                 
                 playback.playCardByIndex(0, isMutedForRecord);
             },
+
             stop: () => {
                 clearTimeout(state.playbackTimeoutId);
                 state.isPlaying = false; 
@@ -608,12 +643,16 @@
                 state.currentPersistentMedia = null;
                 if(state.selectedCardId) render.updatePreviewDisplay();
             },
+
             playBGM: (bgmData = state.globalBGM) => {
                 if (bgmData && bgmData.url) {
                     if (UI.bgmPlayer.src !== bgmData.url) UI.bgmPlayer.src = bgmData.url;
                     UI.bgmPlayer.volume = state.globalBGM.volume; 
                     UI.bgmPlayer.currentTime = bgmData.startTime || 0;
-                    UI.bgmPlayer.play().catch(e => console.error("BGM Playback Error:", e));
+                    
+                    // [수정] 헬퍼 함수를 통해 재생
+                    playback.unlockAndPlayAudio(UI.bgmPlayer);
+
                     if (bgmData.endTime) { 
                         UI.bgmPlayer.loop = false;
                         UI.bgmPlayer.ontimeupdate = () => { if (UI.bgmPlayer.currentTime >= bgmData.endTime) { UI.bgmPlayer.currentTime = bgmData.startTime || 0; } }; 
@@ -623,6 +662,7 @@
                     }
                 } else { UI.bgmPlayer.pause(); }
             },
+
             playCardByIndex(index, isMutedForRecord = false) {
                 if (index >= state.scriptCards.length || !state.isPlaying) { playback.stop(); return; }
                 state.playbackCurrentIndex = index;
@@ -673,16 +713,17 @@
                 }
                 
                 if (!isMutedForRecord) {
+                    // [수정] 오디오 소스를 미리 설정하고 헬퍼 함수로 재생
                     if (card.audioUrl) { 
                         UI.ttsPlayer.src = card.audioUrl; 
                         UI.ttsPlayer.volume = card.ttsVolume; 
                         UI.ttsPlayer.playbackRate = card.ttsSettings.speed; 
-                        UI.ttsPlayer.play(); 
+                        playback.unlockAndPlayAudio(UI.ttsPlayer);
                     }
                     if (card.sfxUrl) { 
                         UI.sfxPlayer.src = card.sfxUrl; 
                         UI.sfxPlayer.volume = card.sfxVolume; 
-                        UI.sfxPlayer.play(); 
+                        playback.unlockAndPlayAudio(UI.sfxPlayer);
                     }
                 }
                 
@@ -799,8 +840,23 @@
                 cardEl.querySelector('.media-timing-select').addEventListener('change', e => cardData.media.showOnSegment = parseInt(e.target.value, 10));
                 cardEl.querySelector('.media-persist-select').addEventListener('change', e => cardData.media.persistUntilCardId = e.target.value || null);
                 cardEl.querySelectorAll(`input[name="media-fit-${cardId}"]`).forEach(radio => { radio.addEventListener('change', e => { cardData.media.fit = e.target.value; if(state.selectedCardId === cardId) render.updatePreviewDisplay(); }); });
-                cardEl.querySelector('.st-play-clip-btn').addEventListener('click', (e) => { e.stopPropagation(); playback.stop(); if (cardData.ttsReady && cardData.audioUrl) { UI.ttsPlayer.src = cardData.audioUrl; UI.ttsPlayer.playbackRate = cardData.ttsSettings.speed; UI.ttsPlayer.volume = cardData.ttsVolume; UI.ttsPlayer.play(); } if (cardData.sfxUrl) { UI.sfxPlayer.src = cardData.sfxUrl; UI.sfxPlayer.volume = cardData.sfxVolume; UI.sfxPlayer.play(); } });
-                
+                cardEl.querySelector('.st-play-clip-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    playback.stop(); // 다른 재생은 멈춤
+                    
+                    // [수정] 헬퍼 함수를 통해 오디오 재생
+                    if (cardData.ttsReady && cardData.audioUrl) {
+                        UI.ttsPlayer.src = cardData.audioUrl;
+                        UI.ttsPlayer.playbackRate = cardData.ttsSettings.speed;
+                        UI.ttsPlayer.volume = cardData.ttsVolume;
+                        playback.unlockAndPlayAudio(UI.ttsPlayer);
+                    }
+                    if (cardData.sfxUrl) {
+                        UI.sfxPlayer.src = cardData.sfxUrl;
+                        UI.sfxPlayer.volume = cardData.sfxVolume;
+                        playback.unlockAndPlayAudio(UI.sfxPlayer);
+                    }
+                });                
                 const ttsSettingsHandler = () => {
                     cardData.ttsSettings.speed = parseFloat(cardEl.querySelector('.tts-speed-slider').value);
                     cardData.ttsSettings.stability = parseFloat(cardEl.querySelector('.tts-stability-slider').value);
