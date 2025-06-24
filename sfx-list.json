@@ -1,0 +1,354 @@
+[
+  {
+    "name": "효과음 없음",
+    "url": ""
+  },
+  {
+    "name": "What",
+    "url": "https://sunsaktool-final.netlify.app/sfx/What.mp3"
+  },
+  {
+    "name": "까꿍",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EA%B9%8C%EA%BF%8D.mp3"
+  },
+  {
+    "name": "깜짝 2",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EA%B9%9C%EC%A7%9D%202.mp3"
+  },
+  {
+    "name": "깜짝 놀라는 전자음 1",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EA%B9%9C%EC%A7%9D%20%EB%86%80%EB%9D%BC%EB%8A%94%20%EC%A0%84%EC%9E%90%EC%9D%8C%201.mp3"
+  },
+  {
+    "name": "깜짝 놀라는 전자음 2",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EA%B9%9C%EC%A7%9D%20%EB%86%80%EB%9D%BC%EB%8A%94%20%EC%A0%84%EC%9E%90%EC%9D%8C%202.mp3"
+  },
+  {
+    "name": "깜짝 놀라는 전자음 3",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EA%B9%9C%EC%A7%9D%20%EB%86%80%EB%9D%BC%EB%8A%94%20%EC%A0%84%EC%9E%90%EC%9D%8C%203.mp3"
+  },
+  {
+    "name": "놀람.발견",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EB%86%80%EB%9E%8C.%EB%B0%9C%EA%B2%AC.mp3"
+  },
+  {
+    "name": "두둥탁!",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EB%91%90%EB%91%A5%ED%83%81%21.mp3"
+  },
+  {
+    "name": "등장신(트랜스포머)2",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EB%93%B1%EC%9E%A5%EC%8B%A0%28%ED%8A%B8%EB%9E%9C%EC%8A%A4%ED%8F%AC%EB%A8%B8%292.mp3"
+  },
+  {
+    "name": "띠-으-",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EB%9D%A0-%EC%9C%BC-.mp3"
+  },
+  {
+    "name": "띠딩2",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EB%9D%A0%EB%94%A92.mp3"
+  },
+  {
+    "name": "띠링",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EB%9D%A0%EB%A7%81.mp3"
+  },
+  {
+    "name": "띠용띠용(전자음)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EB%9D%A0%EC%9A%A9%EB%9D%A0%EC%9A%A9%28%EC%A0%84%EC%9E%90%EC%9D%8C%29.mp3"
+  },
+  {
+    "name": "띵",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EB%9D%B5.mp3"
+  },
+  {
+    "name": "마우스 더블클릭소리",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EB%A7%88%EC%9A%B0%EC%8A%A4%20%EB%8D%94%EB%B8%94%ED%81%B4%EB%A6%AD%EC%86%8C%EB%A6%AC.mp3"
+  },
+  {
+    "name": "비우욱",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EB%B9%84%EC%9A%B0%EC%9A%B1.mp3"
+  },
+  {
+    "name": "빠르게 사르르 녹는 느낌",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EB%B9%A0%EB%A5%B4%EA%B2%8C%20%EC%82%AC%EB%A5%B4%EB%A5%B4%20%EB%85%B9%EB%8A%94%20%EB%8A%90%EB%82%8C.mp3"
+  },
+  {
+    "name": "뽀욕 (고무장난감 누르는)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EB%BD%80%EC%9A%95%20%28%EA%B3%A0%EB%AC%B4%EC%9E%A5%EB%82%9C%EA%B0%90%20%EB%88%84%EB%A5%B4%EB%8A%94%29.mp3"
+  },
+  {
+    "name": "뾰로로롱 (하프)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EB%BE%B0%EB%A1%9C%EB%A1%9C%EB%A1%B1%20%28%ED%95%98%ED%94%84%29.mp3"
+  },
+  {
+    "name": "뾰로롱",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EB%BE%B0%EB%A1%9C%EB%A1%B1.mp3"
+  },
+  {
+    "name": "뿅",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EB%BF%85.mp3"
+  },
+  {
+    "name": "삐-우-우-으-",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EC%82%90-%EC%9A%B0-%EC%9A%B0-%EC%9C%BC-.mp3"
+  },
+  {
+    "name": "수우우우",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EC%88%98%EC%9A%B0%EC%9A%B0%EC%9A%B0.mp3"
+  },
+  {
+    "name": "수으으윽",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EC%88%98%EC%9C%BC%EC%9C%BC%EC%9C%BD.mp3"
+  },
+  {
+    "name": "쉭",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EC%89%AD.mp3"
+  },
+  {
+    "name": "스스우욱",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EC%8A%A4%EC%8A%A4%EC%9A%B0%EC%9A%B1.mp3"
+  },
+  {
+    "name": "스우우",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EC%8A%A4%EC%9A%B0%EC%9A%B0.mp3"
+  },
+  {
+    "name": "스우우우으",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EC%8A%A4%EC%9A%B0%EC%9A%B0%EC%9A%B0%EC%9C%BC.mp3"
+  },
+  {
+    "name": "스우우욱",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EC%8A%A4%EC%9A%B0%EC%9A%B0%EC%9A%B1.mp3"
+  },
+  {
+    "name": "스우우츠으",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EC%8A%A4%EC%9A%B0%EC%9A%B0%EC%B8%A0%EC%9C%BC.mp3"
+  },
+  {
+    "name": "스우윽",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EC%8A%A4%EC%9A%B0%EC%9C%BD.mp3"
+  },
+  {
+    "name": "스우윽2",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EC%8A%A4%EC%9A%B0%EC%9C%BD2.mp3"
+  },
+  {
+    "name": "스으으윽",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EC%8A%A4%EC%9C%BC%EC%9C%BC%EC%9C%BD.mp3"
+  },
+  {
+    "name": "스으으윽2",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EC%8A%A4%EC%9C%BC%EC%9C%BC%EC%9C%BD2.mp3"
+  },
+  {
+    "name": "스으으윽3",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EC%8A%A4%EC%9C%BC%EC%9C%BC%EC%9C%BD3.mp3"
+  },
+  {
+    "name": "스으츠",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EC%8A%A4%EC%9C%BC%EC%B8%A0.mp3"
+  },
+  {
+    "name": "쏘오오",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EC%8F%98%EC%98%A4%EC%98%A4.mp3"
+  },
+  {
+    "name": "쒹",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EC%92%B9.mp3"
+  },
+  {
+    "name": "쓔우욱",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EC%93%94%EC%9A%B0%EC%9A%B1.mp3"
+  },
+  {
+    "name": "예~",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EC%98%88~.mp3"
+  },
+  {
+    "name": "우우윽",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EC%9A%B0%EC%9A%B0%EC%9C%BD.mp3"
+  },
+  {
+    "name": "우우흐으으",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EC%9A%B0%EC%9A%B0%ED%9D%90%EC%9C%BC%EC%9C%BC.mp3"
+  },
+  {
+    "name": "으르르츠흐",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EC%9C%BC%EB%A5%B4%EB%A5%B4%EC%B8%A0%ED%9D%90.mp3"
+  },
+  {
+    "name": "으으스윽",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EC%9C%BC%EC%9C%BC%EC%8A%A4%EC%9C%BD.mp3"
+  },
+  {
+    "name": "으흐츠",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EC%9C%BC%ED%9D%90%EC%B8%A0.mp3"
+  },
+  {
+    "name": "책장 넘기기  4",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EC%B1%85%EC%9E%A5%20%EB%84%98%EA%B8%B0%EA%B8%B0%20%204.mp3"
+  },
+  {
+    "name": "책장 넘기기 1",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EC%B1%85%EC%9E%A5%20%EB%84%98%EA%B8%B0%EA%B8%B0%201.mp3"
+  },
+  {
+    "name": "책장 넘기기 2",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EC%B1%85%EC%9E%A5%20%EB%84%98%EA%B8%B0%EA%B8%B0%202.mp3"
+  },
+  {
+    "name": "책장 넘기기 3",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EC%B1%85%EC%9E%A5%20%EB%84%98%EA%B8%B0%EA%B8%B0%203.mp3"
+  },
+  {
+    "name": "츠으으",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EC%B8%A0%EC%9C%BC%EC%9C%BC.mp3"
+  },
+  {
+    "name": "카툰 스핀",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EC%B9%B4%ED%88%B0%20%EC%8A%A4%ED%95%80.mp3"
+  },
+  {
+    "name": "카툰 쌩쌩이 출발",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EC%B9%B4%ED%88%B0%20%EC%8C%A9%EC%8C%A9%EC%9D%B4%20%EC%B6%9C%EB%B0%9C.mp3"
+  },
+  {
+    "name": "카툰 쌩쌩이",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EC%B9%B4%ED%88%B0%20%EC%8C%A9%EC%8C%A9%EC%9D%B4.mp3"
+  },
+  {
+    "name": "카툰 웃음",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EC%B9%B4%ED%88%B0%20%EC%9B%83%EC%9D%8C.mp3"
+  },
+  {
+    "name": "카툰 팝",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EC%B9%B4%ED%88%B0%20%ED%8C%9D.mp3"
+  },
+  {
+    "name": "쿠-우-우-웅",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EC%BF%A0-%EC%9A%B0-%EC%9A%B0-%EC%9B%85.mp3"
+  },
+  {
+    "name": "쿵 효과음",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%EC%BF%B5%20%ED%9A%A8%EA%B3%BC%EC%9D%8C.mp3"
+  },
+  {
+    "name": "키보드 타이핑",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%ED%82%A4%EB%B3%B4%EB%93%9C%2C%ED%83%80%EC%9D%B4%ED%95%91.mp3"
+  },
+  {
+    "name": "퉁우우",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%ED%89%81%EC%9A%B0%EC%9A%B0.mp3"
+  },
+  {
+    "name": "팝",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%ED%8C%9D.mp3"
+  },
+  {
+    "name": "푸직",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%ED%91%B8%EC%A7%81.mp3"
+  },
+  {
+    "name": "화면전환효과음 01",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%ED%99%94%EB%A9%B4%EC%A0%84%ED%99%98%ED%9A%A8%EA%B3%BC%EC%9D%8C_01.mp3"
+  },
+  {
+    "name": "화면전환효과음 02",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%ED%99%94%EB%A9%B4%EC%A0%84%ED%99%98%ED%9A%A8%EA%B3%BC%EC%9D%8C_02.mp3"
+  },
+  {
+    "name": "화면전환효과음 03",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%ED%99%94%EB%A9%B4%EC%A0%84%ED%99%98%ED%9A%A8%EA%B3%BC%EC%9D%8C_03.mp3"
+  },
+  {
+    "name": "화면전환효과음 04",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%ED%99%94%EB%A9%B4%EC%A0%84%ED%99%98%ED%9A%A8%EA%B3%BC%EC%9D%8C_04.mp3"
+  },
+  {
+    "name": "화면전환효과음 05",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%ED%99%94%EB%A9%B4%EC%A0%84%ED%99%98%ED%9A%A8%EA%B3%BC%EC%9D%8C_05.mp3"
+  },
+  {
+    "name": "화면전환효과음 06",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%ED%99%94%EB%A9%B4%EC%A0%84%ED%99%98%ED%9A%A8%EA%B3%BC%EC%9D%8C_06.mp3"
+  },
+  {
+    "name": "화면전환효과음 07",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%ED%99%94%EB%A9%B4%EC%A0%84%ED%99%98%ED%9A%A8%EA%B3%BC%EC%9D%8C_07.mp3"
+  },
+  {
+    "name": "화면전환효과음 08",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%ED%99%94%EB%A9%B4%EC%A0%84%ED%99%98%ED%9A%A8%EA%B3%BC%EC%9D%8C_08.mp3"
+  },
+  {
+    "name": "화면전환효과음 09",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%ED%99%94%EB%A9%B4%EC%A0%84%ED%99%98%ED%9A%A8%EA%B3%BC%EC%9D%8C_09.mp3"
+  },
+  {
+    "name": "화면전환효과음 10",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%ED%99%94%EB%A9%B4%EC%A0%84%ED%99%98%ED%9A%A8%EA%B3%BC%EC%9D%8C_10.mp3"
+  },
+  {
+    "name": "화면전환효과음 11",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%ED%99%94%EB%A9%B4%EC%A0%84%ED%99%98%ED%9A%A8%EA%B3%BC%EC%9D%8C_11.mp3"
+  },
+  {
+    "name": "화면전환효과음 12",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%ED%99%94%EB%A9%B4%EC%A0%84%ED%99%98%ED%9A%A8%EA%B3%BC%EC%9D%8C_12.mp3"
+  },
+  {
+    "name": "화면전환효과음 13",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%ED%99%94%EB%A9%B4%EC%A0%84%ED%99%98%ED%9A%A8%EA%B3%BC%EC%9D%8C_13.mp3"
+  },
+  {
+    "name": "화면전환효과음 14",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%ED%99%94%EB%A9%B4%EC%A0%84%ED%99%98%ED%9A%A8%EA%B3%BC%EC%9D%8C_14.mp3"
+  },
+  {
+    "name": "화면전환효과음 15",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%ED%99%94%EB%A9%B4%EC%A0%84%ED%99%98%ED%9A%A8%EA%B3%BC%EC%9D%8C_15.mp3"
+  },
+  {
+    "name": "화면전환효과음 16",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%ED%99%94%EB%A9%B4%EC%A0%84%ED%99%98%ED%9A%A8%EA%B3%BC%EC%9D%8C_16.mp3"
+  },
+  {
+    "name": "화면전환효과음 17",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%ED%99%94%EB%A9%B4%EC%A0%84%ED%99%98%ED%9A%A8%EA%B3%BC%EC%9D%8C_17.mp3"
+  },
+  {
+    "name": "화면전환효과음 18",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%ED%99%94%EB%A9%B4%EC%A0%84%ED%99%98%ED%9A%A8%EA%B3%BC%EC%9D%8C_18.mp3"
+  },
+  {
+    "name": "화면전환효과음 19",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%ED%99%94%EB%A9%B4%EC%A0%84%ED%99%98%ED%9A%A8%EA%B3%BC%EC%9D%8C_19.mp3"
+  },
+  {
+    "name": "화면전환효과음 20",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%ED%99%94%EB%A9%B4%EC%A0%84%ED%99%98%ED%9A%A8%EA%B3%BC%EC%9D%8C_20.mp3"
+  },
+  {
+    "name": "화면전환효과음 21",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%ED%99%94%EB%A9%B4%EC%A0%84%ED%99%98%ED%9A%A8%EA%B3%BC%EC%9D%8C_21.mp3"
+  },
+  {
+    "name": "화면전환효과음 22",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%ED%99%94%EB%A9%B4%EC%A0%84%ED%99%98%ED%9A%A8%EA%B3%BC%EC%9D%8C_22.mp3"
+  },
+  {
+    "name": "후우우욱",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%ED%9B%84%EC%9A%B0%EC%9A%B0%EC%9A%B1.mp3"
+  },
+  {
+    "name": "후윽",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%ED%9B%84%EC%9C%BD.mp3"
+  },
+  {
+    "name": "훅",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%ED%9B%85.mp3"
+  },
+  {
+    "name": "휙(만화적)",
+    "url": "https://sunsaktool-final.netlify.app/sfx/%ED%9C%99%28%EB%A7%8C%ED%99%94%EC%A0%81%29.mp3"
+  }
+]
