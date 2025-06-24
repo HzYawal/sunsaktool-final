@@ -53,78 +53,106 @@ app.post('/render-video', async (req, res) => {
     const framesDir = path.join(tempDir, 'frames');
     const outputVideoPath = path.join(tempDir, 'output.mp4');
 
+    let browser; // 나중에 finally에서 닫기 위해 외부에 선언
+
     try {
         await fs.ensureDir(framesDir);
         console.log(`[${renderId}] 임시 폴더 생성 완료: ${tempDir}`);
 
-        const browser = await puppeteer.launch({ headless: true });
+        browser = await puppeteer.launch({ headless: true });
         const page = await browser.newPage();
         await page.setViewport({ width: 1080, height: 1920 });
 
         const templatePath = `file://${path.join(__dirname, 'render_template.html')}`;
         await page.goto(templatePath, { waitUntil: 'networkidle0' });
         console.log(`[${renderId}] 렌더링 템플릿 로드 완료`);
+        
+        // 애니메이션 CSS를 동적으로 주입하기 위한 준비
+        const animationCss = fs.readFileSync(path.join(__dirname, 'animations.css'), 'utf-8');
+        await page.addStyleTag({ content: animationCss });
 
         let frameCount = 0;
         const fps = 30;
 
+        // 전체 프로젝트 렌더링 시작
         for (const card of projectData.scriptCards) {
             const cardFrames = Math.floor(card.duration * fps);
+
             for (let i = 0; i < cardFrames; i++) {
+                const timeInCard = i / fps;
                 
-                // ▼▼▼▼▼ 이 page.evaluate 함수를 업그레이드합니다 ▼▼▼▼▼
-                await page.evaluate((projectData, cardData) => {
-                    // 이 코드는 Puppeteer의 가상 브라우저 안에서 실행됩니다.
+                // Puppeteer의 브라우저 내부에서 실행될 정교한 렌더링 함수
+                await page.evaluate((projectData, cardData, t) => {
                     
-                    // 1. 헤더 설정
+                    // --- 1. 정적 요소 렌더링 (매번 동일) ---
                     const header = projectData.projectSettings.header;
                     const headerEl = document.querySelector('.st-preview-header');
                     headerEl.style.backgroundColor = header.backgroundColor;
                     headerEl.querySelector('.header-title').innerText = header.text;
-                    // TODO: 헤더 아이콘, 로고 등 추가 구현 필요
+                    headerEl.querySelector('.header-title').style.color = header.color;
+                    headerEl.querySelector('.header-title').style.fontFamily = header.fontFamily;
+                    headerEl.querySelector('.header-title').style.fontSize = `${header.fontSize}px`;
+                    // TODO: header.icon, header.logo 구현
 
-                    // 2. 프로젝트 정보 설정
                     const project = projectData.projectSettings.project;
                     document.querySelector('.st-project-info .title').innerText = project.title;
                     document.querySelector('.st-project-info span').innerText = `${project.author || ''} | 조회수 ${Number(project.views || 0).toLocaleString()}`;
-                    
-                    // 3. 텍스트 요소 설정
+                    document.querySelector('.st-project-info .title').style.color = project.titleColor;
+                    document.querySelector('.st-project-info span').style.color = project.metaColor;
+
+                    // --- 2. 카드별 요소 렌더링 ---
                     const textWrapper = document.querySelector('#st-preview-text-container-wrapper');
                     const textEl = document.querySelector('#st-preview-text');
-                    
-                    textEl.innerText = cardData.text;
-                    Object.assign(textEl.style, cardData.style);
-                    textWrapper.style.transform = `translate(${cardData.layout.text.x || 0}px, ${cardData.layout.text.y || 0}px) scale(${cardData.layout.text.scale || 1}) rotate(${cardData.layout.text.angle || 0}deg)`;
-
-                    // 4. 미디어 요소 설정
                     const mediaWrapper = document.querySelector('#st-preview-media-container-wrapper');
                     const imageEl = document.querySelector('#st-preview-image');
                     const videoEl = document.querySelector('#st-preview-video');
                     
+                    // 텍스트 스타일 및 위치 적용
+                    Object.assign(textEl.style, cardData.style);
+                    textWrapper.style.transform = `translate(${cardData.layout.text.x || 0}px, ${cardData.layout.text.y || 0}px) scale(${cardData.layout.text.scale || 1}) rotate(${cardData.layout.text.angle || 0}deg)`;
+
+                    // 미디어 스타일 및 위치 적용
                     if (cardData.media.url) {
                         mediaWrapper.style.display = 'block';
                         mediaWrapper.style.transform = `translate(${cardData.layout.media.x || 0}px, ${cardData.layout.media.y || 0}px) scale(${cardData.layout.media.scale || 1}) rotate(${cardData.layout.media.angle || 0}deg)`;
-
+                        
                         if (cardData.media.type === 'image') {
                             imageEl.style.display = 'block';
                             videoEl.style.display = 'none';
-                            imageEl.src = cardData.media.url; // 여기서 URL이 blob: 형태라면 문제가 될 수 있습니다.
+                            imageEl.src = cardData.media.url; // Base64 데이터를 바로 src에 넣음
                             imageEl.style.objectFit = cardData.media.fit;
-                        } else {
-                            // 비디오 렌더링은 훨씬 더 복잡합니다. (지금은 일단 생략)
-                            videoEl.style.display = 'none';
-                            imageEl.style.display = 'none';
-                        }
+                        } // TODO: 비디오 렌더링 구현
                     } else {
                         mediaWrapper.style.display = 'none';
                     }
 
-                    // TODO: 애니메이션, 줄별 나타나기 등 시간(timeInCard)에 따른 변화 구현 필요
+                    // --- 3. 시간 기반 렌더링 (애니메이션, 텍스트 순서) ---
+                    
+                    // 텍스트 줄별 순서 렌더링
+                    textEl.innerHTML = ''; // 일단 비우고
+                    const linesToShow = cardData.animationSequence.length > 0 ? cardData.segments : cardData.text.split('\n').map(line => ({ text: line, startTime: 0 }));
+                    
+                    linesToShow.forEach(segment => {
+                        if (t >= segment.startTime) {
+                            const p = document.createElement('p');
+                            p.textContent = segment.text || ' ';
+                            p.style.margin = 0;
+                            textEl.appendChild(p);
+                        }
+                    });
 
-                }, projectData, card); // projectData와 cardData를 함께 넘겨줍니다.
-                // ▲▲▲▲▲ 여기까지가 업그레이드된 부분입니다 ▲▲▲▲▲
+                    // 애니메이션 상태 적용
+                    const applyAnimationState = (el, animIn, animOut, duration) => {
+                        // (이전에 exporter에 있던 애니메이션 계산 로직을 여기에 구현)
+                        // ...
+                    };
+                    // applyAnimationState(textWrapper, cardData.animations.text.in, ...);
+                    // applyAnimationState(mediaWrapper, cardData.animations.media.in, ...);
 
-                // 프레임 캡처 (이 부분은 동일)
+
+                }, projectData, card, timeInCard);
+
+                // 프레임 캡처
                 const framePath = path.join(framesDir, `frame_${String(frameCount).padStart(6, '0')}.png`);
                 await page.screenshot({ path: framePath });
                 frameCount++;
@@ -132,8 +160,8 @@ app.post('/render-video', async (req, res) => {
         }
         
         console.log(`[${renderId}] 총 ${frameCount}개 프레임 캡처 완료`);
-        await browser.close();
-
+        
+        // 4. FFmpeg로 영상 합성 (오디오는 다음 단계)
         const ffmpegCommand = `ffmpeg -framerate ${fps} -i "${path.join(framesDir, 'frame_%06d.png')}" -c:v libx264 -pix_fmt yuv420p -y "${outputVideoPath}"`;
         
         console.log(`[${renderId}] FFmpeg 실행...`);
@@ -149,19 +177,24 @@ app.post('/render-video', async (req, res) => {
         
         console.log(`[${renderId}] 영상 합성 완료: ${outputVideoPath}`);
 
-        res.download(outputVideoPath, `${projectData.projectSettings.project.title || 'sunsak-video'}.mp4`, async (err) => {
-            if (err) {
-                console.error('파일 다운로드 오류:', err);
-            }
+        // 5. 완성된 영상 파일 스트림으로 전송
+        res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(projectData.projectSettings.project.title || 'sunsak-video')}.mp4"`);
+        const fileStream = fs.createReadStream(outputVideoPath);
+        fileStream.pipe(res);
+        fileStream.on('close', async () => {
+            if (browser) await browser.close();
             await fs.remove(tempDir);
             console.log(`[${renderId}] 임시 폴더 삭제 완료`);
         });
 
     } catch (error) {
         console.error(`[${renderId}] 렌더링 중 오류 발생:`, error);
-        res.status(500).json({ success: false, message: '영상 생성 중 오류가 발생했습니다.' });
+        if (browser) await browser.close();
         if (await fs.pathExists(tempDir)) {
             await fs.remove(tempDir);
+        }
+        if (!res.headersSent) {
+            res.status(500).json({ success: false, message: '영상 생성 중 오류가 발생했습니다.' });
         }
     }
 });
