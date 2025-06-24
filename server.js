@@ -1,9 +1,9 @@
-// server.js
 const express = require('express');
 const path = require('path');
 const fs = require('fs-extra');
 const puppeteer = require('puppeteer');
 const { exec } = require('child_process');
+const fetch = require('node-fetch'); // TTS 중계를 위해 필요합니다.
 
 const app = express();
 const PORT = 3000;
@@ -11,13 +11,38 @@ const PORT = 3000;
 app.use(express.json({ limit: '50mb' }));
 app.use(express.static(__dirname));
 
-// ※※※ TTS 중계 API (Netlify 함수가 있다면 필요, 없다면 이 부분은 무시해도 됩니다) ※※※
-// const fetch = require('node-fetch');
-// app.post('/api/create-tts', ...);
+
+// ==========================================================
+// ▼▼▼ TTS 중계 API (이 부분이 추가되었습니다) ▼▼▼
+// ==========================================================
+app.post('/api/create-tts', async (req, res) => {
+    console.log("TTS 중계 요청 받음:", req.body);
+    try {
+        // 실제 Netlify 함수 URL로 요청을 전달합니다.
+        const ttsResponse = await fetch('https://sunsaktool-final.netlify.app/.netlify/functions/create-tts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(req.body)
+        });
+
+        if (!ttsResponse.ok) {
+            const errorText = await ttsResponse.text();
+            console.error('Netlify 함수 오류 응답:', errorText);
+            throw new Error(`Netlify 함수 오류: ${ttsResponse.statusText}`);
+        }
+
+        const result = await ttsResponse.json();
+        res.json(result);
+
+    } catch (error) {
+        console.error('TTS 중계 중 오류 발생:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
 
 
 // ==========================================================
-// ▼▼▼ 실제 영상 렌더링 API ▼▼▼
+// ▼▼▼ 실제 영상 렌더링 API (기존과 동일) ▼▼▼
 // ==========================================================
 app.post('/render-video', async (req, res) => {
     console.log("실제 영상 렌더링 요청 받음!");
@@ -40,12 +65,6 @@ app.post('/render-video', async (req, res) => {
         await page.goto(templatePath, { waitUntil: 'networkidle0' });
         console.log(`[${renderId}] 렌더링 템플릿 로드 완료`);
 
-        // ※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※
-        // ※※※ 여기가 실제 렌더링 로직의 핵심입니다 ※※※
-        // ※※※ 전문가가 프로젝트 데이터 구조에 맞춰 정교하게 구현해야 합니다.
-        // ※※※ 지금은 개념 증명을 위해 매우 단순하게 구현합니다.
-        // ※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※
-
         let frameCount = 0;
         const fps = 30;
 
@@ -53,17 +72,14 @@ app.post('/render-video', async (req, res) => {
             const cardFrames = Math.floor(card.duration * fps);
             for (let i = 0; i < cardFrames; i++) {
                 
-                // Puppeteer의 브라우저 내부에서 실행될 함수
                 await page.evaluate((cardData) => {
                     const textEl = document.querySelector('#st-preview-text');
                     if (textEl) {
                         textEl.innerText = cardData.text;
                         Object.assign(textEl.style, cardData.style);
                     }
-                    // TODO: 이미지, 비디오, 헤더, 프로젝트 정보, 레이아웃 등 모든 상태를 여기에 적용해야 함
                 }, card);
 
-                // 프레임 캡처
                 const framePath = path.join(framesDir, `frame_${String(frameCount).padStart(6, '0')}.png`);
                 await page.screenshot({ path: framePath });
                 frameCount++;
@@ -73,7 +89,6 @@ app.post('/render-video', async (req, res) => {
         console.log(`[${renderId}] 총 ${frameCount}개 프레임 캡처 완료`);
         await browser.close();
 
-        // 4. FFmpeg로 영상 합성 (지금은 오디오 없이 비디오만 만듭니다)
         const ffmpegCommand = `ffmpeg -framerate ${fps} -i "${path.join(framesDir, 'frame_%06d.png')}" -c:v libx264 -pix_fmt yuv420p -y "${outputVideoPath}"`;
         
         console.log(`[${renderId}] FFmpeg 실행...`);
@@ -89,7 +104,6 @@ app.post('/render-video', async (req, res) => {
         
         console.log(`[${renderId}] 영상 합성 완료: ${outputVideoPath}`);
 
-        // 5. 완성된 영상 파일 다운로드
         res.download(outputVideoPath, `${projectData.projectSettings.project.title || 'sunsak-video'}.mp4`, async (err) => {
             if (err) {
                 console.error('파일 다운로드 오류:', err);
