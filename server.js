@@ -215,54 +215,78 @@ app.post('/render-video', async (req, res) => {
             let currentTime = 0;
 
             if (projectData.globalBGM && projectData.globalBGM.url) {
-                const response = await fetch(projectData.globalBGM.url);
-                const path = `${audioDir}/bgm.mp3`;
-                await fs.writeFile(path, await response.buffer());
-                audioTracks.push({ type: 'bgm', path, volume: projectData.globalBGM.volume });
+                try {
+                    const response = await fetch(projectData.globalBGM.url);
+                    const path = `${audioDir}/bgm.mp3`;
+                    await fs.writeFile(path, await response.buffer());
+                    audioTracks.push({ type: 'bgm', path, volume: projectData.globalBGM.volume || 0.3 });
+                } catch (e) { console.error('BGM 다운로드 실패:', e); }
             }
             for (const [index, card] of projectData.scriptCards.entries()) {
                 if (card.audioUrl) {
-                    const path = `${audioDir}/tts_${index}.mp3`;
-                    await fs.writeFile(path, Buffer.from(card.audioUrl.split(',')[1], 'base64'));
-                    audioTracks.push({ type: 'effect', path, time: currentTime, speed: card.ttsSettings.speed, volume: card.ttsVolume });
+                    try {
+                        const path = `${audioDir}/tts_${index}.mp3`;
+                        await fs.writeFile(path, Buffer.from(card.audioUrl.split(',')[1], 'base64'));
+                        audioTracks.push({ type: 'effect', path, time: currentTime, speed: card.ttsSettings.speed || 1.0, volume: card.ttsVolume || 1.0 });
+                    } catch(e) { console.error('TTS 파일 저장 실패:', e); }
                 }
                 if (card.sfxUrl) {
-                    const response = await fetch(card.sfxUrl);
-                    const path = `${audioDir}/sfx_${index}.mp3`;
-                    await fs.writeFile(path, await response.buffer());
-                    audioTracks.push({ type: 'effect', path, time: currentTime, speed: 1.0, volume: card.sfxVolume });
+                    try {
+                        const response = await fetch(card.sfxUrl);
+                        const path = `${audioDir}/sfx_${index}.mp3`;
+                        await fs.writeFile(path, await response.buffer());
+                        audioTracks.push({ type: 'effect', path, time: currentTime, speed: 1.0, volume: card.sfxVolume || 1.0 });
+                    } catch(e) { console.error('SFX 다운로드 실패:', e); }
                 }
                 currentTime += card.duration;
             }
 
-            if (audioTracks.length === 0) return null;
+            if (audioTracks.length === 0) {
+                console.log(`[${renderId}] 오디오 트랙 없음`);
+                return null;
+            }
 
             const inputClauses = audioTracks.map(t => `-i "${t.path}"`).join(' ');
             let filterComplex = '';
-            const outputStreams = [];
-            
-            audioTracks.forEach((track, i) => {
-                let stream = `[${i}:a]`;
-                if (track.type === 'bgm') {
-                    stream += `volume=${track.volume}[bgm${i}]`;
-                    outputStreams.push(`[bgm${i}]`);
-                } else if (track.type === 'effect') {
-                    stream += `atempo=${track.speed},volume=${track.volume},adelay=${track.time * 1000}|${track.time * 1000}[eff${i}]`;
-                    outputStreams.push(`[eff${i}]`);
-                }
-                filterComplex += stream;
-                if(i < audioTracks.length - 1) filterComplex += ';';
-            });
-            
-            if (outputStreams.length > 1) {
+
+            // [수정] 오디오 트랙 개수에 따라 명령어 분기
+            if (audioTracks.length > 1) {
+                const outputStreams = [];
+                audioTracks.forEach((track, i) => {
+                    let stream = `[${i}:a]`;
+                    if (track.type === 'bgm') {
+                        stream += `volume=${track.volume}[a${i}]`;
+                    } else if (track.type === 'effect') {
+                        stream += `atempo=${track.speed},volume=${track.volume},adelay=${track.time * 1000}|${track.time * 1000}[a${i}]`;
+                    }
+                    filterComplex += stream;
+                    outputStreams.push(`[a${i}]`);
+                    if(i < audioTracks.length - 1) filterComplex += ';';
+                });
                 filterComplex += `;${outputStreams.join('')}amix=inputs=${outputStreams.length}:duration=longest`;
+            } else {
+                // 오디오 트랙이 하나일 경우 (amix 불필요)
+                const track = audioTracks[0];
+                if (track.type === 'bgm') {
+                    filterComplex = `[0:a]volume=${track.volume}`;
+                } else if (track.type === 'effect') {
+                    filterComplex = `[0:a]atempo=${track.speed},volume=${track.volume}`;
+                }
             }
 
             const mixCommand = `ffmpeg ${inputClauses} -filter_complex "${filterComplex}" -y "${finalAudioPath}"`;
             
-            console.log(`[${renderId}] 오디오 믹싱 실행`);
-            await new Promise((resolve, reject) => exec(mixCommand, (err, stdout, stderr) => err ? reject(new Error(stderr)) : resolve(stdout)));
-            console.log(`[${renderId}] 오디오 믹싱 완료`);
+            console.log(`[${renderId}] 오디오 믹싱 실행: ${mixCommand}`);
+            await new Promise((resolve, reject) => {
+                exec(mixCommand, (error, stdout, stderr) => {
+                    if (error) {
+                        console.error('오디오 믹싱 오류:', stderr);
+                        return reject(new Error(stderr));
+                    }
+                    resolve(stdout);
+                });
+            });
+            console.log(`[${renderId}] 최종 오디오 파일 생성 완료`);
             return finalAudioPath;
         })();
 
