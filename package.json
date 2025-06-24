@@ -6,12 +6,13 @@
   "scripts": {
     "start": "node server.js"
   },
-  "dependencies": {
-    "express": "^4.21.2",
-    "fs-extra": "^11.3.0",
-    "node-fetch": "^2.7.0",
-    "puppeteer": "^24.10.2"
-  },
+"dependencies": {
+  "express": "^4.21.2",
+  "fs-extra": "^11.3.0",
+  "node-fetch": "^2.7.0",
+  "puppeteer": "^24.10.2",
+  "elevenlabs-node": "^1.2.0" 
+},
   "author": "",
   "license": "ISC"
 }
