@@ -1166,15 +1166,50 @@
                 playback.stop();
                 UI.exportBtn.disabled = true;
                 UI.progressOverlay.style.display = 'flex';
+                UI.progressText.textContent = '렌더링 준비 중...';
+                UI.progressSubText.textContent = '이미지 데이터를 변환합니다.';
+                UI.progressBarInner.style.width = '10%';
+
+                // [추가] 이미지를 Base64로 변환하는 함수
+                const toBase64 = file => new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = error => reject(error);
+                });
+                
+                // [추가] 모든 blob URL을 Base64로 변환하는 로직
+                // 1. 원본 state를 깊은 복사하여 원본이 변경되지 않도록 함
+                const projectDataForRender = JSON.parse(JSON.stringify(state));
+
+                // 2. 변환 작업을 비동기로 처리
+                const conversionPromises = projectDataForRender.scriptCards.map(async (card) => {
+                    if (card.media.url && card.media.url.startsWith('blob:')) {
+                        try {
+                            const response = await fetch(card.media.url);
+                            const blob = await response.blob();
+                            card.media.url = await toBase64(blob);
+                        } catch (e) {
+                            console.error('Blob to Base64 변환 실패:', e);
+                            card.media.url = null; // 실패 시 URL 제거
+                        }
+                    }
+                    return card;
+                });
+                
+                // 3. 모든 변환이 끝날 때까지 기다림
+                projectDataForRender.scriptCards = await Promise.all(conversionPromises);
+                
                 UI.progressText.textContent = '서버에 영상 제작을 요청하는 중...';
                 UI.progressSubText.textContent = '프로젝트 데이터를 전송합니다.';
                 UI.progressBarInner.style.width = '50%';
 
+
                 // 1. 현재 프로젝트의 모든 상태를 JSON 데이터로 준비
                 const projectData = {
-                    projectSettings: state.projectSettings,
-                    scriptCards: state.scriptCards,
-                    globalBGM: state.globalBGM
+                    projectSettings: projectDataForRender.projectSettings,
+                    scriptCards: projectDataForRender.scriptCards,
+                    globalBGM: projectDataForRender.globalBGM
                 };
                 
                 try {
@@ -1191,33 +1226,30 @@
                     UI.progressBarInner.style.width = '80%';
                     
                     if (!response.ok) {
-                        throw new Error(`서버 오류: ${response.statusText}`);
+                        const errorText = await response.text();
+                        throw new Error(`서버 오류: ${response.statusText} - ${errorText}`);
                     }
 
-                    const result = await response.json();
+                    // [수정] 다운로드 방식 변경 (서버가 직접 파일을 보내줌)
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = `${state.projectSettings.project.title || 'sunsak-video'}.mp4`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
 
-                    if (result.success) {
-                        UI.progressText.textContent = '영상 제작 완료!';
-                        UI.progressSubText.textContent = '다운로드를 시작합니다.';
-                        UI.progressBarInner.style.width = '100%';
+                    UI.progressText.textContent = '영상 제작 완료!';
+                    UI.progressSubText.textContent = '다운로드가 완료되었습니다.';
+                    UI.progressBarInner.style.width = '100%';
 
-                        // 3. 서버가 알려준 링크로 다운로드 시작
-                        const a = document.createElement('a');
-                        a.href = result.downloadUrl;
-                        a.download = `${state.projectSettings.project.title || 'sunsak-video'}.mp4`;
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-
-                        setTimeout(() => {
-                           UI.progressOverlay.style.display = 'none';
-                           // 다운로드 후 프로그레스 바 초기화
-                           UI.progressBarInner.style.width = '0%';
-                        }, 2000);
-                        
-                    } else {
-                        throw new Error(result.message || '알 수 없는 서버 오류');
-                    }
+                    setTimeout(() => {
+                        UI.progressOverlay.style.display = 'none';
+                        UI.progressBarInner.style.width = '0%';
+                    }, 2000);
 
                 } catch (error) {
                     console.error("영상 생성 요청 오류:", error);
