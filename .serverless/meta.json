@@ -105,7 +105,7 @@
               "Properties": {
                 "Code": {
                   "S3Bucket": "serverless-framework-deployments-ap-northeast-2-6173bdc6-38bc",
-                  "S3Key": "serverless/sunsaktool-renderer/dev/1750346259427-2025-06-19T15:17:39.427Z/sunsaktool-renderer.zip"
+                  "S3Key": "serverless/sunsaktool-renderer/dev/1750347864788-2025-06-19T15:44:24.788Z/sunsaktool-renderer.zip"
                 },
                 "Handler": "rendering-server/handler.main",
                 "Runtime": "nodejs18.x",
@@ -254,7 +254,7 @@
                 "RenderVideoLambdaPermissionApiGateway"
               ]
             },
-            "ApiGatewayDeployment1750346252159": {
+            "ApiGatewayDeployment1750347858806": {
               "Type": "AWS::ApiGateway::Deployment",
               "Properties": {
                 "RestApiId": {
@@ -493,7 +493,7 @@
             "Properties": {
               "Code": {
                 "S3Bucket": "serverless-framework-deployments-ap-northeast-2-6173bdc6-38bc",
-                "S3Key": "serverless/sunsaktool-renderer/dev/1750346259427-2025-06-19T15:17:39.427Z/sunsaktool-renderer.zip"
+                "S3Key": "serverless/sunsaktool-renderer/dev/1750347864788-2025-06-19T15:44:24.788Z/sunsaktool-renderer.zip"
               },
               "Handler": "rendering-server/handler.main",
               "Runtime": "nodejs18.x",
@@ -642,7 +642,7 @@
               "RenderVideoLambdaPermissionApiGateway"
             ]
           },
-          "ApiGatewayDeployment1750346252159": {
+          "ApiGatewayDeployment1750347858806": {
             "Type": "AWS::ApiGateway::Deployment",
             "Properties": {
               "RestApiId": {
@@ -749,8 +749,8 @@
       "instanceParameters": null
     },
     "error": {
-      "message": "An error occurred: RenderVideoLambdaFunction - Resource handler returned message: \"User: arn:aws:iam::610726994046:user/sunsak-admin is not authorized to perform: lambda:GetLayerVersion on resource: arn:aws:lambda:ap-northeast-2:145266761615:layer:ffmpeg-6-20230522:1 because no resource-based policy allows the lambda:GetLayerVersion action (Service: Lambda, Status Code: 403, Request ID: 8b406f97-9e94-4cda-beaa-4f9b457b5318) (SDK Attempt Count: 1)\" (RequestToken: 54a994e7-fa52-fcc5-42c2-14fb9819d3ab, HandlerErrorCode: AccessDenied).",
-      "stack": "ServerlessError2: An error occurred: RenderVideoLambdaFunction - Resource handler returned message: \"User: arn:aws:iam::610726994046:user/sunsak-admin is not authorized to perform: lambda:GetLayerVersion on resource: arn:aws:lambda:ap-northeast-2:145266761615:layer:ffmpeg-6-20230522:1 because no resource-based policy allows the lambda:GetLayerVersion action (Service: Lambda, Status Code: 403, Request ID: 8b406f97-9e94-4cda-beaa-4f9b457b5318) (SDK Attempt Count: 1)\" (RequestToken: 54a994e7-fa52-fcc5-42c2-14fb9819d3ab, HandlerErrorCode: AccessDenied).\n    at file:///C:/Users/leebu/.serverless/releases/4.17.1/package/dist/sf-core.js:1175:828\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async AwsDeploy.createFallback (file:///C:/Users/leebu/.serverless/releases/4.17.1/package/dist/sf-core.js:1175:23484)\n    at async aws:deploy:deploy:updateStack (file:///C:/Users/leebu/.serverless/releases/4.17.1/package/dist/sf-core.js:1186:7908)\n    at async PluginManager.runHooks (file:///C:/Users/leebu/.serverless/releases/4.17.1/package/dist/sf-core.js:1377:9870)\n    at async PluginManager.invoke (file:///C:/Users/leebu/.serverless/releases/4.17.1/package/dist/sf-core.js:1377:10639)\n    at async PluginManager.spawn (file:///C:/Users/leebu/.serverless/releases/4.17.1/package/dist/sf-core.js:1377:11000)\n    at async PluginManager.runHooks (file:///C:/Users/leebu/.serverless/releases/4.17.1/package/dist/sf-core.js:1377:9870)\n    at async PluginManager.invoke (file:///C:/Users/leebu/.serverless/releases/4.17.1/package/dist/sf-core.js:1377:10639)\n    at async PluginManager.run (file:///C:/Users/leebu/.serverless/releases/4.17.1/package/dist/sf-core.js:1377:11373)",
+      "message": "An error occurred: RenderVideoLambdaFunction - Resource handler returned message: \"User: arn:aws:iam::610726994046:user/sunsak-admin is not authorized to perform: lambda:GetLayerVersion on resource: arn:aws:lambda:ap-northeast-2:145266761615:layer:ffmpeg-6-20230522:1 because no resource-based policy allows the lambda:GetLayerVersion action (Service: Lambda, Status Code: 403, Request ID: af187314-81cd-481c-a6bb-af86c249acea) (SDK Attempt Count: 1)\" (RequestToken: 58bc825a-e417-d02a-35ed-6dfbf551d932, HandlerErrorCode: AccessDenied).",
+      "stack": "ServerlessError2: An error occurred: RenderVideoLambdaFunction - Resource handler returned message: \"User: arn:aws:iam::610726994046:user/sunsak-admin is not authorized to perform: lambda:GetLayerVersion on resource: arn:aws:lambda:ap-northeast-2:145266761615:layer:ffmpeg-6-20230522:1 because no resource-based policy allows the lambda:GetLayerVersion action (Service: Lambda, Status Code: 403, Request ID: af187314-81cd-481c-a6bb-af86c249acea) (SDK Attempt Count: 1)\" (RequestToken: 58bc825a-e417-d02a-35ed-6dfbf551d932, HandlerErrorCode: AccessDenied).\n    at file:///C:/Users/leebu/.serverless/releases/4.17.1/package/dist/sf-core.js:1175:828\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async AwsDeploy.createFallback (file:///C:/Users/leebu/.serverless/releases/4.17.1/package/dist/sf-core.js:1175:23484)\n    at async aws:deploy:deploy:updateStack (file:///C:/Users/leebu/.serverless/releases/4.17.1/package/dist/sf-core.js:1186:7908)\n    at async PluginManager.runHooks (file:///C:/Users/leebu/.serverless/releases/4.17.1/package/dist/sf-core.js:1377:9870)\n    at async PluginManager.invoke (file:///C:/Users/leebu/.serverless/releases/4.17.1/package/dist/sf-core.js:1377:10639)\n    at async PluginManager.spawn (file:///C:/Users/leebu/.serverless/releases/4.17.1/package/dist/sf-core.js:1377:11000)\n    at async PluginManager.runHooks (file:///C:/Users/leebu/.serverless/releases/4.17.1/package/dist/sf-core.js:1377:9870)\n    at async PluginManager.invoke (file:///C:/Users/leebu/.serverless/releases/4.17.1/package/dist/sf-core.js:1377:10639)\n    at async PluginManager.run (file:///C:/Users/leebu/.serverless/releases/4.17.1/package/dist/sf-core.js:1377:11373)",
       "code": "AWS_CLOUD_FORMATION_CREATE_STACK_INTERNAL_INSUFFICIENT_PERMISSIONS"
     },
     "serviceRawFile": "# 파일 이름: serverless.yml (권한 문제 해결 최종 버전)\r\n\r\nservice: sunsaktool-renderer\r\nframeworkVersion: '^4'\r\n\r\nprovider:\r\n  name: aws\r\n  runtime: nodejs18.x\r\n  region: ap-northeast-2\r\n\r\nfunctions:\r\n  renderVideo:\r\n    handler: rendering-server/handler.main\r\n    timeout: 900\r\n    memorySize: 2048\r\n    layers:\r\n      - arn:aws:lambda:ap-northeast-2:145266761615:layer:ffmpeg-6-20230522:1\r\n    events:\r\n      # httpApi 대신 http를 사용하고, cors를 여기에 설정하는 것이 더 안정적입니다.\r\n      - http:\r\n          path: /render-video\r\n          method: post\r\n          cors: true\r\n",
