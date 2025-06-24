@@ -1,20 +1,9 @@
-try {
-    const elevenLabsModule = require('elevenlabs-node');
-    console.log('--- elevenlabs-node 모듈 구조 검사 시작 ---');
-    console.log(JSON.stringify(elevenLabsModule, null, 2)); // 구조를 자세히 보기 위해 JSON으로 변환
-    console.log('--- 모듈의 키 목록:', Object.keys(elevenLabsModule));
-    console.log('--- 모듈 구조 검사 끝 ---');
-} catch (e) {
-    console.error('!!! 모듈 require 단계에서 오류 발생:', e);
-}
-
 const express = require('express');
 const path = require('path');
 const fs = require('fs-extra');
 const puppeteer = require('puppeteer');
 const { exec } = require('child_process');
 const fetch = require('node-fetch');
-const ElevenLabs = require('elevenlabs-node');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -22,30 +11,38 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json({ limit: '100mb' }));
 app.use(express.static(__dirname));
 // ElevenLabs 클라이언트 초기화
-const voice = new ElevenLabs({
-    apiKey: process.env.ELEVENLABS_API_KEY, // Railway에 설정한 환경 변수 사용
-});
 
 // ==========================================================
 // TTS 중계 API
 // ==========================================================
+const elevenLabs = require('elevenlabs-node'); // 여기서 바로 라이브러리를 불러옵니다.
+
 app.post('/api/create-tts', async (req, res) => {
     const { text, voice_settings } = req.body;
+    const apiKey = process.env.ELEVENLABS_API_KEY; // 환경 변수에서 API 키를 가져옵니다.
+    const voiceId = "pNInz6obpgDQGcFmaJgB";      // 사용할 목소리 ID
+
+    if (!apiKey) {
+        console.error("ElevenLabs API 키가 설정되지 않았습니다.");
+        return res.status(500).json({ error: '서버에 API 키가 설정되지 않았습니다.' });
+    }
     if (!text || !text.trim()) {
         return res.status(400).json({ error: 'TTS로 변환할 텍스트가 없습니다.' });
     }
     console.log(`TTS 요청 받음: "${text.substring(0, 30)}..."`);
 
     try {
-        const audioStream = await voice.textToSpeechStream({
+        // 'new' 없이 바로 textToSpeechStream 함수를 호출합니다.
+        const audioStream = await elevenLabs.textToSpeechStream({
+            apiKey: apiKey,
+            voiceId: voiceId,
             textInput: text,
-            voiceId: "pNInz6obpgDQGcFmaJgB", // 기본 목소리 ID (필요시 변경)
             stability: voice_settings.stability,
             similarityBoost: voice_settings.similarity_boost,
-            modelId: "eleven_multilingual_v2", // 한국어 지원 모델
+            modelId: "eleven_multilingual_v2",
         });
 
-        // 프론트엔드에서 바로 사용할 수 있도록 Base64 데이터로 변환
+        // 스트림을 Base64 데이터로 변환
         const chunks = [];
         for await (const chunk of audioStream) {
             chunks.push(chunk);
@@ -57,11 +54,10 @@ app.post('/api/create-tts', async (req, res) => {
         console.log(`TTS 생성 성공 및 Base64 데이터 전송 완료.`);
 
     } catch (error) {
-        console.error('ElevenLabs API 오류:', error);
+        console.error('ElevenLabs API 호출 오류:', error);
         res.status(500).json({ error: error.message || 'TTS 생성 중 서버에서 오류가 발생했습니다.' });
     }
 });
-
 
 // ==========================================================
 // 영상 렌더링 API (모든 기능 포함 최종본)
