@@ -1,26 +1,19 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <!-- CSP 수정: localhost의 서버와 통신할 수 있도록 connect-src에 http://localhost:3000 추가 -->
-        <meta http-equiv="Content-Security-Policy" content="
-        default-src 'self' blob: data:;
-        script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com;
-        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-        font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com;
-        img-src 'self' blob: data:;
-        // [수정] 이 줄에 data: 를 추가하여 base64 형식의 오디오를 허용합니다.
-        <meta http-equiv="Content-Security-Policy" content="
-        default-src 'self' blob: data:;
-        script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com;
-        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-        font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com;
-        img-src 'self' blob: data:;
-        media-src 'self' blob: data: https://sunsaktool-final.netlify.app;
-        connect-src 'self' https://sunsaktool-final.netlify.app http://localhost:3000;
-    ">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SunsakTool (순삭툴)</title>
+   <meta charset="UTF-8">
+<!-- [수정] 중복된 CSP 메타 태그를 하나로 합치고, 주석을 제거했습니다. -->
+<meta http-equiv="Content-Security-Policy" content="
+    default-src 'self' blob: data:;
+    script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com;
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+    font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com;
+    img-src 'self' blob: data:;
+    media-src 'self' blob: data: https://sunsaktool-final.netlify.app;
+    connect-src 'self' https://sunsaktool-final.netlify.app http://localhost:3000;
+">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SunsakTool (순삭툴)</title>
     <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
     <script src="https://unpkg.com/@ffmpeg/util@0.11.0/dist/util.min.js"></script>
