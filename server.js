@@ -158,19 +158,30 @@ app.post('/render-video', async (req, res) => {
                             mediaWrapper.style.display = 'none';
                         }
                         
-                        // 텍스트 줄별 렌더링
+                         // 텍스트 줄별 렌더링 (최종 수정)
                         textEl.innerHTML = '';
-                        const linesToShow = (currentCard.animationSequence && currentCard.animationSequence.length > 0) ? currentCard.animationSequence : currentCard.text.split('\n');
-                        const segments = (currentCard.segments || []).filter(s => linesToShow.includes(s.text));
-                        
-                        if (segments.length > 0) {
-                            segments.forEach(segment => {
+
+                        // 사용자가 직접 순서를 지정했는지 확인
+                        const hasCustomSequence = currentCard.animationSequence && currentCard.animationSequence.length > 0;
+
+                        if (hasCustomSequence) {
+                            // 직접 지정한 순서가 있을 때만 시간차 렌더링
+                            (currentCard.segments || []).forEach(segment => {
                                 if (t >= segment.startTime) {
-                                    const p = document.createElement('p'); p.textContent = segment.text || ' '; p.style.margin = 0; textEl.appendChild(p);
+                                    const p = document.createElement('p');
+                                    p.textContent = segment.text || ' ';
+                                    p.style.margin = 0;
+                                    textEl.appendChild(p);
                                 }
                             });
                         } else {
-                            textEl.textContent = currentCard.text;
+                            // 순서를 지정하지 않았으면, 모든 텍스트를 한 번에 표시
+                            currentCard.text.split('\n').forEach(line => {
+                                const p = document.createElement('p');
+                                p.textContent = line || ' ';
+                                p.style.margin = 0;
+                                textEl.appendChild(p);
+                            });
                         }
 
                         // 애니메이션 적용
