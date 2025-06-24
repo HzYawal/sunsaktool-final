@@ -109,22 +109,36 @@ app.post('/render-video', async (req, res) => {
             const audioInputs = [];
             let currentTime = 0;
             
+            // 1. 필요한 모든 오디오 파일 저장
             for (const [index, card] of projectData.scriptCards.entries()) {
                 if (card.audioUrl) {
                     const audioPath = path.join(audioDir, `tts_${index}.mp3`);
-                    const response = await fetch(card.audioUrl);
-                    const buffer = await response.buffer();
-                    await fs.writeFile(audioPath, buffer);
+                    
+                    // [수정] URL 타입에 따라 다르게 처리
+                    if (card.audioUrl.startsWith('data:')) {
+                        // Base64 데이터 URL인 경우
+                        const base64Data = card.audioUrl.split(',')[1];
+                        const buffer = Buffer.from(base64Data, 'base64');
+                        await fs.writeFile(audioPath, buffer);
+                    } else if (card.audioUrl.startsWith('http')) {
+                        // 일반 URL인 경우 (예: BGM)
+                        const response = await fetch(card.audioUrl);
+                        const buffer = await response.buffer();
+                        await fs.writeFile(audioPath, buffer);
+                    }
+                    
                     audioInputs.push({ path: audioPath, time: currentTime, volume: card.ttsVolume });
                 }
                 currentTime += card.duration;
             }
+            // TODO: BGM, SFX 다운로드 로직 추가 필요
 
             if (audioInputs.length === 0) {
                 console.log(`[${renderId}] 오디오 트랙 없음`);
                 return;
             }
 
+            // (이하 오디오 믹싱 로직은 동일합니다)
             const inputClauses = audioInputs.map(a => `-i "${a.path}"`).join(' ');
             const filterClauses = audioInputs.map((a, i) => `[${i}:a]adelay=${a.time * 1000}|${a.time * 1000}[a${i}]`).join(';');
             const concatClause = audioInputs.map((a, i) => `[a${i}]`).join('') + `amix=inputs=${audioInputs.length}`;
