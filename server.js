@@ -41,6 +41,9 @@ app.post('/api/create-tts', async (req, res) => {
 app.post('/render-video', async (req, res) => {
     console.log("실제 영상 렌더링 요청 받음!");
     const projectData = req.body;
+    
+    // [수정] fps 변수를 여기 최상단에 선언합니다.
+    const fps = 30; 
 
     const renderId = `render_${Date.now()}`;
     const tempDir = path.join(__dirname, 'temp', renderId);
@@ -65,7 +68,6 @@ app.post('/render-video', async (req, res) => {
             await page.goto(templatePath, { waitUntil: 'networkidle0' });
             
             let frameCount = 0;
-            const fps = 30;
 
             for (const card of projectData.scriptCards) {
                 const cardFrames = Math.floor(card.duration * fps);
