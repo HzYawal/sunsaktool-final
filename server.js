@@ -68,7 +68,7 @@ app.post('/render-video', async (req, res) => {
             await page.goto(templatePath, { waitUntil: 'networkidle0' });
             
             let frameCount = 0;
-
+            
             for (const card of projectData.scriptCards) {
                 const cardFrames = Math.floor(card.duration * fps);
                 for (let i = 0; i < cardFrames; i++) {
