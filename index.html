@@ -343,16 +343,21 @@
                         similarity_boost
                     }
                 };
-                const response = await fetch('/.netlify/functions/create-tts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                // [수정된 부분] Netlify 함수 경로 대신, 로컬 서버의 중계 API 경로를 호출합니다.
+                const response = await fetch('/api/create-tts', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify(payload) 
+                });
                 if (!response.ok) { const errorResult = await response.json(); throw new Error(`[${response.status}] ${errorResult.error || '서버 요청 실패'}`); }
                 const result = await response.json(); 
                 const { audioUrl } = result;
-                const duration = await helpers.getAudioDuration(audioUrl); // Get original duration
+                const duration = await helpers.getAudioDuration(audioUrl);
                 const ttsData = { audioUrl, duration };
                 state.ttsCache.set(cacheKey, ttsData); 
                 return ttsData;
             } catch (error) {
-                console.error('TTS 생성 오류:', error); alert(`음성 생성 중 오류가 발생했습니다: ${error.message}\n(백엔드 기능이 설정되지 않았을 수 있습니다.)`); return null;
+                console.error('TTS 생성 오류:', error); alert(`음성 생성 중 오류가 발생했습니다: ${error.message}`); return null;
             } finally {
                 render.showLoadingOnCard(cardId, false);
             }
