@@ -1,3 +1,13 @@
+try {
+    const elevenLabsModule = require('elevenlabs-node');
+    console.log('--- elevenlabs-node 모듈 구조 검사 시작 ---');
+    console.log(JSON.stringify(elevenLabsModule, null, 2)); // 구조를 자세히 보기 위해 JSON으로 변환
+    console.log('--- 모듈의 키 목록:', Object.keys(elevenLabsModule));
+    console.log('--- 모듈 구조 검사 끝 ---');
+} catch (e) {
+    console.error('!!! 모듈 require 단계에서 오류 발생:', e);
+}
+
 const express = require('express');
 const path = require('path');
 const fs = require('fs-extra');
