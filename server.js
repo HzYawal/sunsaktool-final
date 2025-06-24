@@ -72,14 +72,59 @@ app.post('/render-video', async (req, res) => {
             const cardFrames = Math.floor(card.duration * fps);
             for (let i = 0; i < cardFrames; i++) {
                 
-                await page.evaluate((cardData) => {
-                    const textEl = document.querySelector('#st-preview-text');
-                    if (textEl) {
-                        textEl.innerText = cardData.text;
-                        Object.assign(textEl.style, cardData.style);
-                    }
-                }, card);
+                // ▼▼▼▼▼ 이 page.evaluate 함수를 업그레이드합니다 ▼▼▼▼▼
+                await page.evaluate((projectData, cardData) => {
+                    // 이 코드는 Puppeteer의 가상 브라우저 안에서 실행됩니다.
+                    
+                    // 1. 헤더 설정
+                    const header = projectData.projectSettings.header;
+                    const headerEl = document.querySelector('.st-preview-header');
+                    headerEl.style.backgroundColor = header.backgroundColor;
+                    headerEl.querySelector('.header-title').innerText = header.text;
+                    // TODO: 헤더 아이콘, 로고 등 추가 구현 필요
 
+                    // 2. 프로젝트 정보 설정
+                    const project = projectData.projectSettings.project;
+                    document.querySelector('.st-project-info .title').innerText = project.title;
+                    document.querySelector('.st-project-info span').innerText = `${project.author || ''} | 조회수 ${Number(project.views || 0).toLocaleString()}`;
+                    
+                    // 3. 텍스트 요소 설정
+                    const textWrapper = document.querySelector('#st-preview-text-container-wrapper');
+                    const textEl = document.querySelector('#st-preview-text');
+                    
+                    textEl.innerText = cardData.text;
+                    Object.assign(textEl.style, cardData.style);
+                    textWrapper.style.transform = `translate(${cardData.layout.text.x || 0}px, ${cardData.layout.text.y || 0}px) scale(${cardData.layout.text.scale || 1}) rotate(${cardData.layout.text.angle || 0}deg)`;
+
+                    // 4. 미디어 요소 설정
+                    const mediaWrapper = document.querySelector('#st-preview-media-container-wrapper');
+                    const imageEl = document.querySelector('#st-preview-image');
+                    const videoEl = document.querySelector('#st-preview-video');
+                    
+                    if (cardData.media.url) {
+                        mediaWrapper.style.display = 'block';
+                        mediaWrapper.style.transform = `translate(${cardData.layout.media.x || 0}px, ${cardData.layout.media.y || 0}px) scale(${cardData.layout.media.scale || 1}) rotate(${cardData.layout.media.angle || 0}deg)`;
+
+                        if (cardData.media.type === 'image') {
+                            imageEl.style.display = 'block';
+                            videoEl.style.display = 'none';
+                            imageEl.src = cardData.media.url; // 여기서 URL이 blob: 형태라면 문제가 될 수 있습니다.
+                            imageEl.style.objectFit = cardData.media.fit;
+                        } else {
+                            // 비디오 렌더링은 훨씬 더 복잡합니다. (지금은 일단 생략)
+                            videoEl.style.display = 'none';
+                            imageEl.style.display = 'none';
+                        }
+                    } else {
+                        mediaWrapper.style.display = 'none';
+                    }
+
+                    // TODO: 애니메이션, 줄별 나타나기 등 시간(timeInCard)에 따른 변화 구현 필요
+
+                }, projectData, card); // projectData와 cardData를 함께 넘겨줍니다.
+                // ▲▲▲▲▲ 여기까지가 업그레이드된 부분입니다 ▲▲▲▲▲
+
+                // 프레임 캡처 (이 부분은 동일)
                 const framePath = path.join(framesDir, `frame_${String(frameCount).padStart(6, '0')}.png`);
                 await page.screenshot({ path: framePath });
                 frameCount++;
