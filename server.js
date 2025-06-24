@@ -4,29 +4,51 @@ const fs = require('fs-extra');
 const puppeteer = require('puppeteer');
 const { exec } = require('child_process');
 const fetch = require('node-fetch');
+const ElevenLabs = require('elevenlabs-node');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 app.use(express.json({ limit: '100mb' }));
 app.use(express.static(__dirname));
+// ElevenLabs 클라이언트 초기화
+const voice = new ElevenLabs({
+    apiKey: process.env.ELEVENLABS_API_KEY, // Railway에 설정한 환경 변수 사용
+});
 
 // ==========================================================
 // TTS 중계 API
 // ==========================================================
 app.post('/api/create-tts', async (req, res) => {
+    const { text, voice_settings } = req.body;
+    if (!text || !text.trim()) {
+        return res.status(400).json({ error: 'TTS로 변환할 텍스트가 없습니다.' });
+    }
+    console.log(`TTS 요청 받음: "${text.substring(0, 30)}..."`);
+
     try {
-        const response = await fetch('https://sunsaktool-final.netlify.app/.netlify/functions/create-tts', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(req.body)
+        const audioStream = await voice.textToSpeechStream({
+            textInput: text,
+            voiceId: "pNInz6obpgDQGcFmaJgB", // 기본 목소리 ID (필요시 변경)
+            stability: voice_settings.stability,
+            similarityBoost: voice_settings.similarity_boost,
+            modelId: "eleven_multilingual_v2", // 한국어 지원 모델
         });
-        if (!response.ok) throw new Error(`Netlify 함수 오류: ${response.statusText}`);
-        const result = await response.json();
-        res.json(result);
+
+        // 프론트엔드에서 바로 사용할 수 있도록 Base64 데이터로 변환
+        const chunks = [];
+        for await (const chunk of audioStream) {
+            chunks.push(chunk);
+        }
+        const audioBuffer = Buffer.concat(chunks);
+        const audioBase64 = `data:audio/mpeg;base64,${audioBuffer.toString('base64')}`;
+
+        res.json({ audioUrl: audioBase64 });
+        console.log(`TTS 생성 성공 및 Base64 데이터 전송 완료.`);
+
     } catch (error) {
-        console.error('TTS 중계 오류:', error);
-        res.status(500).json({ error: error.message });
+        console.error('ElevenLabs API 오류:', error);
+        res.status(500).json({ error: error.message || 'TTS 생성 중 서버에서 오류가 발생했습니다.' });
     }
 });
 
@@ -233,25 +255,27 @@ app.post('/render-video', async (req, res) => {
                     audioTracks.push({ type: 'bgm', path, volume: projectData.globalBGM.volume || 0.3 });
                 } catch (e) { console.error('BGM 다운로드 실패:', e); }
             }
-            for (const [index, card] of projectData.scriptCards.entries()) {
-                if (card.audioUrl) {
+                        for (const [index, card] of projectData.scriptCards.entries()) {
+                // TTS 오디오 처리 (Base64 데이터)
+                if (card.audioUrl && card.audioUrl.startsWith('data:audio/')) {
                     try {
-                        const path = `${audioDir}/tts_${index}.mp3`;
-                        await fs.writeFile(path, Buffer.from(card.audioUrl.split(',')[1], 'base64'));
-                        audioTracks.push({ type: 'effect', path, time: currentTime, speed: card.ttsSettings.speed || 1.0, volume: card.ttsVolume || 1.0 });
-                    } catch(e) { console.error('TTS 파일 저장 실패:', e); }
+                        const ttsPath = `${audioDir}/tts_${index}.mp3`;
+                        const base64Data = card.audioUrl.split(',')[1];
+                        await fs.writeFile(ttsPath, Buffer.from(base64Data, 'base64'));
+                        audioTracks.push({ type: 'effect', path: ttsPath, time: currentTime, speed: card.ttsSettings.speed || 1.0, volume: card.ttsVolume || 1.0 });
+                    } catch (e) { console.error('TTS Base64 파일 저장 실패:', e); }
                 }
+                // SFX 오디오 처리 (기존 URL 방식)
                 if (card.sfxUrl) {
                     try {
                         const response = await fetch(card.sfxUrl);
-                        const path = `${audioDir}/sfx_${index}.mp3`;
-                        await fs.writeFile(path, await response.buffer());
-                        audioTracks.push({ type: 'effect', path, time: currentTime, speed: 1.0, volume: card.sfxVolume || 1.0 });
-                    } catch(e) { console.error('SFX 다운로드 실패:', e); }
+                        const sfxPath = `${audioDir}/sfx_${index}.mp3`;
+                        await fs.writeFile(sfxPath, await response.buffer());
+                        audioTracks.push({ type: 'effect', path: sfxPath, time: currentTime, speed: 1.0, volume: card.sfxVolume || 1.0 });
+                    } catch (e) { console.error('SFX 다운로드 실패:', e); }
                 }
                 currentTime += card.duration;
             }
-
             if (audioTracks.length === 0) {
                 console.log(`[${renderId}] 오디오 트랙 없음`);
                 return null;
@@ -330,9 +354,8 @@ app.post('/render-video', async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`=============================================`);
-    console.log(`  SunsakTool 서버가 실행되었습니다!`);
-    console.log(`  브라우저에서 http://localhost:${PORT} 로 접속하세요.`);
+    console.log(`  SunsakTool 서버가 ${PORT} 포트에서 실행되었습니다!`);
     console.log(`=============================================`);
 });
