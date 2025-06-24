@@ -13,49 +13,43 @@ app.use(express.static(__dirname));
 // ElevenLabs 클라이언트 초기화
 
 // ==========================================================
-// TTS 중계 API
+// [최종] 나만의 Hugging Face TTS API 호출
 // ==========================================================
-const elevenLabs = require('elevenlabs-node'); // 여기서 바로 라이브러리를 불러옵니다.
-
 app.post('/api/create-tts', async (req, res) => {
-    const { text, voice_settings } = req.body;
-    const apiKey = process.env.ELEVENLABS_API_KEY; // 환경 변수에서 API 키를 가져옵니다.
-    const voiceId = "pNInz6obpgDQGcFmaJgB";      // 사용할 목소리 ID
+    // 이제 프론트에서는 ttsSettings 대신 text만 받습니다.
+    const { text } = req.body;
+    
+    // 우리가 만든 Hugging Face Space의 최종 API 주소입니다!
+    const MY_TTS_API_URL = 'https://ywawaawawwa-sunsaktool-tts-korean.hf.space/api/tts'; 
 
-    if (!apiKey) {
-        console.error("ElevenLabs API 키가 설정되지 않았습니다.");
-        return res.status(500).json({ error: '서버에 API 키가 설정되지 않았습니다.' });
-    }
-    if (!text || !text.trim()) {
-        return res.status(400).json({ error: 'TTS로 변환할 텍스트가 없습니다.' });
-    }
-    console.log(`TTS 요청 받음: "${text.substring(0, 30)}..."`);
+    console.log(`나만의 TTS API로 요청 전달: "${text.substring(0, 30)}..."`);
 
     try {
-        // 'new' 없이 바로 textToSpeechStream 함수를 호출합니다.
-        const audioStream = await elevenLabs.textToSpeechStream({
-            apiKey: apiKey,
-            voiceId: voiceId,
-            textInput: text,
-            stability: voice_settings.stability,
-            similarityBoost: voice_settings.similarity_boost,
-            modelId: "eleven_multilingual_v2",
+        // 1. 우리 API 서버에 TTS 생성을 요청합니다.
+        const response = await fetch(MY_TTS_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: text })
         });
 
-        // 스트림을 Base64 데이터로 변환
-        const chunks = [];
-        for await (const chunk of audioStream) {
-            chunks.push(chunk);
+        // 2. 우리 API 서버가 제대로 응답했는지 확인합니다.
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`내 TTS API 서버 오류 (${response.status}): ${errorText}`);
         }
-        const audioBuffer = Buffer.concat(chunks);
-        const audioBase64 = `data:audio/mpeg;base64,${audioBuffer.toString('base64')}`;
 
+        // 3. 응답으로 온 오디오 데이터(wav)를 Buffer로 변환합니다.
+        const audioBuffer = await response.buffer();
+        // 4. 프론트엔드에서 사용할 수 있도록 Base64로 인코딩합니다.
+        const audioBase64 = `data:audio/wav;base64,${audioBuffer.toString('base64')}`;
+
+        // 5. 성공적으로 변환된 데이터를 프론트엔드로 보냅니다.
         res.json({ audioUrl: audioBase64 });
-        console.log(`TTS 생성 성공 및 Base64 데이터 전송 완료.`);
+        console.log(`나만의 TTS 음성 생성 및 Base64 전송 성공!`);
 
     } catch (error) {
-        console.error('ElevenLabs API 호출 오류:', error);
-        res.status(500).json({ error: error.message || 'TTS 생성 중 서버에서 오류가 발생했습니다.' });
+        console.error('내 TTS API 호출 중 오류 발생:', error);
+        res.status(500).json({ error: error.message });
     }
 });
 
