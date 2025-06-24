@@ -75,27 +75,38 @@ app.post('/render-video', async (req, res) => {
                     const timeInCard = i / fps;
                     
                     await page.evaluate((projectData, cardData, t) => {
-                        document.body.className = 'st-main-container';
+                        // [추가] 스케일 비율 계산
+                        const sourceWidth = projectData.renderMetadata.sourceWidth;
+                        const targetWidth = 1080; // 렌더링 목표 너비
+                        const scaleRatio = targetWidth / sourceWidth;
+
+                        // --- 1. 정적 요소 렌더링 (헤더, 프로젝트 정보) ---
                         const pSettings = projectData.projectSettings;
                         
+                        // 헤더
                         const headerEl = document.querySelector('.st-preview-header');
                         const headerTitleEl = headerEl.querySelector('.header-title');
                         headerEl.style.backgroundColor = pSettings.header.backgroundColor;
                         headerTitleEl.innerText = pSettings.header.text;
                         headerTitleEl.style.color = pSettings.header.color;
                         headerTitleEl.style.fontFamily = pSettings.header.fontFamily;
-                        headerTitleEl.style.fontSize = `${pSettings.header.fontSize}px`;
+                        headerTitleEl.style.fontSize = `${pSettings.header.fontSize * scaleRatio}px`; // 스케일링
                         
+                        // 프로젝트 정보
                         const projectInfoTitleEl = document.querySelector('.st-project-info .title');
                         const projectInfoSpanEl = document.querySelector('.st-project-info span');
                         projectInfoTitleEl.innerText = pSettings.project.title;
                         projectInfoTitleEl.style.color = pSettings.project.titleColor;
                         projectInfoTitleEl.style.fontFamily = pSettings.project.titleFontFamily;
-                        projectInfoTitleEl.style.fontSize = `${pSettings.project.titleFontSize}px`;
+                        projectInfoTitleEl.style.fontSize = `${pSettings.project.titleFontSize * scaleRatio}px`; // 스케일링
                         projectInfoTitleEl.style.fontWeight = 'bold';
                         projectInfoSpanEl.innerText = `${pSettings.project.author || ''} | 조회수 ${Number(pSettings.project.views || 0).toLocaleString()}`;
                         projectInfoSpanEl.style.color = pSettings.project.metaColor;
+                        // [추가] 하단 정보 폰트 크기도 스케일링
+                        projectInfoSpanEl.style.fontSize = `${13 * scaleRatio}px`;
 
+
+                        // --- 2. 카드별 동적 요소 렌더링 ---
                         const textWrapper = document.querySelector('#st-preview-text-container-wrapper');
                         const textEl = document.querySelector('#st-preview-text');
                         
@@ -107,8 +118,14 @@ app.post('/render-video', async (req, res) => {
                             textEl.appendChild(p);
                         });
 
-                        Object.assign(textEl.style, cardData.style);
-                        textWrapper.style.transform = `translate(${cardData.layout.text.x || 0}px, ${cardData.layout.text.y || 0}px) scale(${cardData.layout.text.scale || 1}) rotate(${cardData.layout.text.angle || 0}deg)`;
+                        // [수정] 스타일 객체의 모든 수치 값을 스케일링
+                        const scaledStyle = { ...cardData.style };
+                        scaledStyle.fontSize = `${parseFloat(cardData.style.fontSize) * scaleRatio}px`;
+                        scaledStyle.letterSpacing = `${parseFloat(cardData.style.letterSpacing) * scaleRatio}px`;
+                        Object.assign(textEl.style, scaledStyle);
+                        
+                        // [수정] 레이아웃 좌표도 스케일링
+                        textWrapper.style.transform = `translate(${cardData.layout.text.x * scaleRatio}px, ${cardData.layout.text.y * scaleRatio}px) scale(${cardData.layout.text.scale || 1}) rotate(${cardData.layout.text.angle || 0}deg)`;
 
                     }, projectData, card, timeInCard);
 
