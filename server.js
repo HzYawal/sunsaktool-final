@@ -4,7 +4,7 @@ const fs = require('fs-extra');
 const puppeteer = require('puppeteer');
 const { exec } = require('child_process');
 const fetch = require('node-fetch');
-const ElevenLabs = require('elevenlabs-node');
+const { ElevenLabs } = require('elevenlabs-node');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
