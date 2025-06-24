@@ -3,10 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>SunsakTool Renderer</title>
-    <!-- 폰트 로딩을 위한 링크 -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=IBM+Plex+Sans+KR:wght@400;700&family=Gowun+Dodum&family=Gowun+Batang&family=Nanum+Myeongjo:wght@400;700;800&family=Do+Hyeon&family=Black+Han+Sans&family=Gaegu:wght@400;700&family=Hi+Melody&family=Noto+Serif+KR:wght@400;700;900&family=Dokdo&display=swap">
     <style>
-        /* index.html의 모든 CSS 코드가 여기에 복사되었습니다. */
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=IBM+Plex+Sans+KR:wght@400;700&family=Gowun+Dodum&family=Gowun+Batang&family=Nanum+Myeongjo:wght@400;700;800&family=Do+Hyeon&family=Black+Han+Sans&family=Gaegu:wght@400;700&family=Hi+Melody&family=Noto+Serif+KR:wght@400;700;900&family=Dokdo&display=swap');
         @font-face { font-family: 'Pretendard'; src: url('https://cdn.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Regular.woff') format('woff'); font-weight: 400; }
         @font-face { font-family: 'Spoqa Han Sans Neo'; src: url('https://cdn.jsdelivr.net/gh/spoqa/spoqa-han-sans@latest/Subset/SpoqaHanSansNeo/SpoqaHanSansNeo-Regular.woff2') format('woff2'); font-weight: 400; }
@@ -51,9 +49,25 @@
         .st-preview-content { padding: 10px; color: black; flex-grow: 1; display: flex; flex-direction: column; background-color: white; overflow: hidden; position: relative; }
         .st-project-info { font-size: 13px; color: #555; margin: 0 0 16px 0; border-bottom: 1px solid #eee; padding-bottom: 16px; flex-shrink: 0; }
         .st-project-info .title { font-size: 22px; color: black; font-weight: bold; margin-bottom: 5px; }
-        .st-script-display { flex-grow: 1; display: flex; flex-direction: column; align-items: center; text-align: center; min-height: 0; width: 100%; }
+        .st-script-display {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            min-height: 0;
+            width: 100%;
+        }
         .interactive-target { position: relative; width: 100%; touch-action: none; transform-origin: center center; cursor: move; }
-        #st-preview-media-container-wrapper { margin-top: 8px; display: flex; justify-content: center; align-items: center; width: 100%; flex-grow: 1; min-height: 0; }
+        #st-preview-media-container-wrapper {
+            margin-top: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            flex-grow: 1;
+            min-height: 0;
+        }
         #st-preview-image, #st-preview-video { max-width: 100%; max-height: 100%; object-fit: contain; }
         .interactive-target.interactive-active { outline: 2px dashed var(--st-interact-color); z-index: 100; }
         #st-preview-text { width: 100%; font-size: 24px; color: #000; white-space: pre-wrap; flex-shrink: 0; }
@@ -117,51 +131,62 @@
         #st-sequence-menu hr { border: none; border-top: 1px solid var(--st-border-color); margin: 5px 0; }
         .tts-settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
+        /* ====== 모바일 반응형 CSS ====== */
         @media (max-width: 768px) {
             body {
                 overflow-y: auto; 
                 flex-direction: column;
                 height: auto;
             }
+
             .st-main-content {
                 flex-direction: column;
                 overflow: visible;
             }
+
             .st-sidebar {
                 display: none; 
             }
+            
             .st-main-container {
                 height: auto;
             }
+
             .st-preview-area {
                 flex-basis: auto;
                 width: 100%;
                 padding: 10px;
-                order: 1;
+                order: 1; /* 미리보기를 위로 */
             }
+
             .st-editor-area {
                 width: 100%;
                 border-left: none;
                 border-top: 2px solid var(--st-border-color);
                 height: auto;
                 min-height: 50vh;
-                order: 2;
+                order: 2; /* 편집기를 아래로 */
             }
+
             .st-top-header .st-logo {
                 display: none;
             }
+            
             .st-top-header {
                 justify-content: center;
             }
+            
             .st-editor-header .button-group {
                 flex-wrap: wrap;
                 gap: 5px;
                 justify-content: center;
                 margin-top: 10px;
             }
+
             .st-editor-header {
                 flex-direction: column;
             }
+            
             body.is-rendering .st-preview-panel {
                  transform: scale(0.3) translate(-110%, -110%) !important;
                  transform-origin: top left !important;
@@ -169,29 +194,32 @@
         }
     </style>
 </head>
-<body style="margin: 0; display: flex; height: 1920px; width: 1080px; align-items: center; justify-content: center;">
-    
-    <div class="st-preview-panel" id="st-preview-panel" style="width: 1080px; height: 1920px; max-width: none; aspect-ratio: auto; border-radius: 0; box-shadow: none; position: static;">
-        <div class="st-preview-header">
-            <div class="header-icon"></div>
-            <div class="header-title"></div>
-            <div class="header-logo-container"><img class="header-logo"></div>
-        </div>
-        <div class="st-preview-content" id="st-preview-content">
-            <div class="st-project-info">
-                <div class="title"></div><span></span>
-            </div>
-            <div class="st-script-display">
-                <div id="st-preview-text-container-wrapper" class="interactive-target" data-layout-key="text">
-                    <div id="st-preview-text"></div>
+<body>
+    <!-- [수정] index.html과 유사한 래퍼 구조 추가 -->
+    <div class="st-main-content" style="width: 1080px; height: 1920px; justify-content: center; align-items: center;">
+        <div class="st-preview-area" style="padding: 0; flex-basis: auto;">
+            <div class="st-preview-panel" id="st-preview-panel" style="width: 1080px; height: 1920px; max-width: none; aspect-ratio: auto; border-radius: 0; box-shadow: none; position: static;">
+                <div class="st-preview-header">
+                    <div class="header-icon"></div>
+                    <div class="header-title"></div>
+                    <div class="header-logo-container"><img class="header-logo"></div>
                 </div>
-                <div id="st-preview-media-container-wrapper" class="interactive-target" data-layout-key="media" style="display: none;">
-                    <img id="st-preview-image" style="display: none;">
-                    <video id="st-preview-video" style="display: none;" muted playsinline></video>
+                <div class="st-preview-content" id="st-preview-content">
+                    <div class="st-project-info">
+                        <div class="title"></div><span></span>
+                    </div>
+                    <div class="st-script-display">
+                        <div id="st-preview-text-container-wrapper" class="interactive-target" data-layout-key="text">
+                            <div id="st-preview-text"></div>
+                        </div>
+                        <div id="st-preview-media-container-wrapper" class="interactive-target" data-layout-key="media" style="display: none;">
+                            <img id="st-preview-image" style="display: none;">
+                            <video id="st-preview-video" style="display: none;" muted playsinline></video>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-
 </body>
 </html>
