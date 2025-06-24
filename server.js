@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs-extra');
 const puppeteer = require('puppeteer');
 const { exec } = require('child_process');
-const fetch = require('node-fetch'); // TTS 중계를 위해 필요합니다.
+const fetch = require('node-fetch');
 
 const app = express();
 const PORT = 3000;
@@ -11,14 +11,12 @@ const PORT = 3000;
 app.use(express.json({ limit: '50mb' }));
 app.use(express.static(__dirname));
 
-
 // ==========================================================
-// ▼▼▼ TTS 중계 API (이 부분이 추가되었습니다) ▼▼▼
+// TTS 중계 API
 // ==========================================================
 app.post('/api/create-tts', async (req, res) => {
     console.log("TTS 중계 요청 받음:", req.body);
     try {
-        // 실제 Netlify 함수 URL로 요청을 전달합니다.
         const ttsResponse = await fetch('https://sunsaktool-final.netlify.app/.netlify/functions/create-tts', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -42,7 +40,7 @@ app.post('/api/create-tts', async (req, res) => {
 
 
 // ==========================================================
-// ▼▼▼ 실제 영상 렌더링 API (기존과 동일) ▼▼▼
+// 실제 영상 렌더링 API (최종 강화 버전)
 // ==========================================================
 app.post('/render-video', async (req, res) => {
     console.log("실제 영상 렌더링 요청 받음!");
@@ -75,7 +73,7 @@ app.post('/render-video', async (req, res) => {
             for (let i = 0; i < cardFrames; i++) {
                 const timeInCard = i / fps;
                 
-                // [수정] Puppeteer의 브라우저 내부에서 실행될 완성형 렌더링 함수
+                // Puppeteer의 브라우저 내부에서 실행될 완성형 렌더링 함수
                 await page.evaluate((projectData, cardData, t) => {
                     // --- 1. 정적 요소 렌더링 (헤더, 프로젝트 정보) ---
                     const pSettings = projectData.projectSettings;
@@ -90,12 +88,16 @@ app.post('/render-video', async (req, res) => {
                     headerTitleEl.style.fontSize = `${pSettings.header.fontSize}px`;
                     
                     // 프로젝트 정보
-                    const projectInfoTitleEl = document.querySelector('.st-project-info .title');
-                    const projectInfoSpanEl = document.querySelector('.st-project-info span');
+                    const projectInfoEl = document.querySelector('.st-project-info');
+                    const projectInfoTitleEl = projectInfoEl.querySelector('.title');
+                    const projectInfoSpanEl = projectInfoEl.querySelector('span');
+                    
                     projectInfoTitleEl.innerText = pSettings.project.title;
                     projectInfoTitleEl.style.color = pSettings.project.titleColor;
                     projectInfoTitleEl.style.fontFamily = pSettings.project.titleFontFamily;
                     projectInfoTitleEl.style.fontSize = `${pSettings.project.titleFontSize}px`;
+                    projectInfoTitleEl.style.fontWeight = 'bold';
+                    
                     projectInfoSpanEl.innerText = `${pSettings.project.author || ''} | 조회수 ${Number(pSettings.project.views || 0).toLocaleString()}`;
                     projectInfoSpanEl.style.color = pSettings.project.metaColor;
 
@@ -107,13 +109,15 @@ app.post('/render-video', async (req, res) => {
                     const videoEl = document.querySelector('#st-preview-video');
                     
                     // 텍스트 내용, 스타일, 위치 적용
-                    textEl.innerText = cardData.text; // innerHTML 대신 innerText로 XSS 방지
+                    textEl.style.whiteSpace = 'pre-wrap';
+                    textEl.textContent = cardData.text; 
                     Object.assign(textEl.style, cardData.style);
+                    
                     textWrapper.style.transform = `translate(${cardData.layout.text.x || 0}px, ${cardData.layout.text.y || 0}px) scale(${cardData.layout.text.scale || 1}) rotate(${cardData.layout.text.angle || 0}deg)`;
 
                     // 미디어 내용, 스타일, 위치 적용
                     if (cardData.media.url) {
-                        mediaWrapper.style.display = 'flex'; // block 대신 flex로
+                        mediaWrapper.style.display = 'flex';
                         mediaWrapper.style.transform = `translate(${cardData.layout.media.x || 0}px, ${cardData.layout.media.y || 0}px) scale(${cardData.layout.media.scale || 1}) rotate(${cardData.layout.media.angle || 0}deg)`;
                         
                         if (cardData.media.type === 'image') {
@@ -122,15 +126,12 @@ app.post('/render-video', async (req, res) => {
                             imageEl.src = cardData.media.url;
                             imageEl.style.objectFit = cardData.media.fit;
                         } else {
-                            // 비디오는 다음 단계에서...
                             videoEl.style.display = 'none';
                             imageEl.style.display = 'none';
                         }
                     } else {
                         mediaWrapper.style.display = 'none';
                     }
-
-                    // TODO: 시간(t)에 따른 애니메이션, 텍스트 줄별 렌더링 로직 추가
 
                 }, projectData, card, timeInCard);
 
@@ -144,7 +145,7 @@ app.post('/render-video', async (req, res) => {
         console.log(`[${renderId}] 총 ${frameCount}개 프레임 캡처 완료`);
         await browser.close();
 
-        // 4. FFmpeg로 영상 합성
+        // 4. FFmpeg로 영상 합성 (오디오는 다음 단계에서 추가)
         const ffmpegCommand = `ffmpeg -framerate ${fps} -i "${path.join(framesDir, 'frame_%06d.png')}" -c:v libx264 -pix_fmt yuv420p -y "${outputVideoPath}"`;
         
         console.log(`[${renderId}] FFmpeg 실행...`);
