@@ -11,7 +11,7 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json({ limit: '100mb' }));
 app.use(express.static(__dirname));
-// ElevenLabs 클라이언트 초기화
+
 
 // ==========================================================
 // [최종 완성본] 구글 TTS API (목소리 & 속도 조절 가능)
