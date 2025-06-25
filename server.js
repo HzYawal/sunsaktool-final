@@ -7,6 +7,8 @@ const fetch = require('node-fetch');
 // 구글 클라이언트 라이브러리를 불러옵니다.
 const { TextToSpeechClient } = require('@google-cloud/text-to-speech');
 
+const cors = require('cors');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
