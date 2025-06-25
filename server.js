@@ -190,27 +190,18 @@ app.post('/render-video', async (req, res) => {
                         
                         textEl.innerHTML = '';
                         const hasCustomSequence = currentCard.animationSequence && currentCard.animationSequence.length > 0;
-                        const linesToDisplay = hasCustomSequence ? currentCard.animationSequence : currentCard.text.split('\n');
-                        const segments = currentCard.segments || [];
-
-                        // 렌더링할 텍스트 덩어리(segment)를 찾기 위한 헬퍼
-                        const findSegmentByText = (text) => segments.find(s => s.text.trim() === text.trim());
 
                         if (hasCustomSequence) {
-                            // 사용자가 지정한 순서(animationSequence)대로 텍스트를 표시
-                            linesToDisplay.forEach(lineText => {
-                                const segment = findSegmentByText(lineText);
-                                // 해당 텍스트의 시작 시간에 도달했을 때만 화면에 그림
-                                if (segment && t >= segment.startTime) {
+                            (currentCard.segments || []).forEach(segment => {
+                                if (t >= segment.startTime) {
                                     const p = document.createElement('p');
-                                    p.textContent = lineText || ' ';
+                                    p.textContent = segment.text || ' ';
                                     p.style.margin = 0;
                                     textEl.appendChild(p);
                                 }
                             });
                         } else {
-                            // 기본 동작: 줄바꿈 기준으로 모든 텍스트를 한 번에 표시
-                            linesToDisplay.forEach(line => {
+                            currentCard.text.split('\n').forEach(line => {
                                 const p = document.createElement('p');
                                 p.textContent = line || ' ';
                                 p.style.margin = 0;
