@@ -338,12 +338,10 @@
             render.showLoadingOnCard(cardId, true, '음성 생성 중...');
             try {
                 const payload = {
-                    text: text.trim(),
-                    voice_settings: {
-                        stability,
-                        similarity_boost
-                    }
-                };
+                      text: text.trim(),
+                      voice: cardData.ttsVoice // 사용자가 선택한 목소리 이름 추가
+                      speed: cardData.ttsSettings.speed // 사용자가 조절한 속도 값 추가
+               };
                 // [수정된 부분] Netlify 함수 경로 대신, 로컬 서버의 중계 API 경로를 호출합니다.
                 const response = await fetch('/api/create-tts', { 
                     method: 'POST', 
@@ -436,7 +434,16 @@
             cardElement: (cardData) => {
                 const cardEl = document.createElement('div'); cardEl.className = 'st-card'; cardEl.dataset.id = cardData.id;
                 const sfxOptions = render.sfxOptions();
-                cardEl.innerHTML = `<div class="st-card-header st-card-drag-handle"><span class="st-card-number"></span><button class="st-btn-delete-card">🗑️</button></div><div class="st-script-editor" contenteditable="true" spellcheck="false"></div><div class="st-card-footer"><div class="footer-row"><button class="st-play-clip-btn" title="미리듣기" disabled>▶️</button><span class="st-duration-label" title="클릭하여 자동/수동 전환">길이(자동)</span><input type="number" class="st-duration-input" min="0.1" step="0.1" value="${cardData.duration}" title="길이(초)" style="display: none;"><label class="st-action-btn" for="${cardData.id}-file">미디어 추가</label><input type="file" id="${cardData.id}-file" accept="image/*,video/*"></div><div class="footer-row media-controls" style="display: none;"><span>미디어 표시:</span><select class="media-timing-select"></select><span>지속 시간:</span><select class="media-persist-select"></select></div><div class="footer-row media-controls" style="display: none;"><span>미디어 맞춤:</span><label class="media-fit-label"><input type="radio" name="media-fit-${cardData.id}" value="cover">꽉 채우기</label><label class="media-fit-label"><input type="radio" name="media-fit-${cardData.id}" value="contain" checked>안에 맞추기</label><label class="media-fit-label"><input type="radio" name="media-fit-${cardData.id}" value="fill">늘리기</label></div><div class="footer-row tts-controls"><h4>TTS 설정</h4></div><div class="footer-row tts-controls"><label>볼륨</label><div class="st-flex-group"><input type="range" class="st-volume-slider tts-volume" data-type="tts-volume" data-target-id="${cardData.id}" min="0" max="1" step="0.01" value="${cardData.ttsVolume}"><input type="number" class="value-input" data-type="tts-volume" data-target-id="${cardData.id}" value="${Math.round(cardData.ttsVolume * 100)}"></div></div><div class="footer-row tts-controls"><label>속도</label><div class="st-flex-group"><input type="range" class="tts-speed-slider" data-target-id="${cardData.id}" min="0.5" max="2" step="0.05" value="${cardData.ttsSettings.speed}"><input type="number" class="value-input tts-speed-input" data-target-id="${cardData.id}" value="${cardData.ttsSettings.speed}" step="0.1"></div></div><div class="footer-row tts-controls tts-settings-grid"><div><label>안정성</label><input type="range" class="tts-stability-slider" data-target-id="${cardData.id}" min="0" max="1" step="0.01" value="${cardData.ttsSettings.stability}"></div><div><label>유사성</label><input type="range" class="tts-similarity-slider" data-target-id="${cardData.id}" min="0" max="1" step="0.01" value="${cardData.ttsSettings.similarity_boost}"></div></div><div class="footer-row"><label>효과음</label><div class="st-flex-group"><input type="range" class="st-volume-slider sfx-volume" data-type="sfx-volume" data-target-id="${cardData.id}" min="0" max="1" step="0.01" value="${cardData.sfxVolume}"><input type="number" class="value-input" data-type="sfx-volume" data-target-id="${cardData.id}" value="${Math.round(cardData.sfxVolume * 100)}"></div></div><div class="footer-row"><select class="st-sfx-select" style="flex-grow: 1;">${sfxOptions}</select></div></div><div class="st-card-loading" style="display: none;"></div>`;
+                cardEl.innerHTML = `<div class="st-card-header st-card-drag-handle"><span class="st-card-number"></span><button class="st-btn-delete-card">🗑️</button></div><div class="st-script-editor" contenteditable="true" spellcheck="false"></div><div class="st-card-footer"><div class="footer-row"><button class="st-play-clip-btn" title="미리듣기" disabled>▶️</button><span class="st-duration-label" title="클릭하여 자동/수동 전환">길이(자동)</span><input type="number" class="st-duration-input" min="0.1" step="0.1" value="${cardData.duration}" title="길이(초)" style="display: none;"><label class="st-action-btn" for="${cardData.id}-file">미디어 추가</label><input type="file" id="${cardData.id}-file" accept="image/*,video/*"></div><div class="footer-row media-controls" style="display: none;"><span>미디어 표시:</span><select class="media-timing-select"></select><span>지속 시간:</span><select class="media-persist-select"></select></div><div class="footer-row media-controls" style="display: none;"><span>미디어 맞춤:</span><label class="media-fit-label"><input type="radio" name="media-fit-${cardData.id}" value="cover">꽉 채우기</label><label class="media-fit-label"><input type="radio" name="media-fit-${cardData.id}" value="contain" checked>안에 맞추기</label><label class="media-fit-label"><input type="radio" name="media-fit-${cardData.id}" value="fill">늘리기</label></div><div class="footer-row tts-controls"><h4>TTS 설정</h4></div><div class="footer-row tts-controls"><label>볼륨</label><div class="st-flex-group"><input type="range" class="st-volume-slider tts-volume" data-type="tts-volume" data-target-id="${cardData.id}" min="0" max="1" step="0.01" value="${cardData.ttsVolume}"><input type="number" class="value-input" data-type="tts-volume" data-target-id="${cardData.id}" value="${Math.round(cardData.ttsVolume * 100)}"></div></div><div class="footer-row tts-controls">
+    <label>목소리 선택</label>
+    <select class="tts-voice-select">
+        <option value="ko-KR-Standard-C">표준 남성 1</option>
+        <option value="ko-KR-Standard-D">표준 남성 2</option>
+        <option value="ko-KR-Standard-A">표준 여성 1</option>
+        <option value="ko-KR-Standard-B">표준 여성 2</option>
+    </select>
+</div><div class="footer-row tts-controls"><label>속도</label><div class="st-flex-group"><input type="range" class="tts-speed-slider" data-target-id="${cardData.id}" min="0.5" max="2" step="0.05" value="${cardData.ttsSettings.speed}"><input type="number" class="value-input tts-speed-input" data-target-id="${cardData.id}" value="${cardData.ttsSettings.speed}" step="0.1"></div></div><div class="footer-row"><label>효과음</label><div class="st-flex-group"><input type="range" class="st-volume-slider sfx-volume" data-type="sfx-volume" data-target-id="${cardData.id}" min="0" max="1" step="0.01" value="${cardData.sfxVolume}"><input type="number" class="value-input" data-type="sfx-volume" data-target-id="${cardData.id}" value="${Math.round(cardData.sfxVolume * 100)}"></div></div><div class="footer-row"><select class="st-sfx-select" style="flex-grow: 1;">${sfxOptions}</select></div></div><div class="st-card-loading" style="display: none;"></div>`;
+                
                 cardEl.querySelector('.st-sfx-select').value = cardData.sfxUrl || '';
                 return cardEl;
             },
@@ -781,6 +788,7 @@
                     style: { ...state.projectSettings.defaultStyle, fontSize: state.projectSettings.defaultStyle.fontSize + 'px', letterSpacing: state.projectSettings.defaultStyle.letterSpacing + 'px' },
                     audioUrl: null, ttsReady: false, ttsVolume: 0.9, 
                     ttsSettings: { speed: 1.3, stability: 0.75, similarity_boost: 0.75 },
+                    ttsVoice: 'ko-KR-Standard-C', // 기본 목소리 설정
                     sfxUrl: null, sfxVolume: 0.8,
                     layout: { text: { x: 0, y: 0, scale: 1, angle: 0 }, media: { x: 0, y: 0, scale: 1, angle: 0 } },
                     // [수정] 모든 애니메이션 기본값을 '없음(none)'으로 설정
@@ -804,6 +812,14 @@
             bindCardEvents(cardEl) {
                 const cardId = cardEl.dataset.id;
                 const editor = cardEl.querySelector('.st-script-editor');
+               cardEl.querySelector('.tts-voice-select').addEventListener('change', (e) => {
+    const cardData = state.scriptCards.find(c => c.id === cardId);
+    if (cardData) {
+        cardData.ttsVoice = e.target.value;
+        // 목소리를 바꾸면 바로 새 음성을 생성하도록 요청
+        debouncedTTSRequest(cardId);
+    }
+});
                 
                 editor.addEventListener('input', () => {
                     const parentCardEl = editor.closest('.st-card');
