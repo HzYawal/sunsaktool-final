@@ -16,7 +16,7 @@ app.use(express.static(__dirname));
 // ==========================================================
 // [최종 완성본] 구글 TTS API (목소리 & 속도 조절 가능)
 // ==========================================================
-app.post('/api/create-tts', async (req, res) => { // <--- async 키워드 확인!
+app.post('/api/create-tts', async (req, res) => {
     // 프론트엔드에서 'text', 'voice', 'speed' 값을 받습니다.
     const { text, voice, speed } = req.body;
     
@@ -54,31 +54,6 @@ app.post('/api/create-tts', async (req, res) => { // <--- async 키워드 확인
 
         res.json({ audioUrl: audioUrl });
         console.log(`[${selectedVoice}, 속도: ${speakingRate}] 목소리 생성 성공!`);
-
-    } catch (error) {
-        console.error('구글 TTS API 호출 중 오류 발생:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
-    try {
-        // 구글에 보낼 요청 내용을 구성합니다.
-        const request = {
-            input: { text: text },
-            // 먼저 표준 남성 목소리(C) 하나로만 고정해서 테스트합니다.
-            voice: { languageCode: 'ko-KR', name: 'ko-KR-Standard-C' },
-            audioConfig: { audioEncoding: 'MP3' },
-        };
-
-        // 구글에 TTS 생성을 요청하고 응답을 받습니다.
-        const [response] = await client.synthesizeSpeech(request);
-        
-        // 받은 오디오 데이터를 Base64 문자열로 변환합니다.
-        const audioBase64 = response.audioContent.toString('base64');
-        const audioUrl = `data:audio/mp3;base64,${audioBase64}`;
-
-        // 성공적으로 변환된 데이터를 프론트엔드로 보냅니다.
-        res.json({ audioUrl: audioUrl });
-        console.log(`구글 표준 목소리 생성 성공!`);
 
     } catch (error) {
         console.error('구글 TTS API 호출 중 오류 발생:', error);
@@ -213,14 +188,10 @@ app.post('/render-video', async (req, res) => {
                             mediaWrapper.style.display = 'none';
                         }
                         
-                         // 텍스트 줄별 렌더링 (최종 수정)
                         textEl.innerHTML = '';
-
-                        // 사용자가 직접 순서를 지정했는지 확인
                         const hasCustomSequence = currentCard.animationSequence && currentCard.animationSequence.length > 0;
 
                         if (hasCustomSequence) {
-                            // 직접 지정한 순서가 있을 때만 시간차 렌더링
                             (currentCard.segments || []).forEach(segment => {
                                 if (t >= segment.startTime) {
                                     const p = document.createElement('p');
@@ -230,7 +201,6 @@ app.post('/render-video', async (req, res) => {
                                 }
                             });
                         } else {
-                            // 순서를 지정하지 않았으면, 모든 텍스트를 한 번에 표시
                             currentCard.text.split('\n').forEach(line => {
                                 const p = document.createElement('p');
                                 p.textContent = line || ' ';
@@ -239,7 +209,6 @@ app.post('/render-video', async (req, res) => {
                             });
                         }
 
-                        // 애니메이션 적용
                         const applyAnimation = (el, anims, duration, time) => {
                             const baseTransform = el.style.transform.split(' ').filter(s => !s.startsWith('translateY') && !s.startsWith('scale')).join(' ');
                             el.style.opacity = 1; el.style.transform = baseTransform;
@@ -288,23 +257,22 @@ app.post('/render-video', async (req, res) => {
                     audioTracks.push({ type: 'bgm', path, volume: projectData.globalBGM.volume || 0.3 });
                 } catch (e) { console.error('BGM 다운로드 실패:', e); }
             }
-                        for (const [index, card] of projectData.scriptCards.entries()) {
-                // TTS 오디오 처리 (Base64 데이터)
+            for (const [index, card] of projectData.scriptCards.entries()) {
                 if (card.audioUrl && card.audioUrl.startsWith('data:audio/')) {
                     try {
                         const ttsPath = `${audioDir}/tts_${index}.mp3`;
                         const base64Data = card.audioUrl.split(',')[1];
                         await fs.writeFile(ttsPath, Buffer.from(base64Data, 'base64'));
-                        audioTracks.push({ type: 'effect', path: ttsPath, time: currentTime, speed: card.ttsSettings.speed || 1.0, volume: card.ttsVolume || 1.0 });
+                        // 구글 TTS는 속도 조절이 이미 오디오에 반영되었으므로 atempo 필터가 필요 없습니다.
+                        audioTracks.push({ type: 'effect', path: ttsPath, time: currentTime, volume: card.ttsVolume || 1.0 });
                     } catch (e) { console.error('TTS Base64 파일 저장 실패:', e); }
                 }
-                // SFX 오디오 처리 (기존 URL 방식)
                 if (card.sfxUrl) {
                     try {
                         const response = await fetch(card.sfxUrl);
                         const sfxPath = `${audioDir}/sfx_${index}.mp3`;
                         await fs.writeFile(sfxPath, await response.buffer());
-                        audioTracks.push({ type: 'effect', path: sfxPath, time: currentTime, speed: 1.0, volume: card.sfxVolume || 1.0 });
+                        audioTracks.push({ type: 'effect', path: sfxPath, time: currentTime, volume: card.sfxVolume || 1.0 });
                     } catch (e) { console.error('SFX 다운로드 실패:', e); }
                 }
                 currentTime += card.duration;
@@ -317,15 +285,14 @@ app.post('/render-video', async (req, res) => {
             const inputClauses = audioTracks.map(t => `-i "${t.path}"`).join(' ');
             let filterComplex = '';
 
-            // [수정] 오디오 트랙 개수에 따라 명령어 분기
             if (audioTracks.length > 1) {
                 const outputStreams = [];
                 audioTracks.forEach((track, i) => {
                     let stream = `[${i}:a]`;
                     if (track.type === 'bgm') {
                         stream += `volume=${track.volume}[a${i}]`;
-                    } else if (track.type === 'effect') {
-                        stream += `atempo=${track.speed},volume=${track.volume},adelay=${track.time * 1000}|${track.time * 1000}[a${i}]`;
+                    } else {
+                        stream += `volume=${track.volume},adelay=${track.time * 1000}|${track.time * 1000}[a${i}]`;
                     }
                     filterComplex += stream;
                     outputStreams.push(`[a${i}]`);
@@ -333,13 +300,8 @@ app.post('/render-video', async (req, res) => {
                 });
                 filterComplex += `;${outputStreams.join('')}amix=inputs=${outputStreams.length}:duration=longest`;
             } else {
-                // 오디오 트랙이 하나일 경우 (amix 불필요)
                 const track = audioTracks[0];
-                if (track.type === 'bgm') {
-                    filterComplex = `[0:a]volume=${track.volume}`;
-                } else if (track.type === 'effect') {
-                    filterComplex = `[0:a]atempo=${track.speed},volume=${track.volume}`;
-                }
+                filterComplex = `[0:a]volume=${track.volume}`;
             }
 
             const mixCommand = `ffmpeg ${inputClauses} -filter_complex "${filterComplex}" -y "${finalAudioPath}"`;
@@ -360,10 +322,10 @@ app.post('/render-video', async (req, res) => {
 
         const [_, audioPathResult] = await Promise.all([videoRenderPromise, audioRenderPromise]);
         
-        await browser.close();
+        if (browser) await browser.close();
 
-        const hasAudio = audioPathResult && (await fs.pathExists(audioPathResult));
-        const audioInput = hasAudio ? `-i "${audioPathResult}"` : '';
+        const hasAudio = await fs.pathExists(finalAudioPath);
+        const audioInput = hasAudio ? `-i "${finalAudioPath}"` : '';
         const totalDuration = projectData.scriptCards.reduce((sum, c) => sum + c.duration, 0);
         
         const durationOpt = hasAudio ? '-shortest' : `-t ${totalDuration}`;
