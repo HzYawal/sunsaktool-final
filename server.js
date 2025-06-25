@@ -4,6 +4,7 @@ const fs = require('fs-extra');
 const puppeteer = require('puppeteer');
 const { exec } = require('child_process');
 const fetch = require('node-fetch');
+// 구글 클라이언트 라이브러리를 불러옵니다.
 const { TextToSpeechClient } = require('@google-cloud/text-to-speech');
 
 const app = express();
@@ -12,12 +13,11 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json({ limit: '100mb' }));
 app.use(express.static(__dirname));
 
-
 // ==========================================================
 // [최종 완성본] 구글 TTS API (목소리 & 속도 조절 가능)
 // ==========================================================
-app.post('/api/create-tts', async (req, res) => {
-    // 프론트엔드에서 'text', 'voice', 그리고 'speed' 값을 받습니다.
+app.post('/api/create-tts', async (req, res) => { // <--- async 키워드 확인!
+    // 프론트엔드에서 'text', 'voice', 'speed' 값을 받습니다.
     const { text, voice, speed } = req.body;
     
     if (!text || !text.trim()) {
