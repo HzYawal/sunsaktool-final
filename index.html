@@ -520,8 +520,7 @@
 
                 cardEl.querySelector('.tts-speed-slider').value = cardData.ttsSettings.speed;
                 cardEl.querySelector('.tts-speed-input').value = cardData.ttsSettings.speed.toFixed(2);
-                cardEl.querySelector('.tts-stability-slider').value = cardData.ttsSettings.stability;
-                cardEl.querySelector('.tts-similarity-slider').value = cardData.ttsSettings.similarity_boost;
+                
 
                 cardEl.querySelector('.sfx-volume').value = cardData.sfxVolume;
                 cardEl.querySelector('.value-input[data-type="sfx-volume"]').value = Math.round(cardData.sfxVolume*100);
@@ -933,8 +932,6 @@
                 });                
                 const ttsSettingsHandler = () => {
                     cardData.ttsSettings.speed = parseFloat(cardEl.querySelector('.tts-speed-slider').value);
-                    cardData.ttsSettings.stability = parseFloat(cardEl.querySelector('.tts-stability-slider').value);
-                    cardData.ttsSettings.similarity_boost = parseFloat(cardEl.querySelector('.tts-similarity-slider').value);
                     debouncedTTSRequest(cardId);
                 };
                 cardEl.querySelector('.tts-speed-slider').addEventListener('change', ttsSettingsHandler);
