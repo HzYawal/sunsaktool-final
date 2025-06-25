@@ -846,7 +846,7 @@
                     media: { url: null, type: null, fit: 'contain', showOnSegment: 1, persistUntilCardId: null, startTime: 0, endTime: null },
                     style: { ...state.projectSettings.defaultStyle, fontSize: state.projectSettings.defaultStyle.fontSize + 'px', letterSpacing: state.projectSettings.defaultStyle.letterSpacing + 'px' },
                     audioUrl: null, ttsReady: false, ttsVolume: 0.9, 
-                    ttsSettings: { speed: 1.3, stability: 0.75, similarity_boost: 0.75 },
+                    ttsSettings: { speed: 1.0 }, // 기본 속도를 1.0으로 설정하고, 불필요한 값 제거
                     ttsVoice: 'ko-KR-Standard-C', // 기본 목소리 설정
                     sfxUrl: null, sfxVolume: 0.8,
                     layout: { text: { x: 0, y: 0, scale: 1, angle: 0 }, media: { x: 0, y: 0, scale: 1, angle: 0 } },
