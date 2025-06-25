@@ -324,16 +324,16 @@
             getGroupKey: (name) => { const keywords = ['물방울','클릭','등장','알림','타격','게임','스윕','넘어가는','넘기는','종이','카툰','폭발','팡파레','스우','깜짝','전자음']; for (const key of keywords) { if (name.includes(key)) return key; } return '기타'; }
         };
         async function fetchTTS(cardId) {
-            const cardData = state.scriptCards.find(c => c.id === cardId);
-            if (!cardData || !cardData.text.trim()) return null;
-            
-            const { text } = cardData;
-            const { stability, similarity_boost } = cardData.ttsSettings;
-            const cacheKey = `${text.trim()}-${stability}-${similarity_boost}`;
+    const cardData = state.scriptCards.find(c => c.id === cardId);
+    if (!cardData || !cardData.text.trim()) return null;
+    
+    // [수정] 더 이상 사용하지 않는 ElevenLabs 설정 대신, 현재 사용하는 값으로 캐시 키를 만듭니다.
+    const { text, ttsVoice, ttsSettings } = cardData;
+    const cacheKey = `${text.trim()}-${ttsVoice}-${ttsSettings.speed}`;
 
-            if (state.ttsCache.has(cacheKey)) {
-                return state.ttsCache.get(cacheKey);
-            }
+    if (state.ttsCache.has(cacheKey)) {
+        return state.ttsCache.get(cacheKey);
+    }
 
             render.showLoadingOnCard(cardId, true, '음성 생성 중...');
             try {
