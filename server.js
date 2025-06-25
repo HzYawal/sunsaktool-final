@@ -4,6 +4,7 @@ const fs = require('fs-extra');
 const puppeteer = require('puppeteer');
 const { exec } = require('child_process');
 const fetch = require('node-fetch');
+const { TextToSpeechClient } = require('@google-cloud/text-to-speech');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -13,42 +14,45 @@ app.use(express.static(__dirname));
 // ElevenLabs 클라이언트 초기화
 
 // ==========================================================
-// [최종] 나만의 Hugging Face TTS API 호출
+// [최종] 구글 클라우드 TTS API 호출 (표준 목소리)
 // ==========================================================
 app.post('/api/create-tts', async (req, res) => {
-    // 이제 프론트에서는 ttsSettings 대신 text만 받습니다.
+    // 프론트엔드에서는 이제 설정 없이 text만 받습니다.
     const { text } = req.body;
     
-    // 우리가 만든 Hugging Face Space의 최종 API 주소입니다!
-    const MY_TTS_API_URL = 'https://ywawaawawwa-sunsaktool-tts-korean.hf.space/api/tts'; 
+    if (!text || !text.trim()) {
+        return res.status(400).json({ error: 'TTS로 변환할 텍스트가 없습니다.' });
+    }
 
-    console.log(`나만의 TTS API로 요청 전달: "${text.substring(0, 30)}..."`);
+    console.log(`구글 TTS API로 요청 전달: "${text.substring(0, 30)}..."`);
+    
+    const client = new TextToSpeechClient({
+        // Railway 환경변수에 저장된 API 키를 사용합니다.
+        key: process.env.GOOGLE_API_KEY 
+    });
 
     try {
-        // 1. 우리 API 서버에 TTS 생성을 요청합니다.
-        const response = await fetch(MY_TTS_API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: text })
-        });
+        // 구글에 보낼 요청 내용을 구성합니다.
+        const request = {
+            input: { text: text },
+            // 먼저 표준 남성 목소리(C) 하나로만 고정해서 테스트합니다.
+            voice: { languageCode: 'ko-KR', name: 'ko-KR-Standard-C' },
+            audioConfig: { audioEncoding: 'MP3' },
+        };
 
-        // 2. 우리 API 서버가 제대로 응답했는지 확인합니다.
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`내 TTS API 서버 오류 (${response.status}): ${errorText}`);
-        }
+        // 구글에 TTS 생성을 요청하고 응답을 받습니다.
+        const [response] = await client.synthesizeSpeech(request);
+        
+        // 받은 오디오 데이터를 Base64 문자열로 변환합니다.
+        const audioBase64 = response.audioContent.toString('base64');
+        const audioUrl = `data:audio/mp3;base64,${audioBase64}`;
 
-        // 3. 응답으로 온 오디오 데이터(wav)를 Buffer로 변환합니다.
-        const audioBuffer = await response.buffer();
-        // 4. 프론트엔드에서 사용할 수 있도록 Base64로 인코딩합니다.
-        const audioBase64 = `data:audio/wav;base64,${audioBuffer.toString('base64')}`;
-
-        // 5. 성공적으로 변환된 데이터를 프론트엔드로 보냅니다.
-        res.json({ audioUrl: audioBase64 });
-        console.log(`나만의 TTS 음성 생성 및 Base64 전송 성공!`);
+        // 성공적으로 변환된 데이터를 프론트엔드로 보냅니다.
+        res.json({ audioUrl: audioUrl });
+        console.log(`구글 표준 목소리 생성 성공!`);
 
     } catch (error) {
-        console.error('내 TTS API 호출 중 오류 발생:', error);
+        console.error('구글 TTS API 호출 중 오류 발생:', error);
         res.status(500).json({ error: error.message });
     }
 });
