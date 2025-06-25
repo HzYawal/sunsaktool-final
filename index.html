@@ -930,17 +930,27 @@
                         UI.sfxPlayer.play().catch(err => console.error("미리듣기 SFX 재생 오류:", err));
                     }
                 });                
-                const ttsSettingsHandler = () => {
-                    cardData.ttsSettings.speed = parseFloat(cardEl.querySelector('.tts-speed-slider').value);
-                    debouncedTTSRequest(cardId);
-                };
-                cardEl.querySelector('.tts-speed-slider').addEventListener('change', ttsSettingsHandler);
-                cardEl.querySelector('.tts-stability-slider').addEventListener('change', ttsSettingsHandler);
-                cardEl.querySelector('.tts-similarity-slider').addEventListener('change', ttsSettingsHandler);
-                cardEl.querySelector('.tts-speed-input').addEventListener('change', e => {
-                    const speed = parseFloat(e.target.value);
-                    if (!isNaN(speed)) { cardEl.querySelector('.tts-speed-slider').value = speed; ttsSettingsHandler(); }
-                });
+                cardEl.querySelector('.tts-speed-slider').addEventListener('input', e => {
+    const cardData = state.scriptCards.find(c => c.id === cardId);
+    if (cardData) {
+        cardData.ttsSettings.speed = parseFloat(e.target.value);
+        cardEl.querySelector('.tts-speed-input').value = cardData.ttsSettings.speed.toFixed(1);
+    }
+});
+
+cardEl.querySelector('.tts-speed-slider').addEventListener('change', () => {
+    debouncedTTSRequest(cardId);
+});
+
+cardEl.querySelector('.tts-speed-input').addEventListener('change', e => {
+    const cardData = state.scriptCards.find(c => c.id === cardId);
+    const speed = parseFloat(e.target.value);
+    if (cardData && !isNaN(speed)) {
+        cardData.ttsSettings.speed = speed;
+        cardEl.querySelector('.tts-speed-slider').value = speed;
+        debouncedTTSRequest(cardId);
+    }
+});
 
                 cardEl.querySelector('.st-sfx-select').addEventListener('change', (e) => {
                     const url = e.target.value;
