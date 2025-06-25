@@ -10,6 +10,7 @@ const { TextToSpeechClient } = require('@google-cloud/text-to-speech');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+app.use(cors()); // <-- 이 줄 추가
 app.use(express.json({ limit: '100mb' }));
 app.use(express.static(__dirname));
 
