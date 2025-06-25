@@ -14,23 +14,24 @@ app.use(express.static(__dirname));
 // ElevenLabs 클라이언트 초기화
 
 // ==========================================================
-// [최종 업그레이드] 구글 TTS API (목소리 & 속도 조절 가능)
+// [최종 완성본] 구글 TTS API (목소리 & 속도 조절 가능)
 // ==========================================================
 app.post('/api/create-tts', async (req, res) => {
-    // 프론트에서 'text', 'voice', 그리고 'speed' 값을 받습니다.
+    // 프론트엔드에서 'text', 'voice', 그리고 'speed' 값을 받습니다.
     const { text, voice, speed } = req.body;
     
     if (!text || !text.trim()) {
         return res.status(400).json({ error: 'TTS로 변환할 텍스트가 없습니다.' });
     }
 
+    // 프론트에서 값이 안 넘어올 경우를 대비한 기본값 설정
     const selectedVoice = voice || 'ko-KR-Standard-C';
-    // speed 값이 없으면 기본값 1.0 사용
     const speakingRate = parseFloat(speed) || 1.0; 
 
     console.log(`구글 TTS 요청: [${selectedVoice}, 속도: ${speakingRate}] "${text.substring(0, 20)}..."`);
     
     const client = new TextToSpeechClient({
+        // Railway 환경변수에 저장된 API 키를 사용합니다.
         key: process.env.GOOGLE_API_KEY
     });
 
@@ -39,8 +40,9 @@ app.post('/api/create-tts', async (req, res) => {
 
     try {
         const request = {
-            // 'input' 대신 'ssml'을 사용합니다.
+            // SSML 형식으로 요청합니다.
             input: { ssml: ssmlText }, 
+            // 프론트에서 받은 목소리 이름을 사용합니다.
             voice: { languageCode: 'ko-KR', name: selectedVoice },
             audioConfig: { audioEncoding: 'MP3' },
         };
