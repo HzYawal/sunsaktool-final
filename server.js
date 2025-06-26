@@ -1,4 +1,4 @@
-// ================== [server.js 전체 최종 코드 시작 V6] ==================
+// ================== [이 코드로 통째로 교체하세요] ==================
 const express = require('express');
 const path = require('path');
 const fs = require('fs-extra');
@@ -8,6 +8,7 @@ const { TextToSpeechClient } = require('@google-cloud/text-to-speech');
 const cors = require('cors');
 const { URL } = require('url');
 const puppeteer = require('puppeteer'); 
+const os = require('os'); // [핵심 추가] os 모듈 추가
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -33,13 +34,16 @@ app.post('/api/create-tts', async (req, res) => {
     } catch (error) { console.error('구글 TTS API 호출 중 오류 발생:', error); res.status(500).json({ error: error.message }); }
 });
 
-// 영상 렌더링 API (V6: FFmpeg 로직 완전 재설계 최종판)
+// 영상 렌더링 API
 app.post('/render-video', async (req, res) => {
-    console.log("영상 렌더링 요청 시작 (V6: 안정성 최우선)");
+    console.log("영상 렌더링 요청 시작 (Cloud Run 호환 버전)");
     const projectData = req.body;
     const fps = 30;
     const renderId = `render_${Date.now()}`;
-    const tempDir = path.join(__dirname, 'temp', renderId);
+    
+    // [핵심 수정] Cloud Run의 유일한 쓰기 가능 폴더인 /tmp를 사용
+    const tempDir = path.join(os.tmpdir(), renderId);
+    
     const overlayFramesDir = path.join(tempDir, 'overlay_frames');
     const mediaDir = path.join(tempDir, 'media');
     const audioDir = path.join(tempDir, 'audio');
@@ -52,16 +56,12 @@ app.post('/render-video', async (req, res) => {
         await fs.ensureDir(overlayFramesDir);
         await fs.ensureDir(mediaDir);
         await fs.ensureDir(audioDir);
-        console.log(`[${renderId}] 임시 폴더 생성`);
+        console.log(`[${renderId}] 임시 폴더 생성: ${tempDir}`);
         
         const totalDuration = projectData.scriptCards.reduce((sum, card) => sum + card.duration, 0);
 
-        // ==========================================================
-        // PASS 1-A: 배경 비디오 생성 (가장 안정적인 '한 장씩 쌓기' 방식으로 변경)
-        // ==========================================================
+        // --- PASS 1-A: 배경 비디오 생성 ---
         console.log(`[${renderId}] Pass 1-A: 배경 비디오 생성 시작`);
-        
-        // 1. 검은색 배경 비디오를 기본 캔버스로 생성
         const canvasVideoPath = path.join(mediaDir, 'canvas.mp4');
         const blackBgCommand = `ffmpeg -f lavfi -i color=c=black:s=1080x1920:d=${totalDuration} -pix_fmt yuv420p -y "${canvasVideoPath}"`;
         await new Promise((resolve, reject) => exec(blackBgCommand, (err) => { if (err) { console.error('검은 배경 생성 실패:', err); reject(new Error(err)); } else resolve(); }));
@@ -69,14 +69,24 @@ app.post('/render-video', async (req, res) => {
         let currentVideo = canvasVideoPath;
         let accumulatedTime = 0;
 
-        // 2. 각 미디어를 순차적으로 캔버스에 덮어씌움
         for (const [index, card] of projectData.scriptCards.entries()) {
             if (card.media.url) {
                 try {
                     const nextVideo = path.join(mediaDir, `temp_video_${index}.mp4`);
                     const isBase64 = card.media.url.startsWith('data:');
-                    const fileBuffer = isBase64 ? Buffer.from(card.media.url.split(',')[1], 'base64') : await (await fetch(card.media.url)).buffer();
-                    const fileExtension = isBase64 ? card.media.url.match(/data:(?:image|video)\/([a-zA-Z0-9-.+]+);/)[1].split('+')[0] : path.extname(new URL(card.media.url).pathname).substring(1);
+                    
+                    let fileBuffer;
+                    let fileExtension;
+
+                    if (isBase64) {
+                        fileBuffer = Buffer.from(card.media.url.split(',')[1], 'base64');
+                        fileExtension = card.media.url.match(/data:(?:image|video)\/([a-zA-Z0-9-.+]+);/)[1].split('+')[0];
+                    } else { // http, https URL
+                        const response = await fetch(card.media.url);
+                        if (!response.ok) throw new Error(`URL fetch 실패: ${response.statusText}`);
+                        fileBuffer = await response.buffer();
+                        fileExtension = path.extname(new URL(card.media.url).pathname).substring(1) || 'jpg';
+                    }
                     
                     const inputPath = path.join(mediaDir, `media_${index}.${fileExtension}`);
                     await fs.writeFile(inputPath, fileBuffer);
@@ -92,11 +102,10 @@ app.post('/render-video', async (req, res) => {
                     
                     const scaleFilter = `scale=1080:1920:force_original_aspect_ratio=decrease:pad=1080:1920:-1:-1:color=black`;
                     
-                    // [핵심 수정] 이미지와 비디오를 다르게 처리하고, 명령어를 단순화하여 안정성 확보
                     let overlayCommand;
                     if (['jpg', 'jpeg', 'png', 'webp'].includes(fileExtension.toLowerCase())) {
                         overlayCommand = `ffmpeg -i "${currentVideo}" -loop 1 -i "${inputPath}" -filter_complex "[1:v] ${scaleFilter},trim=duration=${card.duration} [ovr]; [0:v][ovr] overlay=x=0:y=0:enable='between(t,${showTime},${endTime})'" -y "${nextVideo}"`;
-                    } else { // GIF 또는 비디오
+                    } else {
                         overlayCommand = `ffmpeg -i "${currentVideo}" -i "${inputPath}" -filter_complex "[1:v] ${scaleFilter} [ovr]; [0:v][ovr] overlay=x=0:y=0:enable='between(t,${showTime},${endTime})':shortest=1" -y "${nextVideo}"`;
                     }
 
@@ -115,10 +124,8 @@ app.post('/render-video', async (req, res) => {
         console.log(`[${renderId}] Pass 1-A: 배경 비디오 생성 완료`);
 
 
-        // ==========================================================
-        // PASS 1-B: Puppeteer로 투명 배경 텍스트 오버레이 렌더링
-        // ==========================================================
-        // (이 부분은 변경 없음, 생략하지 않고 모두 포함)
+        // --- PASS 1-B: Puppeteer 렌더링 ---
+        // [참고] 이 부분은 기존 코드와 거의 동일합니다. render_template.html 경로는 __dirname이 맞습니다.
         console.log(`[${renderId}] Pass 1-B: 텍스트 오버레이 렌더링 시작`);
         browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
         const page = await browser.newPage();
@@ -164,7 +171,7 @@ app.post('/render-video', async (req, res) => {
             console.log(`[${renderId}] 임시 폴더 삭제 및 작업 완료`);
         });
 
-    } catch (error) {
+     } catch (error) {
         console.error(`[${renderId}] 렌더링 중 오류 발생:`, error);
         if (browser) await browser.close();
         if (await fs.pathExists(tempDir)) await fs.remove(tempDir);
@@ -177,4 +184,3 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(`  SunsakTool 서버가 ${PORT} 포트에서 실행되었습니다!`);
     console.log(`=============================================`);
 });
-// ================== [server.js 전체 최종 코드 끝 V6] ==================
