@@ -1,4 +1,4 @@
-// ================== [이 코드로 통째로 교체하세요] ==================
+// ================== [이 코드로 통째로 교체하세요 - 최종 해결 버전] ==================
 const express = require('express');
 const path = require('path');
 const fs = require('fs-extra');
@@ -8,7 +8,7 @@ const { TextToSpeechClient } = require('@google-cloud/text-to-speech');
 const cors = require('cors');
 const { URL } = require('url');
 const puppeteer = require('puppeteer'); 
-const os = require('os'); // [핵심 추가] os 모듈 추가
+const os = require('os');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -36,12 +36,10 @@ app.post('/api/create-tts', async (req, res) => {
 
 // 영상 렌더링 API
 app.post('/render-video', async (req, res) => {
-    console.log("영상 렌더링 요청 시작 (Cloud Run 호환 버전)");
+    console.log("영상 렌더링 요청 시작 (FFmpeg 호환성 해결 버전)");
     const projectData = req.body;
     const fps = 30;
     const renderId = `render_${Date.now()}`;
-    
-    // [핵심 수정] Cloud Run의 유일한 쓰기 가능 폴더인 /tmp를 사용
     const tempDir = path.join(os.tmpdir(), renderId);
     
     const overlayFramesDir = path.join(tempDir, 'overlay_frames');
@@ -74,43 +72,37 @@ app.post('/render-video', async (req, res) => {
                 try {
                     const nextVideo = path.join(mediaDir, `temp_video_${index}.mp4`);
                     const isBase64 = card.media.url.startsWith('data:');
-                    
-                    let fileBuffer;
-                    let fileExtension;
-
+                    let fileBuffer, fileExtension;
                     if (isBase64) {
                         fileBuffer = Buffer.from(card.media.url.split(',')[1], 'base64');
                         fileExtension = card.media.url.match(/data:(?:image|video)\/([a-zA-Z0-9-.+]+);/)[1].split('+')[0];
-                    } else { // http, https URL
+                    } else {
                         const response = await fetch(card.media.url);
                         if (!response.ok) throw new Error(`URL fetch 실패: ${response.statusText}`);
                         fileBuffer = await response.buffer();
                         fileExtension = path.extname(new URL(card.media.url).pathname).substring(1) || 'jpg';
                     }
-                    
                     const inputPath = path.join(mediaDir, `media_${index}.${fileExtension}`);
                     await fs.writeFile(inputPath, fileBuffer);
-                    
                     let showTime = accumulatedTime;
                     if(card.media.showOnSegment > 1) {
                         const targetSegmentIndex = card.media.showOnSegment - 2;
-                        if (card.segments && card.segments[targetSegmentIndex]) {
-                            showTime += card.segments[targetSegmentIndex].startTime;
-                        }
+                        if (card.segments && card.segments[targetSegmentIndex]) { showTime += card.segments[targetSegmentIndex].startTime; }
                     }
                     const endTime = accumulatedTime + card.duration;
                     
-                    const scaleFilter = `scale=1080:1920:force_original_aspect_ratio=decrease:pad=1080:1920:-1:-1:color=black`;
+                    // [핵심 수정] scale과 pad 필터를 분리하여 호환성 문제 해결
+                    const scaleAndPadFilter = `scale=1080:1920:force_original_aspect_ratio=decrease[scaled];[scaled]pad=1080:1920:(ow-iw)/2:(oh-ih)/2:color=black`;
                     
                     let overlayCommand;
                     if (['jpg', 'jpeg', 'png', 'webp'].includes(fileExtension.toLowerCase())) {
-                        overlayCommand = `ffmpeg -i "${currentVideo}" -loop 1 -i "${inputPath}" -filter_complex "[1:v] ${scaleFilter},trim=duration=${card.duration} [ovr]; [0:v][ovr] overlay=x=0:y=0:enable='between(t,${showTime},${endTime})'" -y "${nextVideo}"`;
+                        overlayCommand = `ffmpeg -i "${currentVideo}" -loop 1 -i "${inputPath}" -filter_complex "[1:v]${scaleAndPadFilter}[ovr];[ovr]trim=duration=${card.duration}[ovr_trimmed];[0:v][ovr_trimmed]overlay=x=0:y=0:enable='between(t,${showTime},${endTime})'" -y "${nextVideo}"`;
                     } else {
-                        overlayCommand = `ffmpeg -i "${currentVideo}" -i "${inputPath}" -filter_complex "[1:v] ${scaleFilter} [ovr]; [0:v][ovr] overlay=x=0:y=0:enable='between(t,${showTime},${endTime})':shortest=1" -y "${nextVideo}"`;
+                        overlayCommand = `ffmpeg -i "${currentVideo}" -i "${inputPath}" -filter_complex "[1:v]${scaleAndPadFilter}[ovr];[0:v][ovr]overlay=x=0:y=0:enable='between(t,${showTime},${endTime})':shortest=1" -y "${nextVideo}"`;
                     }
 
                     console.log(`[${renderId}] 카드 ${index + 1} 미디어 합성 실행`);
-                    await new Promise((resolve, reject) => exec(overlayCommand, (err) => { if (err) { console.error(`카드 ${index + 1} 합성 실패:`, err); reject(new Error(err)); } else resolve(); }));
+                    await new Promise((resolve, reject) => exec(overlayCommand, (err, stdout, stderr) => { if (err) { console.error(`카드 ${index + 1} 합성 실패:`, err, stderr); reject(new Error(stderr)); } else resolve(); }));
                     currentVideo = nextVideo;
 
                 } catch (e) {
@@ -119,13 +111,11 @@ app.post('/render-video', async (req, res) => {
             }
             accumulatedTime += card.duration;
         }
-
         const baseVideoPath = currentVideo;
         console.log(`[${renderId}] Pass 1-A: 배경 비디오 생성 완료`);
 
+        // --- (이하 Puppeteer, 오디오 믹싱, 최종 합성 로직은 변경 없이 동일합니다) ---
 
-        // --- PASS 1-B: Puppeteer 렌더링 ---
-        // [참고] 이 부분은 기존 코드와 거의 동일합니다. render_template.html 경로는 __dirname이 맞습니다.
         console.log(`[${renderId}] Pass 1-B: 텍스트 오버레이 렌더링 시작`);
         browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
         const page = await browser.newPage();
@@ -146,17 +136,7 @@ app.post('/render-video', async (req, res) => {
         }
         await browser.close();
         console.log(`[${renderId}] Pass 1-B: 텍스트 오버레이 렌더링 완료`);
-
-
-        // ==========================================================
-        // 오디오 믹싱
-        // ==========================================================
-        // (이 부분은 변경 없음, 생략하지 않고 모두 포함)
         const audioTracks = []; let currentCardTime = 0; if (projectData.globalBGM && projectData.globalBGM.url) { try { const res = await fetch(projectData.globalBGM.url); const p = `${audioDir}/bgm.mp3`; await fs.writeFile(p, await res.buffer()); audioTracks.push({ type: 'bgm', path: p, volume: projectData.globalBGM.volume || 0.3 }); } catch (e) { console.error('BGM 다운로드 실패:', e); } } for (const [index, card] of projectData.scriptCards.entries()) { if (card.audioUrl) { try { const p = `${audioDir}/tts_${index}.mp3`; await fs.writeFile(p, Buffer.from(card.audioUrl.split(',')[1], 'base64')); audioTracks.push({ type: 'effect', path: p, time: currentCardTime, volume: card.ttsVolume || 1.0 }); } catch (e) { console.error('TTS 파일 저장 실패:', e); } } if (card.sfxUrl) { try { const res = await fetch(card.sfxUrl); const p = `${audioDir}/sfx_${index}.mp3`; await fs.writeFile(p, await res.buffer()); audioTracks.push({ type: 'effect', path: p, time: currentCardTime, volume: card.sfxVolume || 1.0 }); } catch (e) { console.error('SFX 다운로드 실패:', e); } } currentCardTime += card.duration; } if (audioTracks.length > 0) { const inputClauses = audioTracks.map(t => `-i "${t.path}"`).join(' '); let filterComplex = ''; if (audioTracks.length > 1) { const outputStreams = []; audioTracks.forEach((track, i) => { let stream = `[${i}:a]`; if (track.type === 'bgm') { stream += `volume=${track.volume}[a${i}]`; } else { stream += `volume=${track.volume},adelay=${track.time * 1000}|${track.time * 1000}[a${i}]`; } filterComplex += stream; outputStreams.push(`[a${i}]`); if(i < audioTracks.length - 1) filterComplex += ';'; }); filterComplex += `;${outputStreams.join('')}amix=inputs=${outputStreams.length}:duration=longest`; } else { const track = audioTracks[0]; filterComplex = `[0:a]volume=${track.volume}`; } const mixCommand = `ffmpeg ${inputClauses} -filter_complex "${filterComplex}" -y "${finalAudioPath}"`; await new Promise((resolve, reject) => exec(mixCommand, (error) => error ? reject(new Error(error)) : resolve())); } console.log(`[${renderId}] 오디오 믹싱 완료`);
-
-        // ==========================================================
-        // PASS 2: 최종 합성
-        // ==========================================================
         const hasAudio = await fs.pathExists(finalAudioPath);
         const audioInput = hasAudio ? `-i "${finalAudioPath}"` : '';
         const audioMap = hasAudio ? `-map 2:a:0` : '';
