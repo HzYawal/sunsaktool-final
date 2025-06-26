@@ -33,12 +33,7 @@ app.post('/api/create-tts', async (req, res) => {
 
     console.log(`구글 TTS 요청: [${selectedVoice}, 속도: ${speakingRate}] "${text.substring(0, 20)}..."`);
     
-    const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON);
-
-// 2. 변환된 객체를 credentials 옵션으로 전달합니다.
-const client = new TextToSpeechClient({
-    credentials
-});
+    const client = new TextToSpeechClient();
     // SSML 형식으로 텍스트를 감싸서 속도를 적용합니다.
     const ssmlText = `<speak><prosody rate="${speakingRate}">${text}</prosody></speak>`;
 
