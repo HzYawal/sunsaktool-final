@@ -65,13 +65,22 @@
 .st-preview-content {
     padding: 10px;
     color: black;
-    /* flex-grow: 1; */ /* <<< 바로 이 줄을 주석 처리하거나 삭제하세요! */
+    flex-grow: 1; /* 복원! */
     display: flex;
     flex-direction: column;
     background-color: white;
     overflow: hidden;
     position: relative;
 }
+.st-script-display {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        min-height: 0;
+        width: 100%;
+    }
         .interactive-target { position: relative; width: 100%; touch-action: none; transform-origin: center center; cursor: move; }
         #st-preview-media-container-wrapper {
             margin-top: 8px;
@@ -274,7 +283,7 @@
             projectSettings: { 
                 header: { text: '채널 이름', backgroundColor: '#e82c43', color: '#ffffff', fontFamily: 'GmarketSans', fontSize: 24, icon: 'none', logo: { url: null, size: 40 } }, 
                 project: { title: '제목을 입력해주세요', author: 'ㅇㅇ', views: 0, titleColor: '#000000', metaColor: '#555555', titleFontFamily: "'Noto Sans KR', sans-serif", titleFontSize: 22 },
-                defaultStyle: { color: '#000000', fontFamily: "'Noto Sans KR', sans-serif", fontSize: '24', lineHeight: '1.5', letterSpacing: '0' }
+                defaultStyle: { color: '#000000', fontFamily: "'Noto Sans KR', sans-serif", fontSize: '24', lineHeight: '1.5', letterSpacing: '0', textAlign: 'center' } // textAlign: 'center' 추가
             },
             scriptCards: [],
             isPlaying: false,
@@ -409,7 +418,14 @@
             globalControls() {
                 const createSelectWithOptions = (id, selectedValue, fontList = C.FONT_LIST) => { let select = `<select id="${id}">`; fontList.forEach(font => { select += `<option value="${font.value}" ${selectedValue === font.value ? 'selected' : ''}>${font.name}</option>`; }); return select + `</select>`; };
                 const bgmOptions = C.BGM_LIST.map(bgm => `<option value="${bgm.url}">${bgm.name}</option>`).join('');
-                UI.globalSettingsPanel.innerHTML = `<div class="st-accordion-item active"><div class="st-accordion-header">영상 설정</div><div class="st-accordion-content"><div class="st-control-group"><h4>상단 헤더</h4><label>헤더 텍스트</label><input type="text" id="st-setting-header-text" value="${state.projectSettings.header.text}"><div class="st-flex-group" style="margin-top: 8px;"><div><label>배경 색상</label><input type="color" id="st-setting-header-bg" value="${state.projectSettings.header.backgroundColor}"></div><div><label>글자 색상</label><input type="color" id="st-setting-header-color" value="${state.projectSettings.header.color}"></div></div><div class="st-flex-group" style="margin-top: 8px;"><div><label>폰트</label>${createSelectWithOptions('st-setting-header-font', state.projectSettings.header.fontFamily)}</div><div><label>크기</label><input type="number" id="st-setting-header-size" value="${state.projectSettings.header.fontSize}"></div></div><div style="margin-top: 8px;"><label>왼쪽 아이콘</label><select id="st-setting-header-icon"><option value="none">없음</option><option value="back">뒤로가기</option><option value="menu">메뉴</option></select></div><div style="margin-top: 8px;"><label>오른쪽 로고</label><div class="st-flex-group"><button id="st-btn-header-logo" style="width: auto; flex-grow: 1;">로고 추가/변경</button><input type="file" id="st-header-logo-file" accept="image/*" style="display:none;"></div><div class="st-flex-group" style="margin-top: 4px;"><label>로고 크기:</label><input type="range" id="st-setting-header-logo-size" min="20" max="60" value="${state.projectSettings.header.logo.size}"><input type="number" class="value-input" data-target="st-setting-header-logo-size" value="${state.projectSettings.header.logo.size}" style="width: 70px;"></div></div></div><div class="st-control-group"><h4>콘텐츠 정보</h4><label>프로젝트 제목</label><input type="text" id="st-setting-project-title" value="${state.projectSettings.project.title}"><div class="st-flex-group" style="margin-top: 8px;"><div><label>폰트</label>${createSelectWithOptions('st-setting-project-font', state.projectSettings.project.titleFontFamily)}</div><div><label>크기</label><input type="number" id="st-setting-project-size" value="${state.projectSettings.project.titleFontSize}"></div></div><div style="margin-top: 8px;"><label>작성자</label><input type="text" id="st-setting-project-author" value="${state.projectSettings.project.author}"></div><div style="margin-top: 8px;"><label>조회수</label><input type="number" id="st-setting-project-views" value="${state.projectSettings.project.views}"></div><div class="st-flex-group" style="margin-top: 8px;"><div><label>제목 색상</label><input type="color" id="st-setting-title-color" value="${state.projectSettings.project.titleColor}"></div><div><label>정보 색상</label><input type="color" id="st-setting-meta-color" value="${state.projectSettings.project.metaColor}"></div></div><hr style="border-color: var(--st-border-color); margin: 15px 0;"><label>기본 스크립트 스타일</label><div class="st-flex-group" style="margin-top: 8px;"><div><label>폰트</label>${createSelectWithOptions('st-setting-script-font', state.projectSettings.defaultStyle.fontFamily)}</div><div><label>크기</label><input type="number" id="st-setting-script-size" value="${state.projectSettings.defaultStyle.fontSize}"></div></div><div style="margin-top: 8px;"><label>색상</label><input type="color" id="st-setting-script-color" value="${state.projectSettings.defaultStyle.color}"></div><div class="st-flex-group" style="margin-top: 8px;"><label>줄 간격</label><input type="range" id="st-setting-line-height" min="1" max="2.5" step="0.1" value="${state.projectSettings.defaultStyle.lineHeight}"><input type="number" class="value-input" data-target="st-setting-line-height" value="${state.projectSettings.defaultStyle.lineHeight}" step="0.1"></div><div class="st-flex-group" style="margin-top: 8px;"><label>자간</label><input type="range" id="st-setting-letter-spacing" min="-2" max="5" step="0.1" value="${state.projectSettings.defaultStyle.letterSpacing}"><input type="number" class="value-input" data-target="st-setting-letter-spacing" value="${state.projectSettings.defaultStyle.letterSpacing}" step="0.1"></div></div><div class="st-control-group"><h4>배경음악</h4><label>전체 BGM 선택</label><select id="st-setting-global-bgm">${bgmOptions}</select><button id="st-btn-upload-bgm" style="width:100%; margin-top: 8px; background-color: #3e3e3e;">내 BGM 업로드</button><div class="st-flex-group" style="margin-top: 8px;"><label>BGM 볼륨</label><input type="range" id="st-setting-global-bgm-volume" min="0" max="1" step="0.01" value="${state.globalBGM.volume}"><input type="number" class="value-input" data-target="st-setting-global-bgm-volume" value="${Math.round(state.globalBGM.volume * 100)}"></div></div></div></div>`;
+                UI.globalSettingsPanel.innerHTML = `<div class="st-accordion-item active"><div class="st-accordion-header">영상 설정</div><div class="st-accordion-content"><div class="st-control-group"><h4>상단 헤더</h4><label>헤더 텍스트</label><input type="text" id="st-setting-header-text" value="${state.projectSettings.header.text}"><div class="st-flex-group" style="margin-top: 8px;"><div><label>배경 색상</label><input type="color" id="st-setting-header-bg" value="${state.projectSettings.header.backgroundColor}"></div><div><label>글자 색상</label><input type="color" id="st-setting-header-color" value="${state.projectSettings.header.color}"></div></div><div class="st-flex-group" style="margin-top: 8px;"><div><label>폰트</label>${createSelectWithOptions('st-setting-header-font', state.projectSettings.header.fontFamily)}</div><div><label>크기</label><input type="number" id="st-setting-header-size" value="${state.projectSettings.header.fontSize}"></div></div><div style="margin-top: 8px;"><label>왼쪽 아이콘</label><select id="st-setting-header-icon"><option value="none">없음</option><option value="back">뒤로가기</option><option value="menu">메뉴</option></select></div><div style="margin-top: 8px;"><label>오른쪽 로고</label><div class="st-flex-group"><button id="st-btn-header-logo" style="width: auto; flex-grow: 1;">로고 추가/변경</button><input type="file" id="st-header-logo-file" accept="image/*" style="display:none;"></div><div class="st-flex-group" style="margin-top: 4px;"><label>로고 크기:</label><input type="range" id="st-setting-header-logo-size" min="20" max="60" value="${state.projectSettings.header.logo.size}"><input type="number" class="value-input" data-target="st-setting-header-logo-size" value="${state.projectSettings.header.logo.size}" style="width: 70px;"></div></div></div><div class="st-control-group"><h4>콘텐츠 정보</h4><label>프로젝트 제목</label><input type="text" id="st-setting-project-title" value="${state.projectSettings.project.title}"><div class="st-flex-group" style="margin-top: 8px;"><div><label>폰트</label>${createSelectWithOptions('st-setting-project-font', state.projectSettings.project.titleFontFamily)}</div><div><label>크기</label><input type="number" id="st-setting-project-size" value="${state.projectSettings.project.titleFontSize}"></div></div><div style="margin-top: 8px;"><label>작성자</label><input type="text" id="st-setting-project-author" value="${state.projectSettings.project.author}"></div><div style="margin-top: 8px;"><label>조회수</label><input type="number" id="st-setting-project-views" value="${state.projectSettings.project.views}"></div><div class="st-flex-group" style="margin-top: 8px;"><div><label>제목 색상</label><input type="color" id="st-setting-title-color" value="${state.projectSettings.project.titleColor}"></div><div><label>정보 색상</label><input type="color" id="st-setting-meta-color" value="${state.projectSettings.project.metaColor}"></div></div><hr style="border-color: var(--st-border-color); margin: 15px 0;"><label>기본 스크립트 스타일</label><div class="st-flex-group" style="margin-top: 8px;"><div><label>폰트</label>${createSelectWithOptions('st-setting-script-font', state.projectSettings.defaultStyle.fontFamily)}</div><div><label>크기</label><input type="number" id="st-setting-script-size" value="${state.projectSettings.defaultStyle.fontSize}"></div></div><div style="margin-top: 8px;"><label>색상</label><input type="color" id="st-setting-script-color" value="${state.projectSettings.defaultStyle.color}"></div><div style="margin-top: 8px;">
+    <label>정렬</label>
+    <div id="st-text-align-group" class="st-flex-group" style="gap: 5px;">
+        <button data-align="left" style="flex-grow: 1;">왼쪽</button>
+        <button data-align="center" style="flex-grow: 1;">중앙</button>
+        <button data-align="right" style="flex-grow: 1;">오른쪽</button>
+    </div>
+</div><div class="st-flex-group" style="margin-top: 8px;"><label>줄 간격</label><input type="range" id="st-setting-line-height" min="1" max="2.5" step="0.1" value="${state.projectSettings.defaultStyle.lineHeight}"><input type="number" class="value-input" data-target="st-setting-line-height" value="${state.projectSettings.defaultStyle.lineHeight}" step="0.1"></div><div class="st-flex-group" style="margin-top: 8px;"><label>자간</label><input type="range" id="st-setting-letter-spacing" min="-2" max="5" step="0.1" value="${state.projectSettings.defaultStyle.letterSpacing}"><input type="number" class="value-input" data-target="st-setting-letter-spacing" value="${state.projectSettings.defaultStyle.letterSpacing}" step="0.1"></div></div><div class="st-control-group"><h4>배경음악</h4><label>전체 BGM 선택</label><select id="st-setting-global-bgm">${bgmOptions}</select><button id="st-btn-upload-bgm" style="width:100%; margin-top: 8px; background-color: #3e3e3e;">내 BGM 업로드</button><div class="st-flex-group" style="margin-top: 8px;"><label>BGM 볼륨</label><input type="range" id="st-setting-global-bgm-volume" min="0" max="1" step="0.01" value="${state.globalBGM.volume}"><input type="number" class="value-input" data-target="st-setting-global-bgm-volume" value="${Math.round(state.globalBGM.volume * 100)}"></div></div></div></div>`;
                 UI.globalSettingsPanel.querySelector('.st-accordion-header').addEventListener('click', (e) => e.currentTarget.parentElement.classList.toggle('active'));
             },
             animationControls(element) {
@@ -849,7 +865,7 @@
                 const cardData = {
                     id: cardId, text, segments: [], animationSequence: [], duration: 0.5, ttsDuration: 0.5, isDurationManual: false,
                     media: { url: null, type: null, fit: 'contain', showOnSegment: 1, persistUntilCardId: null, startTime: 0, endTime: null },
-                    style: { ...state.projectSettings.defaultStyle, fontSize: state.projectSettings.defaultStyle.fontSize + 'px', letterSpacing: state.projectSettings.defaultStyle.letterSpacing + 'px' },
+                    style: { ...state.projectSettings.defaultStyle, fontSize: state.projectSettings.defaultStyle.fontSize + 'px', letterSpacing: state.projectSettings.defaultStyle.letterSpacing + 'px', textAlign: state.projectSettings.defaultStyle.textAlign }, // textAlign 추가
                     audioUrl: null, ttsReady: false, ttsVolume: 0.9, 
                     ttsSettings: { speed: 1.0 }, // 기본 속도를 1.0으로 설정하고, 불필요한 값 제거
                     ttsVoice: 'ko-KR-Standard-C', // 기본 목소리 설정
@@ -1298,8 +1314,23 @@ cardEl.querySelector('.tts-speed-input').addEventListener('change', e => {
             modals.initialize();
             new Sortable(UI.cardContainer, { animation: 150, handle: '.st-card-drag-handle', onEnd: function(evt) { const { oldIndex, newIndex } = evt; const [movedItem] = state.scriptCards.splice(oldIndex, 1); state.scriptCards.splice(newIndex, 0, movedItem); render.updateCardNumbers(); } });
             UI.exportBtn.addEventListener('click', () => exporter.startExport());
-            handlers.addScriptCard('순삭툴에 오신 것을 환영합니다!\n텍스트를 선택해서 재생 순서를 정해보세요.');
+            document.getElementById('st-text-align-group').addEventListener('click', (e) => {
+    if (e.target.tagName === 'BUTTON') {
+        const alignValue = e.target.dataset.align;
+        if(state.selectedCardId) {
+            const card = state.scriptCards.find(c => c.id === state.selectedCardId);
+            if (card) {
+                card.style.textAlign = alignValue;
+                render.updatePreviewDisplay();
+            }
+        } else { // 선택된 카드가 없을 경우 기본값 변경
+            state.projectSettings.defaultStyle.textAlign = alignValue;
         }
+    }
+});
+
+handlers.addScriptCard('순삭툴에 오신 것을 환영합니다!\n텍스트를 선택해서 재생 순서를 정해보세요.');
+}
 
         
 // =================== [이 코드로 통째로 교체하세요] ===================
