@@ -1231,6 +1231,7 @@ cardEl.querySelector('.tts-speed-input').addEventListener('change', e => {
         }
 
         // =================== [수정 후 exporter 코드 시작] ===================
+// ================== [붙여넣을 최종 코드] ==================
 const exporter = {
     async startExport() {
         if (state.scriptCards.some(c => c.text.trim() && !c.ttsReady)) {
@@ -1248,44 +1249,53 @@ const exporter = {
         UI.progressBarInner.style.width = '5%';
 
         // Base64 변환 함수
-        const toBase64 = file => new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = error => reject(error);
-        });
+        const toBase64 = async (blobUrl) => {
+            const response = await fetch(blobUrl);
+            const blob = await response.blob();
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(blob);
+                reader.onloadend = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        };
         
         // 원본 state를 깊은 복사하여 사용
         const projectDataForRender = JSON.parse(JSON.stringify(state));
 
-        // blob URL을 Base64로 변환
-        const conversionPromises = projectDataForRender.scriptCards.map(async (card) => {
-            if (card.media.url && card.media.url.startsWith('blob:')) {
-                try {
-                    const response = await fetch(card.media.url);
-                    const blob = await response.blob();
-                    card.media.url = await toBase64(blob);
-                } catch (e) {
-                    console.error('Blob to Base64 변환 실패:', e);
-                    card.media.url = null;
+        // [핵심 수정] blob URL을 Base64로 변환
+        try {
+            const conversionPromises = projectDataForRender.scriptCards.map(async (card) => {
+                if (card.media.url && card.media.url.startsWith('blob:')) {
+                    console.log(`Converting blob URL to Base64 for card: ${card.id}`);
+                    card.media.url = await toBase64(card.media.url);
+                    console.log(`Conversion successful for card: ${card.id}`);
                 }
-            }
-            return card;
-        });
-        
-        projectDataForRender.scriptCards = await Promise.all(conversionPromises);
+                if (projectDataForRender.projectSettings.header.logo.url && projectDataForRender.projectSettings.header.logo.url.startsWith('blob:')) {
+                     projectDataForRender.projectSettings.header.logo.url = await toBase64(projectDataForRender.projectSettings.header.logo.url);
+                }
+                return card;
+            });
+            
+            projectDataForRender.scriptCards = await Promise.all(conversionPromises);
+
+        } catch (e) {
+            console.error('Blob to Base64 변환 실패:', e);
+            alert('이미지 데이터를 변환하는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+            UI.progressOverlay.style.display = 'none';
+            UI.exportBtn.disabled = false;
+            return;
+        }
         
         UI.progressText.textContent = '서버에 영상 제작을 요청하는 중...';
         UI.progressBarInner.style.width = '50%';
 
-        // [핵심 수정] 최종적으로 서버에 보낼 projectData 객체 구성
         const previewPanelEl = document.getElementById('st-preview-panel');
         const projectData = {
-            projectSettings: projectDataForRender.projectSettings, // Base64 변환이 끝난 데이터 사용
-            scriptCards: projectDataForRender.scriptCards,         // Base64 변환이 끝난 데이터 사용
+            projectSettings: projectDataForRender.projectSettings,
+            scriptCards: projectDataForRender.scriptCards,
             globalBGM: projectDataForRender.globalBGM,
             renderMetadata: {
-                // clientWidth가 0일 경우를 대비해 기본값(420) 사용
                 sourceWidth: previewPanelEl.clientWidth || 420
             }
         };
@@ -1300,12 +1310,10 @@ const exporter = {
             UI.progressBarInner.style.width = '80%';
             
             if (!response.ok) {
-                // [핵심 수정] 서버에서 보낸 JSON 오류 메시지를 파싱하여 보여줌
                 const errorData = await response.json().catch(() => ({ message: '서버 응답을 JSON으로 파싱할 수 없습니다.' }));
                 throw new Error(`서버 오류 (${response.status}): ${errorData.message || '알 수 없는 오류가 발생했습니다.'}`);
             }
 
-            // 다운로드 로직 (기존과 동일)
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -1327,13 +1335,14 @@ const exporter = {
 
         } catch (error) {
             console.error("영상 생성 요청 오류:", error);
-            alert(`영상 생성 중 오류가 발생했습니다:\n${error.message}`); // 사용자에게 더 자세한 오류를 보여줌
+            alert(`영상 생성 중 오류가 발생했습니다:\n${error.message}`);
             UI.progressOverlay.style.display = 'none';
         } finally {
             UI.exportBtn.disabled = false;
         }
     }
 };
+// =======================================================
 // =================== [수정 후 exporter 코드 끝] ===================
 
         document.addEventListener('DOMContentLoaded', initialize);
