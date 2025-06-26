@@ -1,0 +1,40 @@
+# nixpacks.toml
+
+[phases.setup]
+# Puppeteer가 Debian 기반 환경에서 필요로 하는
+# 모든 필수 라이브러리를 여기에 명시합니다.
+# 이 라이브러리들이 없으면 'Failed to launch the browser process' 오류가 발생합니다.
+pkgs = [
+    "...", # 기존에 pkgs가 있었다면 유지하고 아래 내용을 추가하세요.
+    "chromium",
+    "alsa-lib",
+    "at-spi2-atk",
+    "atk",
+    "cairo",
+    "cups",
+    "dbus",
+    "expat",
+    "gdk-pixbuf",
+    "glib",
+    "gtk+3",
+    "harfbuzz",
+    "pango",
+    "udev",
+    "libxkbcommon",
+    "libxcomposite",
+    "libxcursor",
+    "libxdamage",
+    "libxext",
+    "libxfixes",
+    "libxi",
+    "libxrandr",
+    "libxrender",
+    "libxscrnsaver",
+    "libxtst",
+    "nss" # <-- 바로 이 부분이 'libnss3.so' 오류를 해결합니다.
+]
+
+[start]
+# 서버를 시작하는 명령어를 명시합니다.
+# package.json의 "start" 스크립트와 동일해야 합니다.
+cmd = "node server.js"
