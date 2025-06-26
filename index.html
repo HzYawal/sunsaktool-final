@@ -211,6 +211,8 @@
     </style>
 </head>
 <body>
+   <div id="st-guide-vertical" style="position: fixed; display: none; width: 1px; height: 100%; background-color: var(--st-accent-color); top: 0; z-index: 1002;"></div>
+    <div id="st-guide-horizontal" style="position: fixed; display: none; height: 1px; width: 100%; background-color: var(--st-accent-color); left: 0; z-index: 1002;"></div>
     <div class="st-panel st-sidebar" id="st-sidebar-container"> <div id="st-global-settings-panel"></div> <div id="st-animation-settings-panel" style="display: none;"></div> </div>
     <div class="st-main-container">
         <div class="st-top-header"> <div class="st-logo">SunsakTool</div> <button id="st-btn-export-video">🎬 영상 저장</button> </div>
@@ -1064,31 +1066,94 @@ cardEl.querySelector('.tts-speed-input').addEventListener('change', e => {
                 }
             },
             initialize() {
-                interact('.interactive-target').on('tap', (event) => { interaction.activateInteractive(event.currentTarget); event.preventDefault(); });
-                interact('.interactive-target')
-                    .draggable({ listeners: {
-                        move(event) {
-                            const card = state.scriptCards.find(c => c.id === state.selectedCardId); if (!card) return;
-                            const layoutKey = event.target.dataset.layoutKey; const layout = card.layout[layoutKey];
-                            layout.x = (layout.x || 0) + event.dx; layout.y = (layout.y || 0) + event.dy;
-                            render.applyTransform(event.target, layout);
+        // [새 코드 추가] 가이드 라인 DOM 요소를 가져옵니다.
+        const verticalGuide = document.getElementById('st-guide-vertical');
+        const horizontalGuide = document.getElementById('st-guide-horizontal');
+        const previewPanel = document.getElementById('st-preview-panel');
+
+        interact('.interactive-target').on('tap', (event) => { interaction.activateInteractive(event.currentTarget); event.preventDefault(); });
+        
+        interact('.interactive-target')
+            .draggable({
+                listeners: {
+                    start(event) {
+                        // 드래그 시작 시 body에 클래스를 추가하여 마우스 커서 스타일 등을 관리
+                        document.body.classList.add('interaction-active');
+                    },
+                    move(event) {
+                        const card = state.scriptCards.find(c => c.id === state.selectedCardId);
+                        if (!card) return;
+
+                        const layoutKey = event.target.dataset.layoutKey;
+                        const layout = card.layout[layoutKey];
+                        
+                        // 위치 업데이트
+                        layout.x = (layout.x || 0) + event.dx;
+                        layout.y = (layout.y || 0) + event.dy;
+                        
+                        // [새 코드 추가] 스냅 가이드 로직
+                        const snapThreshold = 5;
+                        const panelRect = previewPanel.getBoundingClientRect();
+                        const targetRect = event.target.getBoundingClientRect();
+                        
+                        const panelCenterX = panelRect.left + panelRect.width / 2;
+                        const panelCenterY = panelRect.top + panelRect.height / 2;
+                        
+                        const targetCenterX = targetRect.left + targetRect.width / 2;
+                        const targetCenterY = targetRect.top + targetRect.height / 2;
+
+                        // 수직 가이드 (X축 중앙)
+                        if (Math.abs(targetCenterX - panelCenterX) < snapThreshold) {
+                            layout.x -= (targetCenterX - panelCenterX); // 픽셀 단위로 보정
+                            verticalGuide.style.left = `${panelCenterX}px`;
+                            verticalGuide.style.display = 'block';
+                        } else {
+                            verticalGuide.style.display = 'none';
                         }
-                    }})
-                    .gesturable({ listeners: {
-                        move (event) {
-                            const card = state.scriptCards.find(c => c.id === state.selectedCardId); if (!card) return;
-                            const layoutKey = event.target.dataset.layoutKey; const layout = card.layout[layoutKey];
-                            layout.angle = (layout.angle || 0) + event.da;
-                            layout.scale = (layout.scale || 1) * (1 + event.ds);
-                            render.applyTransform(event.target, layout)
+
+                        // 수평 가이드 (Y축 중앙)
+                        if (Math.abs(targetCenterY - panelCenterY) < snapThreshold) {
+                            layout.y -= (targetCenterY - panelCenterY); // 픽셀 단위로 보정
+                            horizontalGuide.style.top = `${panelCenterY}px`;
+                            horizontalGuide.style.display = 'block';
+                        } else {
+                            horizontalGuide.style.display = 'none';
                         }
-                    }});
-                UI.previewContent.addEventListener('click', (e) => { if (!e.target.closest('.interactive-target')) interaction.deactivateAllInteractive(); });
-                document.addEventListener('selectionchange', helpers.debounce(interaction.sequence.onSelectionChange, 200));
-                document.addEventListener('mousedown', (e) => { if (!UI.sequenceMenu.contains(e.target) && !e.target.closest('.st-script-editor')) interaction.sequence.hideMenu(); });
-                UI.sequenceMenu.addEventListener('click', interaction.sequence.handleMenuClick);
-            }
-        };
+                        
+                        render.applyTransform(event.target, layout);
+                    },
+                    end(event) {
+                        // 드래그 종료 시 가이드 숨기기 및 클래스 제거
+                        verticalGuide.style.display = 'none';
+                        horizontalGuide.style.display = 'none';
+                        document.body.classList.remove('interaction-active');
+                    }
+                }
+            })
+            .gesturable({
+                listeners: {
+                    move (event) {
+                        const card = state.scriptCards.find(c => c.id === state.selectedCardId);
+                        if (!card) return;
+
+                        const layoutKey = event.target.dataset.layoutKey;
+                        const layout = card.layout[layoutKey];
+                        
+                        layout.angle = (layout.angle || 0) + event.da;
+                        layout.scale = (layout.scale || 1) * (1 + event.ds);
+                        
+                        render.applyTransform(event.target, layout);
+                    }
+                }
+            });
+
+        UI.previewContent.addEventListener('click', (e) => { if (!e.target.closest('.interactive-target')) interaction.deactivateAllInteractive(); });
+        document.addEventListener('selectionchange', helpers.debounce(interaction.sequence.onSelectionChange, 200));
+        document.addEventListener('mousedown', (e) => { if (!UI.sequenceMenu.contains(e.target) && !e.target.closest('.st-script-editor')) interaction.sequence.hideMenu(); });
+        UI.sequenceMenu.addEventListener('click', interaction.sequence.handleMenuClick);
+    }
+    // ▲▲▲▲▲ 여기까지 교체 완료! ▲▲▲▲▲
+};
         const modals = {
             openBgmEditor(url, onConfirm) {
                 state.bgmEditorContext = { onConfirm };
