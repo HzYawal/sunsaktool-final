@@ -1230,8 +1230,8 @@ cardEl.querySelector('.tts-speed-input').addEventListener('change', e => {
             handlers.addScriptCard('순삭툴에 오신 것을 환영합니다!\n텍스트를 선택해서 재생 순서를 정해보세요.');
         }
 
-        // =================== [수정 후 exporter 코드 시작] ===================
-// ================== [붙여넣을 최종 코드] ==================
+        
+// =================== [이 코드로 통째로 교체하세요] ===================
 const exporter = {
     async startExport() {
         if (state.scriptCards.some(c => c.text.trim() && !c.ttsReady)) {
@@ -1245,39 +1245,52 @@ const exporter = {
         UI.exportBtn.disabled = true;
         UI.progressOverlay.style.display = 'flex';
         UI.progressText.textContent = '렌더링 준비 중...';
-        UI.progressSubText.textContent = '프로젝트 데이터를 준비합니다.';
+        UI.progressSubText.textContent = '이미지 및 데이터 변환 중...';
         UI.progressBarInner.style.width = '5%';
 
-        // Base64 변환 함수
-        const toBase64 = async (blobUrl) => {
-            const response = await fetch(blobUrl);
-            const blob = await response.blob();
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(blob);
-                reader.onloadend = () => resolve(reader.result);
-                reader.onerror = error => reject(error);
-            });
+        // [핵심 추가] blob URL을 Base64 데이터 URL로 변환하는 헬퍼 함수
+        const toBase64 = async (url) => {
+            // blob: URL이 아니거나, 이미 data: URL인 경우, 혹은 일반 http(s) URL인 경우 그대로 반환
+            if (!url || !url.startsWith('blob:')) {
+                return url;
+            }
+            try {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(blob);
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.onerror = error => reject(error);
+                });
+            } catch (e) {
+                console.error(`Blob to Base64 변환 실패: ${url}`, e);
+                // 변환에 실패하면 null을 반환하여 서버에서 오류가 나지 않도록 함
+                return null;
+            }
         };
         
-        // 원본 state를 깊은 복사하여 사용
+        // 원본 state를 깊은 복사하여 렌더링용 데이터를 만듭니다.
         const projectDataForRender = JSON.parse(JSON.stringify(state));
 
-        // [핵심 수정] blob URL을 Base64로 변환
         try {
+            // [핵심 수정] 모든 미디어와 로고의 blob URL을 Base64로 변환합니다.
+            UI.progressSubText.textContent = '프로젝트 미디어 처리 중...';
+
             const conversionPromises = projectDataForRender.scriptCards.map(async (card) => {
-                if (card.media.url && card.media.url.startsWith('blob:')) {
-                    console.log(`Converting blob URL to Base64 for card: ${card.id}`);
+                if (card.media.url) {
                     card.media.url = await toBase64(card.media.url);
-                    console.log(`Conversion successful for card: ${card.id}`);
-                }
-                if (projectDataForRender.projectSettings.header.logo.url && projectDataForRender.projectSettings.header.logo.url.startsWith('blob:')) {
-                     projectDataForRender.projectSettings.header.logo.url = await toBase64(projectDataForRender.projectSettings.header.logo.url);
                 }
                 return card;
             });
             
-            projectDataForRender.scriptCards = await Promise.all(conversionPromises);
+            // 헤더 로고도 변환합니다.
+            if (projectDataForRender.projectSettings.header.logo.url) {
+                 projectDataForRender.projectSettings.header.logo.url = await toBase64(projectDataForRender.projectSettings.header.logo.url);
+            }
+            
+            // 모든 변환이 끝날 때까지 기다립니다.
+            await Promise.all(conversionPromises);
 
         } catch (e) {
             console.error('Blob to Base64 변환 실패:', e);
@@ -1301,6 +1314,7 @@ const exporter = {
         };
         
         try {
+            // [참고] GCP Cloud Run 주소는 여기에 하드코딩 되어 있습니다.
             const response = await fetch('https://sunsaktool-service-741834545202.asia-northeast3.run.app/render-video', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1342,6 +1356,7 @@ const exporter = {
         }
     }
 };
+
 // =======================================================
 // =================== [수정 후 exporter 코드 끝] ===================
 
