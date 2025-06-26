@@ -1,4 +1,4 @@
-// ================== [server.js 최종 완성본 - 생략 없음] ==================
+// ================== [server.js 최종 완성본 - 생략/중략 없음] ==================
 const express = require('express');
 const path = require('path');
 const fs = require('fs-extra');
@@ -33,9 +33,9 @@ app.post('/api/create-tts', async (req, res) => {
     } catch (error) { console.error('구글 TTS API 호출 중 오류 발생:', error); res.status(500).json({ error: error.message }); }
 });
 
-// 영상 렌더링 API (가장 안정적인 'Puppeteer 전체 렌더링' 전략)
+// 영상 렌더링 API (레이아웃, 확대, 회전 완벽 동기화 버전)
 app.post('/render-video', async (req, res) => {
-    console.log("영상 렌더링 요청 시작 (Puppeteer 전체 렌더링 방식)");
+    console.log("영상 렌더링 요청 시작 (레이아웃/기능 동기화 버전)");
     const projectData = req.body;
     const fps = 30;
     const renderId = `render_${Date.now()}`;
@@ -46,7 +46,6 @@ app.post('/render-video', async (req, res) => {
     const audioDir = path.join(tempDir, 'audio');
     const finalAudioPath = path.join(tempDir, 'final_audio.mp3');
     const outputVideoPath = path.join(tempDir, 'output.mp4');
-
     let browser;
 
     try {
@@ -69,7 +68,7 @@ app.post('/render-video', async (req, res) => {
                 await Promise.all(fontPromises);
             });
             console.log(`[${renderId}] 렌더링 템플릿 및 폰트 로드 완료`);
-
+            
             let frameCount = 0;
             let currentPersistentMedia = null;
 
@@ -84,8 +83,8 @@ app.post('/render-video', async (req, res) => {
                 }
 
                 const mediaToRender = currentPersistentMedia ? currentPersistentMedia : { media: card.media, layout: card.layout.media, animations: card.animations.media };
-
                 const cardFrames = Math.floor(card.duration * fps);
+
                 for (let i = 0; i < cardFrames; i++) {
                     const timeInCard = i / fps;
                     
@@ -147,6 +146,8 @@ app.post('/render-video', async (req, res) => {
                         scaledStyle.lineHeight = currentCard.style.lineHeight;
                         scaledStyle.letterSpacing = `${parseFloat(currentCard.style.letterSpacing) * scale}px`;
                         Object.assign(textEl.style, scaledStyle);
+                        
+                        // [핵심 수정] 텍스트와 미디어의 모든 transform 값을 정확히 반영
                         textWrapper.style.transform = `translate(${currentCard.layout.text.x * scale}px, ${currentCard.layout.text.y * scale}px) scale(${currentCard.layout.text.scale || 1}) rotate(${currentCard.layout.text.angle || 0}deg)`;
 
                         let showMedia = false;
@@ -158,6 +159,7 @@ app.post('/render-video', async (req, res) => {
 
                         if(showMedia) {
                             mediaWrapper.style.display = 'flex';
+                            // [핵심 수정] 미디어의 모든 transform 값을 정확히 반영
                             mediaWrapper.style.transform = `translate(${mediaInfo.layout.x * scale}px, ${mediaInfo.layout.y * scale}px) scale(${mediaInfo.layout.scale || 1}) rotate(${mediaInfo.layout.angle || 0}deg)`;
                              if (mediaInfo.media.type === 'video') {
                                 imageEl.style.display = 'none';
@@ -175,6 +177,7 @@ app.post('/render-video', async (req, res) => {
                             mediaWrapper.style.display = 'none';
                         }
                         
+                        // 텍스트 내용 적용
                         textEl.innerHTML = '';
                         const hasCustomSequence = currentCard.animationSequence && currentCard.animationSequence.length > 0;
                         if (hasCustomSequence) {
@@ -195,12 +198,16 @@ app.post('/render-video', async (req, res) => {
                             });
                         }
 
+                        // 애니메이션 적용
                         const applyAnimation = (el, anims, duration, time) => {
                             const baseTransform = el.style.transform.split(' ').filter(s => !s.startsWith('translateY') && !s.startsWith('scale')).join(' ');
-                            el.style.opacity = 1; el.style.transform = baseTransform;
+                            el.style.opacity = 1;
+                            el.style.transform = baseTransform;
+
                             const inDuration = anims.in.duration;
                             const outStartTime = duration - anims.out.duration;
                             let progress, newTransform = '';
+                            
                             if (time < inDuration && anims.in.name !== 'none') {
                                 progress = Math.min(1, time / inDuration);
                                 if(anims.in.name === 'fadeIn') el.style.opacity = progress;
