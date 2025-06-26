@@ -1,13 +1,16 @@
-// ================== [server.js 전체 코드 시작] ==================
+// ================== [server.js 전체 최종 코드 시작] ==================
 const express = require('express');
 const path = require('path');
 const fs = require('fs-extra');
-const puppeteer = require('puppeteer');
 const { exec } = require('child_process');
 const fetch = require('node-fetch');
 const { TextToSpeechClient } = require('@google-cloud/text-to-speech');
 const cors = require('cors');
-const { URL } = require('url'); // URL 파싱을 위해 추가
+const { URL } = require('url');
+
+// puppeteer-core와 chrome-aws-lambda는 서버 환경에 따라 선택적으로 사용될 수 있으나,
+// Docker 환경에서는 일반 puppeteer로도 충분합니다.
+const puppeteer = require('puppeteer'); 
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -16,46 +19,34 @@ app.use(cors());
 app.use(express.json({ limit: '100mb' }));
 app.use(express.static(__dirname));
 
-// ==========================================================
-// 구글 TTS API (이 부분은 변경 없음)
-// ==========================================================
+// 구글 TTS API (변경 없음)
 app.post('/api/create-tts', async (req, res) => {
+    // ... (이전과 동일한 TTS 코드) ...
     const { text, voice, speed } = req.body;
-    if (!text || !text.trim()) {
-        return res.status(400).json({ error: 'TTS로 변환할 텍스트가 없습니다.' });
-    }
+    if (!text || !text.trim()) { return res.status(400).json({ error: 'TTS로 변환할 텍스트가 없습니다.' }); }
     const selectedVoice = voice || 'ko-KR-Standard-C';
     const speakingRate = parseFloat(speed) || 1.0; 
     const client = new TextToSpeechClient();
     const ssmlText = `<speak><prosody rate="${speakingRate}">${text}</prosody></speak>`;
     try {
-        const request = {
-            input: { ssml: ssmlText }, 
-            voice: { languageCode: 'ko-KR', name: selectedVoice },
-            audioConfig: { audioEncoding: 'MP3' },
-        };
+        const request = { input: { ssml: ssmlText }, voice: { languageCode: 'ko-KR', name: selectedVoice }, audioConfig: { audioEncoding: 'MP3' }, };
         const [response] = await client.synthesizeSpeech(request);
         const audioBase64 = response.audioContent.toString('base64');
         const audioUrl = `data:audio/mp3;base64,${audioBase64}`;
         res.json({ audioUrl: audioUrl });
-    } catch (error) {
-        console.error('구글 TTS API 호출 중 오류 발생:', error);
-        res.status(500).json({ error: error.message });
-    }
+    } catch (error) { console.error('구글 TTS API 호출 중 오류 발생:', error); res.status(500).json({ error: error.message }); }
 });
 
-
-// ==========================================================
-// 영상 렌더링 API (V3: GIF, 비디오 지원 및 모든 버그 수정 최종판)
-// ==========================================================
+// 영상 렌더링 API (V4: 모든 버그 수정 및 FFmpeg 로직 최적화 최종판)
 app.post('/render-video', async (req, res) => {
-    console.log("영상 렌더링 요청 시작 (V3: 2-Pass 렌더링)");
+    console.log("영상 렌더링 요청 시작 (V4: 최종 수정판)");
     const projectData = req.body;
     const fps = 30;
     const renderId = `render_${Date.now()}`;
     const tempDir = path.join(__dirname, 'temp', renderId);
-    const overlayFramesDir = path.join(tempDir, 'overlay_frames'); // 투명 텍스트 프레임
-    const mediaDir = path.join(tempDir, 'media'); // 사용자 미디어 저장
+    // ... (임시 폴더 경로 설정) ...
+    const overlayFramesDir = path.join(tempDir, 'overlay_frames');
+    const mediaDir = path.join(tempDir, 'media');
     const audioDir = path.join(tempDir, 'audio');
     const finalAudioPath = path.join(tempDir, 'final_audio.mp3');
     const outputVideoPath = path.join(tempDir, 'output.mp4');
@@ -67,6 +58,8 @@ app.post('/render-video', async (req, res) => {
         await fs.ensureDir(mediaDir);
         await fs.ensureDir(audioDir);
         console.log(`[${renderId}] 임시 폴더 생성`);
+        
+        const totalDuration = projectData.scriptCards.reduce((sum, card) => sum + card.duration, 0);
 
         // ==========================================================
         // PASS 1: Puppeteer로 투명 배경 텍스트 오버레이 렌더링
@@ -74,11 +67,8 @@ app.post('/render-video', async (req, res) => {
         browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
         const page = await browser.newPage();
         await page.setViewport({ width: 1080, height: 1920 });
-        
         const renderTemplateContent = await fs.readFile(path.join(__dirname, 'render_template.html'), 'utf-8');
         await page.setContent(renderTemplateContent);
-        
-        // Pass 1에서는 모든 미디어를 숨김
         await page.evaluate(() => {
             document.body.style.backgroundColor = 'transparent';
             document.documentElement.style.backgroundColor = 'transparent';
@@ -87,12 +77,11 @@ app.post('/render-video', async (req, res) => {
         });
 
         let frameCount = 0;
-        let totalDurationForFrames = 0;
         for (const card of projectData.scriptCards) {
             const cardFrames = Math.floor(card.duration * fps);
             for (let i = 0; i < cardFrames; i++) {
                 const timeInCard = i / fps;
-                
+                // Puppeteer 렌더링 로직 (텍스트, 헤더, UI만)
                 await page.evaluate((project, currentCard, t, scale) => {
                     const pSettings = project.projectSettings;
                     const headerEl = document.querySelector('.st-preview-header');
@@ -141,92 +130,95 @@ app.post('/render-video', async (req, res) => {
                 await page.screenshot({ path: framePath, omitBackground: true });
                 frameCount++;
             }
-            totalDurationForFrames += card.duration;
         }
         await browser.close();
-        console.log(`[${renderId}] Pass 1: 투명 오버레이 프레임 캡처 완료 (${frameCount}개)`);
+        console.log(`[${renderId}] Pass 1: 투명 오버레이 프레임 캡처 완료`);
         
         // ==========================================================
-        // 미디어 파일 다운로드 및 배경 비디오 생성
+        // 배경 비디오 생성 (이미지, GIF, 비디오 모두 처리)
         // ==========================================================
-        const mediaClips = [];
+        const ffmpegInputs = [];
+        const filterComplexParts = [];
         let accumulatedTime = 0;
+        let mediaStreamIndex = 1; // 0은 검은 배경
+
+        // 1. 검은색 배경 비디오 생성
+        const backgroundVideoPath = path.join(mediaDir, 'background.mp4');
+        const blackBgCommand = `ffmpeg -f lavfi -i color=c=black:s=1080x1920:d=${totalDuration} -pix_fmt yuv420p -y "${backgroundVideoPath}"`;
+        await new Promise((resolve, reject) => exec(blackBgCommand, (err) => err ? reject(err) : resolve()));
+        ffmpegInputs.push(`-i "${backgroundVideoPath}"`);
+        let lastOutputStream = '[0:v]';
+
+        // 2. 각 카드 미디어 처리 및 FFmpeg 명령어 구성
         for (const [index, card] of projectData.scriptCards.entries()) {
             if (card.media.url) {
                 const isBase64 = card.media.url.startsWith('data:');
                 const fileBuffer = isBase64 ? Buffer.from(card.media.url.split(',')[1], 'base64') : await (await fetch(card.media.url)).buffer();
-                const fileExtension = isBase64 ? card.media.url.match(/data:image\/(.+);/)[1] : path.extname(new URL(card.media.url).pathname).substring(1);
+                const fileExtension = isBase64 ? card.media.url.match(/data:(?:image|video)\/([a-zA-Z0-9-.+]+);/)[1] : path.extname(new URL(card.media.url).pathname).substring(1);
                 
-                let inputPath = path.join(mediaDir, `media_${index}.${fileExtension}`);
+                const inputPath = path.join(mediaDir, `media_${index}.${fileExtension}`);
                 await fs.writeFile(inputPath, fileBuffer);
+                ffmpegInputs.push(`-i "${inputPath}"`);
                 
-                // 이미지/GIF를 카드 길이만큼의 비디오로 변환
-                if (['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(fileExtension.toLowerCase())) {
-                    const videoClipPath = path.join(mediaDir, `clip_${index}.mp4`);
-                    const command = `ffmpeg -i "${inputPath}" -t ${card.duration} -vf "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:-1:-1:color=black,format=yuv420p" -y "${videoClipPath}"`;
-                    await new Promise((resolve, reject) => exec(command, (err) => err ? reject(err) : resolve()));
-                    inputPath = videoClipPath;
-                }
-                
-                let showTime = 0;
+                let showTime = accumulatedTime;
                 if(card.media.showOnSegment > 1) {
                     const targetSegmentIndex = card.media.showOnSegment - 2;
                     if (card.segments && card.segments[targetSegmentIndex]) {
-                        showTime = card.segments[targetSegmentIndex].startTime;
+                        showTime += card.segments[targetSegmentIndex].startTime;
                     }
                 }
-                mediaClips.push({ path: inputPath, startTime: accumulatedTime + showTime, endTime: accumulatedTime + card.duration });
+                const endTime = accumulatedTime + card.duration;
+                
+                const nextOutputStream = `[v${index}]`;
+                filterComplexParts.push(`${lastOutputStream}[${mediaStreamIndex}:v] overlay=x=(W-w)/2:y=(H-h)/2:enable='between(t,${showTime},${endTime})' ${nextOutputStream}`);
+                lastOutputStream = nextOutputStream;
+                mediaStreamIndex++;
             }
             accumulatedTime += card.duration;
         }
-        
-        const backgroundVideoPath = path.join(mediaDir, 'background.mp4');
-        const blackBgCommand = `ffmpeg -f lavfi -i color=c=black:s=1080x1920:d=${totalDurationForFrames} -pix_fmt yuv420p -y "${backgroundVideoPath}"`;
-        await new Promise((resolve, reject) => exec(blackBgCommand, (err) => err ? reject(err) : resolve()));
 
-        let currentVideo = backgroundVideoPath;
-        for (const [i, clip] of mediaClips.entries()) {
-            const nextVideo = path.join(mediaDir, `temp_${i}.mp4`);
-            const overlayCommand = `ffmpeg -i "${currentVideo}" -i "${clip.path}" -filter_complex "[0:v][1:v] overlay=0:0:enable='between(t,${clip.startTime},${clip.endTime})'" -y "${nextVideo}"`;
-            await new Promise((resolve, reject) => exec(overlayCommand, (err) => err ? reject(err) : resolve()));
-            currentVideo = nextVideo;
+        const baseVideoPath = path.join(mediaDir, 'base_video.mp4');
+        if (filterComplexParts.length > 0) {
+            const createBaseVideoCommand = `ffmpeg ${ffmpegInputs.join(' ')} -filter_complex "${filterComplexParts.join(';')}" -map "${lastOutputStream}" -y "${baseVideoPath}"`;
+            console.log(`[${renderId}] 배경 비디오 생성 실행: ${createBaseVideoCommand}`);
+            await new Promise((resolve, reject) => exec(createBaseVideoCommand, (err) => err ? reject(err) : resolve()));
+        } else {
+            // 미디어가 하나도 없으면 검은 배경을 그대로 사용
+            await fs.copy(backgroundVideoPath, baseVideoPath);
         }
-        const baseVideoPath = currentVideo;
         console.log(`[${renderId}] 배경 비디오 생성 완료`);
         
         // ==========================================================
         // 오디오 믹싱
         // ==========================================================
         const audioTracks = [];
-        let currentTime = 0;
-        if (projectData.globalBGM && projectData.globalBGM.url) {
-            try { const response = await fetch(projectData.globalBGM.url); const path = `${audioDir}/bgm.mp3`; await fs.writeFile(path, await response.buffer()); audioTracks.push({ type: 'bgm', path, volume: projectData.globalBGM.volume || 0.3 }); } catch (e) { console.error('BGM 다운로드 실패:', e); }
-        }
+        let currentCardTime = 0;
+        if (projectData.globalBGM && projectData.globalBGM.url) { try { const res = await fetch(projectData.globalBGM.url); const p = `${audioDir}/bgm.mp3`; await fs.writeFile(p, await res.buffer()); audioTracks.push({ type: 'bgm', path: p, volume: projectData.globalBGM.volume || 0.3 }); } catch (e) { console.error('BGM 다운로드 실패:', e); } }
         for (const [index, card] of projectData.scriptCards.entries()) {
-            if (card.audioUrl) { try { const ttsPath = `${audioDir}/tts_${index}.mp3`; const base64Data = card.audioUrl.split(',')[1]; await fs.writeFile(ttsPath, Buffer.from(base64Data, 'base64')); audioTracks.push({ type: 'effect', path: ttsPath, time: currentTime, volume: card.ttsVolume || 1.0 }); } catch (e) { console.error('TTS 파일 저장 실패:', e); } }
-            if (card.sfxUrl) { try { const response = await fetch(card.sfxUrl); const sfxPath = `${audioDir}/sfx_${index}.mp3`; await fs.writeFile(sfxPath, await response.buffer()); audioTracks.push({ type: 'effect', path: sfxPath, time: currentTime, volume: card.sfxVolume || 1.0 }); } catch (e) { console.error('SFX 다운로드 실패:', e); } }
-            currentTime += card.duration;
+            if (card.audioUrl) { try { const p = `${audioDir}/tts_${index}.mp3`; await fs.writeFile(p, Buffer.from(card.audioUrl.split(',')[1], 'base64')); audioTracks.push({ type: 'effect', path: p, time: currentCardTime, volume: card.ttsVolume || 1.0 }); } catch (e) { console.error('TTS 파일 저장 실패:', e); } }
+            if (card.sfxUrl) { try { const res = await fetch(card.sfxUrl); const p = `${audioDir}/sfx_${index}.mp3`; await fs.writeFile(p, await res.buffer()); audioTracks.push({ type: 'effect', path: p, time: currentCardTime, volume: card.sfxVolume || 1.0 }); } catch (e) { console.error('SFX 다운로드 실패:', e); } }
+            currentCardTime += card.duration;
         }
-
         if (audioTracks.length > 0) {
             const inputClauses = audioTracks.map(t => `-i "${t.path}"`).join(' ');
             let filterComplex = '';
             if (audioTracks.length > 1) { const outputStreams = []; audioTracks.forEach((track, i) => { let stream = `[${i}:a]`; if (track.type === 'bgm') { stream += `volume=${track.volume}[a${i}]`; } else { stream += `volume=${track.volume},adelay=${track.time * 1000}|${track.time * 1000}[a${i}]`; } filterComplex += stream; outputStreams.push(`[a${i}]`); if(i < audioTracks.length - 1) filterComplex += ';'; }); filterComplex += `;${outputStreams.join('')}amix=inputs=${outputStreams.length}:duration=longest`; } else { const track = audioTracks[0]; filterComplex = `[0:a]volume=${track.volume}`; }
             const mixCommand = `ffmpeg ${inputClauses} -filter_complex "${filterComplex}" -y "${finalAudioPath}"`;
-            await new Promise((resolve, reject) => exec(mixCommand, (error, stdout, stderr) => error ? reject(new Error(stderr)) : resolve(stdout)));
+            await new Promise((resolve, reject) => exec(mixCommand, (error) => error ? reject(new Error(error)) : resolve()));
         }
         console.log(`[${renderId}] 오디오 믹싱 완료`);
 
         // ==========================================================
-        // PASS 2: FFmpeg로 배경 비디오, 오버레이, 오디오 최종 합성
+        // PASS 2: 최종 합성
         // ==========================================================
         const hasAudio = await fs.pathExists(finalAudioPath);
         const audioInput = hasAudio ? `-i "${finalAudioPath}"` : '';
+        const audioMap = hasAudio ? `-map 2:a:0` : '';
 
-        const finalFfmpegCommand = `ffmpeg -i "${baseVideoPath}" -i "${overlayFramesDir}/frame_%06d.png" ${audioInput} -filter_complex "[0:v][1:v]overlay=0:0[v]" -map "[v]" ${hasAudio ? '-map 2:a' : ''} -c:v libx264 -crf 18 -preset slow -pix_fmt yuv420p -c:a aac -shortest -y "${outputVideoPath}"`;
+        const finalFfmpegCommand = `ffmpeg -i "${baseVideoPath}" -i "${overlayFramesDir}/frame_%06d.png" ${audioInput} -filter_complex "[0:v][1:v]overlay=0:0[v]" -map "[v]" ${audioMap} -c:v libx264 -crf 18 -preset slow -pix_fmt yuv420p -c:a aac -shortest -y "${outputVideoPath}"`;
 
         console.log(`[${renderId}] Pass 2: 최종 영상 합성 실행`);
-        await new Promise((resolve, reject) => exec(finalFfmpegCommand, (err, stdout, stderr) => err ? reject(new Error(stderr)) : resolve(stdout)));
+        await new Promise((resolve, reject) => exec(finalFfmpegCommand, (err) => err ? reject(new Error(err)) : resolve()));
         console.log(`[${renderId}] 최종 영상 합성 완료`);
 
         res.download(outputVideoPath, `${projectData.projectSettings.project.title || 'sunsak-video'}.mp4`, async (err) => {
@@ -248,4 +240,4 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(`  SunsakTool 서버가 ${PORT} 포트에서 실행되었습니다!`);
     console.log(`=============================================`);
 });
-// ================== [server.js 전체 코드 끝] ====================
+// ================== [server.js 전체 최종 코드 끝] ==================
