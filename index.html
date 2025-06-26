@@ -61,14 +61,16 @@
         .st-preview-content { padding: 10px; color: black; flex-grow: 1; display: flex; flex-direction: column; background-color: white; overflow: hidden; position: relative; }
         .st-project-info { font-size: 13px; color: #555; margin: 0 0 16px 0; border-bottom: 1px solid #eee; padding-bottom: 16px; flex-shrink: 0; }
         .st-project-info .title { font-size: 22px; color: black; font-weight: bold; margin-bottom: 5px; }
-        .st-script-display {
-    /* flex-grow: 1; */ /* <<< 이렇게 주석 처리하거나 이 줄을 삭제하세요 */
+        /* Ctrl+F 로 .st-preview-content 를 찾으세요 */
+.st-preview-content {
+    padding: 10px;
+    color: black;
+    /* flex-grow: 1; */ /* <<< 바로 이 줄을 주석 처리하거나 삭제하세요! */
     display: flex;
     flex-direction: column;
-    align-items: center;
-    text-align: center;
-    min-height: 0;
-    width: 100%;
+    background-color: white;
+    overflow: hidden;
+    position: relative;
 }
         .interactive-target { position: relative; width: 100%; touch-action: none; transform-origin: center center; cursor: move; }
         #st-preview-media-container-wrapper {
