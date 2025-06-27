@@ -287,30 +287,50 @@ async function renderVideo(jobId, projectData) {
 /**
  * Pub/Sub 구독 리스너를 설정하고 메시지 처리를 시작하는 함수
  */
+/**
+ * Pub/Sub 구독 리스너를 설정하고 메시지 처리를 시작하는 함수
+ */
 function listenForMessages() {
-    const subscription = pubSubClient.subscription(SUBSCRIPTION_NAME);
+    // [수정] 구독 객체를 가져올 때, 자동으로 생성하지 않도록 옵션을 추가합니다.
+    const subscription = pubSubClient.subscription(SUBSCRIPTION_NAME, {
+      gaxOpts: {
+        autoCreate: false,
+      },
+    });
 
-    const messageHandler = async (message) => {
-        console.log(`[Pub/Sub] 수신된 메시지 ID: ${message.id}`);
-        try {
-            const { jobId, projectData } = JSON.parse(message.data);
-            console.log(`[${jobId}] 렌더링 작업 처리 시작`);
-            await renderVideo(jobId, projectData);
-            message.ack(); // 성공적으로 처리했음을 Pub/Sub에 알림 (메시지 삭제)
-            console.log(`[${jobId}] 메시지 처리 완료 (ack)`);
-        } catch (error) {
-            console.error('[Pub/Sub] 메시지 처리 중 심각한 오류:', error);
-            // 오류 발생 시, 재시도하지 않도록 ack()를 호출하여 메시지를 제거합니다.
-            // (오류 내용은 이미 Firestore에 기록되었습니다)
-            message.ack(); 
+    // 구독이 실제로 존재하는지 확인하는 로직 추가
+    subscription.exists().then(([exists]) => {
+        if (!exists) {
+            console.error(`오류: 구독 '${SUBSCRIPTION_NAME}'을(를) 찾을 수 없습니다. GCP 콘솔에서 생성했는지 확인하세요.`);
+            // 구독이 없으면 프로세스를 종료하여 문제를 명확히 알림
+            process.exit(1);
         }
-    };
 
-    subscription.on('message', messageHandler);
-    console.log(`=======================================================`);
-    console.log(`  SunsakTool 렌더링 워커가 시작되었습니다.`);
-    console.log(`  Pub/Sub 구독(${SUBSCRIPTION_NAME})을 수신 대기합니다...`);
-    console.log(`=======================================================`);
+        // 구독이 존재할 때만 메시지 핸들러를 등록합니다.
+        const messageHandler = async (message) => {
+            console.log(`[Pub/Sub] 수신된 메시지 ID: ${message.id}`);
+            try {
+                const { jobId, projectData } = JSON.parse(message.data);
+                console.log(`[${jobId}] 렌더링 작업 처리 시작`);
+                await renderVideo(jobId, projectData);
+                message.ack();
+                console.log(`[${jobId}] 메시지 처리 완료 (ack)`);
+            } catch (error) {
+                console.error('[Pub/Sub] 메시지 처리 중 심각한 오류:', error);
+                message.ack(); 
+            }
+        };
+
+        subscription.on('message', messageHandler);
+        console.log(`=======================================================`);
+        console.log(`  SunsakTool 렌더링 워커가 시작되었습니다.`);
+        console.log(`  Pub/Sub 구독(${SUBSCRIPTION_NAME})을 성공적으로 연결했습니다.`);
+        console.log(`=======================================================`);
+
+    }).catch(err => {
+        console.error("구독 확인 중 오류 발생:", err);
+        process.exit(1);
+    });
 }
 
 // ================== [worker.js 하단 수정] ===================
