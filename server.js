@@ -7,13 +7,22 @@ const { Firestore } = require('@google-cloud/firestore');
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
 
+// ================== [server.js - 키 파일 없는 버전] ==================
+const express = require('express');
+const path = require('path');
+const { TextToSpeechClient } = require('@google-cloud/text-to-speech');
+const { PubSub } = require('@google-cloud/pubsub');
+const { Firestore } = require('@google-cloud/firestore');
+const cors = require('cors');
+const { v4: uuidv4 } = require('uuid');
+
 // --- 환경 설정 및 클라이언트 초기화 ---
 const GCP_PROJECT_ID = 'sunsak-tool-gcp';
-const KEY_FILE_PATH = path.join(__dirname, 'sunsak-key.json');
 
-const ttsClient = new TextToSpeechClient({ projectId: GCP_PROJECT_ID, keyFilename: KEY_FILE_PATH });
-const pubSubClient = new PubSub({ projectId: GCP_PROJECT_ID, keyFilename: KEY_FILE_PATH });
-const firestore = new Firestore({ projectId: GCP_PROJECT_ID, keyFilename: KEY_FILE_PATH });
+// keyFilename 옵션을 모두 제거하면, Cloud Run에 연결된 서비스 계정으로 자동 인증됩니다.
+const ttsClient = new TextToSpeechClient({ projectId: GCP_PROJECT_ID });
+const pubSubClient = new PubSub({ projectId: GCP_PROJECT_ID });
+const firestore = new Firestore({ projectId: GCP_PROJECT_ID });
 
 const RENDER_TOPIC_NAME = 'sunsak-render-jobs';
 const app = express();
