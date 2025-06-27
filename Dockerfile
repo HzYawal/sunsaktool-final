@@ -53,4 +53,4 @@ COPY . .
 EXPOSE 3000
 
 # 8. 서버 시작 명령어 (배포 시점에 server.js 또는 worker.js로 변경)
-CMD ["node", "server.js"]
+CMD ["ls", "-la"]
