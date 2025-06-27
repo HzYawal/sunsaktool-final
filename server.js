@@ -1,11 +1,14 @@
 // ================== [server.js - 최종 완성본] ==================
 const express = require('express');
-const path = require('path');
+const path = require('path'); // path 추가
 const { TextToSpeechClient } = require('@google-cloud/text-to-speech');
 const { PubSub } = require('@google-cloud/pubsub');
 const { Firestore } = require('@google-cloud/firestore');
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
+
+const GCP_PROJECT_ID = 'sunsak-tool-gcp';
+const KEY_FILE_PATH = path.join(__dirname, 'sunsak-key.json');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -13,10 +16,10 @@ const PORT = process.env.PORT || 3000;
 // [핵심 수정] 프로젝트 ID를 코드에 명시적으로 지정합니다.
 const GCP_PROJECT_ID = 'sunsak-tool-gcp'; 
 
-// --- Google Cloud 서비스 클라이언트 초기화 (프로젝트 ID 지정) ---
-const ttsClient = new TextToSpeechClient({ projectId: GCP_PROJECT_ID });
-const pubSubClient = new PubSub({ projectId: GCP_PROJECT_ID });
-const firestore = new Firestore({ projectId: GCP_PROJECT_ID });
+const ttsClient = new TextToSpeechClient({ projectId: GCP_PROJECT_ID, keyFilename: KEY_FILE_PATH });
+const pubSubClient = new PubSub({ projectId: GCP_PROJECT_ID, keyFilename: KEY_FILE_PATH });
+const firestore = new Firestore({ projectId: GCP_PROJECT_ID, keyFilename: KEY_FILE_PATH });
+
 
 // --- 환경 설정 ---
 const RENDER_TOPIC_NAME = 'sunsak-render-jobs';
