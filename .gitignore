@@ -2,5 +2,4 @@
 node_modules/
 .netlify/
 
-# 새로 추가할 내용
-gcp-credentials.json
+sunsak-key.json
