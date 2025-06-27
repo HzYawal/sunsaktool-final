@@ -60,3 +60,5 @@ EXPOSE 3000
 
 # 8. 서버 시작 명령어 (기존과 동일)
 CMD ["node", "server.js"]
+
+CMD ["node", "worker.js"]
