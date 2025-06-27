@@ -1,4 +1,4 @@
-// ================== [worker.js - 진짜 최종 완성본] ==================
+// ================== [worker.js - 최종 안정화 버전 / 전체 코드] ==================
 const express = require('express');
 const path = require('path');
 const fs = require('fs-extra');
@@ -10,18 +10,8 @@ const { PubSub } = require('@google-cloud/pubsub');
 const { Storage } = require('@google-cloud/storage');
 const { Firestore } = require('@google-cloud/firestore');
 
-// ================== [worker.js - 키 파일 없는 버전] ==================
-const express = require('express');
-const path = require('path');
-// ... (다른 require 문들은 동일)
-const { PubSub } = require('@google-cloud/pubsub');
-const { Storage } = require('@google-cloud/storage');
-const { Firestore } = require('@google-cloud/firestore');
-
 // --- 환경 설정 및 클라이언트 초기화 ---
 const GCP_PROJECT_ID = 'sunsak-tool-gcp';
-
-// keyFilename 옵션을 모두 제거하면, Cloud Run에 연결된 서비스 계정으로 자동 인증됩니다.
 const pubSubClient = new PubSub({ projectId: GCP_PROJECT_ID });
 const storage = new Storage({ projectId: GCP_PROJECT_ID });
 const firestore = new Firestore({ projectId: GCP_PROJECT_ID });
@@ -70,7 +60,6 @@ async function renderVideo(jobId, projectData) {
             for (let i = 0; i < cardFrames; i++) {
                 const timeInCard = i / fps;
                 await page.evaluate((project, currentCard, mediaInfo, t) => {
-                    // ... (이 부분은 대표님의 원래 렌더링 로직이라 생략하지 않고 그대로 둡니다)
                     const scale = 1080 / project.renderMetadata.sourceWidth; const pSettings = project.projectSettings; const headerEl = document.querySelector('.st-preview-header'); const headerTitleEl = headerEl.querySelector('.header-title'); const headerIconEl = headerEl.querySelector('.header-icon'); const headerLogoEl = headerEl.querySelector('.header-logo'); headerEl.style.height = `${65 * scale}px`; headerEl.style.padding = `0 ${15 * scale}px`; headerEl.style.backgroundColor = pSettings.header.backgroundColor; headerTitleEl.innerText = pSettings.header.text; headerTitleEl.style.color = pSettings.header.color; headerTitleEl.style.fontFamily = pSettings.header.fontFamily; headerTitleEl.style.fontSize = `${pSettings.header.fontSize * scale}px`; const iconSVG = { back: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${pSettings.header.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>`, menu: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${pSettings.header.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>` }; headerIconEl.innerHTML = iconSVG[pSettings.header.icon] || ''; if (pSettings.header.logo.url) { headerLogoEl.src = pSettings.header.logo.url; headerLogoEl.style.width = `${pSettings.header.logo.size * scale}px`; headerLogoEl.style.height = `${pSettings.header.logo.size * scale}px`; headerLogoEl.style.display = 'block'; } else { headerLogoEl.style.display = 'none'; } const projectInfoEl = document.querySelector('.st-project-info'); projectInfoEl.style.paddingBottom = `${16 * scale}px`; projectInfoEl.style.marginBottom = `${16 * scale}px`; const projectInfoTitleEl = projectInfoEl.querySelector('.title'); projectInfoTitleEl.innerText = pSettings.project.title; projectInfoTitleEl.style.color = pSettings.project.titleColor; projectInfoTitleEl.style.fontFamily = pSettings.project.titleFontFamily; projectInfoTitleEl.style.fontSize = `${pSettings.project.titleFontSize * scale}px`; projectInfoTitleEl.style.marginBottom = `${5 * scale}px`; const projectInfoSpanEl = projectInfoEl.querySelector('span'); projectInfoSpanEl.innerText = `${pSettings.project.author || ''} | 조회수 ${Number(pSettings.project.views || 0).toLocaleString()}`; projectInfoSpanEl.style.color = pSettings.project.metaColor; projectInfoSpanEl.style.fontSize = `${13 * scale}px`; const textWrapper = document.querySelector('#st-preview-text-container-wrapper'); const textEl = document.querySelector('#st-preview-text'); const mediaWrapper = document.querySelector('#st-preview-media-container-wrapper'); const imageEl = document.querySelector('#st-preview-image'); const videoEl = document.querySelector('#st-preview-video'); const scaledStyle = { ...currentCard.style }; scaledStyle.fontSize = `${parseFloat(currentCard.style.fontSize) * scale}px`; scaledStyle.lineHeight = currentCard.style.lineHeight; scaledStyle.letterSpacing = `${parseFloat(currentCard.style.letterSpacing) * scale}px`; Object.assign(textEl.style, scaledStyle); textWrapper.style.transform = `translate(${currentCard.layout.text.x * scale}px, ${currentCard.layout.text.y * scale}px) scale(${currentCard.layout.text.scale || 1}) rotate(${currentCard.layout.text.angle || 0}deg)`; let showMedia = false; if(mediaInfo.media && mediaInfo.media.url) { const showOnSegmentIndex = mediaInfo.media.showOnSegment - 1; const showTime = (currentCard.segments[showOnSegmentIndex] || {startTime: 0}).startTime; if (t >= showTime) showMedia = true; } if(showMedia) { mediaWrapper.style.display = 'flex'; mediaWrapper.style.transform = `translate(${mediaInfo.layout.x * scale}px, ${mediaInfo.layout.y * scale}px) scale(${mediaInfo.layout.scale || 1}) rotate(${mediaInfo.layout.angle || 0}deg)`; if (mediaInfo.media.type === 'video') { imageEl.style.display = 'none'; videoEl.style.display = 'block'; videoEl.style.objectFit = mediaInfo.media.fit; if (videoEl.src !== mediaInfo.media.url) videoEl.src = mediaInfo.media.url; videoEl.currentTime = (mediaInfo.media.startTime || 0) + t; } else { videoEl.style.display = 'none'; imageEl.style.display = 'block'; imageEl.style.objectFit = mediaInfo.media.fit; if (imageEl.src !== mediaInfo.media.url) imageEl.src = mediaInfo.media.url; } } else { mediaWrapper.style.display = 'none'; } textEl.innerHTML = ''; const hasCustomSequence = currentCard.animationSequence && currentCard.animationSequence.length > 0; if (hasCustomSequence) { (currentCard.segments || []).forEach(segment => { if (t >= segment.startTime) { const p = document.createElement('p'); p.textContent = segment.text || ' '; p.style.margin = 0; textEl.appendChild(p); } }); } else { currentCard.text.split('\n').forEach(line => { const p = document.createElement('p'); p.textContent = line || ' '; p.style.margin = 0; textEl.appendChild(p); }); } const applyAnimation = (el, anims, duration, time) => { const baseTransform = el.style.transform.split(' ').filter(s => !s.startsWith('translateY') && !s.startsWith('scale')).join(' '); el.style.opacity = 1; el.style.transform = baseTransform; const inDuration = anims.in.duration; const outStartTime = duration - anims.out.duration; let progress, newTransform = ''; if (time < inDuration && anims.in.name !== 'none') { progress = Math.min(1, time / inDuration); if(anims.in.name === 'fadeIn') el.style.opacity = progress; if(anims.in.name === 'slideInUp') newTransform = ` translateY(${(1 - progress) * 50 * scale}px)`; if(anims.in.name === 'zoomIn') { el.style.opacity = progress; newTransform = ` scale(${0.8 + 0.2 * progress})`; } } else if (time >= outStartTime && anims.out.name !== 'none') { progress = Math.min(1, (time - outStartTime) / anims.out.duration); if(anims.out.name === 'fadeOut') el.style.opacity = 1 - progress; if(anims.out.name === 'slideOutDown') newTransform = ` translateY(${progress * 50 * scale}px)`; if(anims.out.name === 'zoomOut') { el.style.opacity = 1 - progress; newTransform = ` scale(${1 - 0.2 * progress})`; } } el.style.transform = `${baseTransform} ${newTransform}`; }; applyAnimation(textWrapper, currentCard.animations.text, currentCard.duration, t); if(showMedia) applyAnimation(mediaWrapper, mediaInfo.animations, currentCard.duration, t);
                 }, projectData, card, mediaToRender, timeInCard);
                 const framePath = path.join(framesDir, `frame_${String(frameCount).padStart(6, '0')}.png`);
@@ -121,17 +110,10 @@ async function renderVideo(jobId, projectData) {
     }
 }
 
-async function initializeAndListen() {
+async function listenForMessages() {
     try {
-        console.log(`Pub/Sub 초기화를 시작합니다... 토픽: ${RENDER_TOPIC_NAME}, 구독: ${SUBSCRIPTION_NAME}`);
-        const topic = pubSubClient.topic(RENDER_TOPIC_NAME);
-        const [topicExists] = await topic.exists();
-        if (!topicExists) { console.log(`토픽 '${RENDER_TOPIC_NAME}'이(가) 존재하지 않아 새로 생성합니다.`); await topic.create(); }
-        console.log(`토픽 '${RENDER_TOPIC_NAME}'이(가) 준비되었습니다.`);
-        const subscription = topic.subscription(SUBSCRIPTION_NAME);
-        const [subscriptionExists] = await subscription.exists();
-        if (!subscriptionExists) { console.log(`구독 '${SUBSCRIPTION_NAME}'이(가) 존재하지 않아 새로 생성합니다.`); await subscription.create(); }
-        console.log(`구독 '${SUBSCRIPTION_NAME}'이(가) 준비되었습니다.`);
+        const subscription = pubSubClient.subscription(SUBSCRIPTION_NAME);
+
         const messageHandler = async (message) => {
             console.log(`[Pub/Sub] 수신된 메시지 ID: ${message.id}`);
             try {
@@ -140,18 +122,26 @@ async function initializeAndListen() {
                 await renderVideo(jobId, projectData);
                 message.ack();
                 console.log(`[${jobId}] 메시지 처리 완료 (ack)`);
-            } catch (error) { console.error('[Pub/Sub] 메시지 처리 중 심각한 오류:', error); message.ack(); }
+            } catch (error) {
+                console.error('[Pub/Sub] 메시지 처리 중 심각한 오류:', error);
+                message.ack();
+            }
         };
-        const errorHandler = (error) => { console.error(`[Pub/Sub] 심각한 리스너 오류 발생:`, error); };
+
+        const errorHandler = (error) => {
+            console.error(`[Pub/Sub] 심각한 리스너 오류 발생:`, error);
+        };
+
         subscription.on('message', messageHandler);
         subscription.on('error', errorHandler);
+
         console.log(`=======================================================`);
         console.log(`  SunsakTool 렌더링 워커가 성공적으로 시작되었습니다.`);
         console.log(`  Pub/Sub 구독(${SUBSCRIPTION_NAME})을 수신 대기합니다...`);
         console.log(`=======================================================`);
+
     } catch (error) {
-        console.error('Pub/Sub 초기화 중 치명적인 오류 발생:', error);
-        process.exit(1);
+        console.error('Pub/Sub 리스너 설정 중 치명적인 오류 발생:', error);
     }
 }
 
@@ -161,7 +151,8 @@ const PORT = process.env.PORT || 3000;
 app.get('/', (req, res) => {
   res.status(200).send('SunsakTool Worker is alive and listening for jobs.');
 });
+
 app.listen(PORT, () => {
   console.log(`워커 Health Check 서버가 ${PORT} 포트에서 실행되었습니다.`);
-  initializeAndListen();
+  listenForMessages();
 });
