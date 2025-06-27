@@ -10,14 +10,17 @@ const { PubSub } = require('@google-cloud/pubsub');
 const { Storage } = require('@google-cloud/storage');
 const { Firestore } = require('@google-cloud/firestore');
 
+const GCP_PROJECT_ID = 'sunsak-tool-gcp';
+const KEY_FILE_PATH = path.join(__dirname, 'sunsak-key.json');
+
 // [!!!!!!!!!!!! 가장 중요한 부분 !!!!!!!!!!!!]
 // 대표님의 실제 GCP 프로젝트 ID를 여기에 입력해주세요.
 const GCP_PROJECT_ID = 'sunsak-tool-gcp'; // <== 대표님의 실제 GCP 프로젝트 ID로 수정해주세요!
 
-// --- Google Cloud 서비스 클라이언트 초기화 (프로젝트 ID 지정) ---
-const pubSubClient = new PubSub({ projectId: GCP_PROJECT_ID });
-const storage = new Storage({ projectId: GCP_PROJECT_ID });
-const firestore = new Firestore({ projectId: GCP_PROJECT_ID });
+// [수정!] 클라이언트 초기화 시, 신분증 파일 경로 지정
+const pubSubClient = new PubSub({ projectId: GCP_PROJECT_ID, keyFilename: KEY_FILE_PATH });
+const storage = new Storage({ projectId: GCP_PROJECT_ID, keyFilename: KEY_FILE_PATH });
+const firestore = new Firestore({ projectId: GCP_PROJECT_ID, keyFilename: KEY_FILE_PATH });
 
 // --- 환경 설정 ---
 const RENDER_TOPIC_NAME = 'sunsak-render-jobs';
