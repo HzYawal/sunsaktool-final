@@ -1,5 +1,5 @@
-// ================== [worker.js - 렌더링 워커 서비스 전체 코드] ==================
-const express = require('express'); // express 추가
+// ================== [worker.js - 최종 완성본 전체 코드] ==================
+const express = require('express');
 const path = require('path');
 const fs = require('fs-extra');
 const { exec } = require('child_process');
@@ -16,18 +16,12 @@ const storage = new Storage();
 const firestore = new Firestore();
 
 // --- 환경 설정 ---
-// 이 값들은 server.js와 동일해야 합니다.
 const RENDER_TOPIC_NAME = 'sunsak-render-jobs';
 const OUTPUT_BUCKET_NAME = 'sunsak-output-videos';
-// 워커가 구독할 '구독'의 이름입니다. GCP 콘솔에서 Pub/Sub 토픽에 연결된 구독을 생성해야 합니다.
 const SUBSCRIPTION_NAME = 'sunsak-render-jobs-sub';
 
 /**
  * Firestore의 작업 상태를 업데이트하는 헬퍼 함수
- * @param {string} jobId - 작업 ID
- * @param {string} status - 현재 상태 ('processing', 'completed', 'failed')
- * @param {string} message - 사용자에게 보여줄 메시지
- * @param {number|null} progress - 진행률 (0-100)
  */
 async function updateJobStatus(jobId, status, message, progress = null) {
     const jobRef = firestore.collection('renderJobs').doc(jobId);
@@ -35,23 +29,19 @@ async function updateJobStatus(jobId, status, message, progress = null) {
     if (progress !== null) {
         updateData.progress = progress;
     }
-    // set-merge를 사용하여 필드가 없으면 생성하고, 있으면 덮어씁니다.
     await jobRef.set(updateData, { merge: true });
     console.log(`[${jobId}] 상태 업데이트: ${status} - ${message} (${progress !== null ? progress + '%' : ''})`);
 }
 
 /**
  * 실제 영상 렌더링을 수행하는 메인 함수
- * @param {string} jobId - 작업 ID
- * @param {object} projectData - 프론트에서 받은 렌더링 데이터
  */
 async function renderVideo(jobId, projectData) {
-    // [최종 디버깅용 로그 추가]
     console.log(`[${jobId}] renderVideo 함수가 성공적으로 호출되었습니다. 렌더링을 시작합니다.`);
 
     await updateJobStatus(jobId, 'processing', '렌더링 환경을 설정하고 있습니다.', 5);
     const fps = 30;
-    const tempDir = path.join(os.tmpdir(), jobId); // renderId 대신 jobId 사용
+    const tempDir = path.join(os.tmpdir(), jobId);
     const framesDir = path.join(tempDir, 'frames');
     const audioDir = path.join(tempDir, 'audio');
     const finalAudioPath = path.join(tempDir, 'final_audio.mp3');
@@ -62,14 +52,12 @@ async function renderVideo(jobId, projectData) {
         await fs.ensureDir(framesDir);
         await fs.ensureDir(audioDir);
         
-        // --- 1. Puppeteer로 비디오 프레임 캡처 ---
         await updateJobStatus(jobId, 'processing', '비디오 프레임 캡처를 시작합니다.', 10);
         
         browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
         const page = await browser.newPage();
         await page.setViewport({ width: 1080, height: 1920 });
         
-        // render_template.html 파일은 worker.js와 같은 위치에 있어야 합니다.
         const renderTemplateContent = await fs.readFile(path.join(__dirname, 'render_template.html'), 'utf-8');
         await page.setContent(renderTemplateContent, { waitUntil: 'networkidle0' });
 
@@ -96,8 +84,6 @@ async function renderVideo(jobId, projectData) {
                 await page.evaluate((project, currentCard, mediaInfo, t) => {
                     const scale = 1080 / project.renderMetadata.sourceWidth;
                     const pSettings = project.projectSettings;
-                    
-                    // (이하 page.evaluate 내용은 대표님의 기존 코드와 100% 동일)
                     const headerEl = document.querySelector('.st-preview-header');
                     const headerTitleEl = headerEl.querySelector('.header-title');
                     const headerIconEl = headerEl.querySelector('.header-icon');
@@ -217,9 +203,8 @@ async function renderVideo(jobId, projectData) {
                 await page.screenshot({ path: framePath });
                 frameCount++;
 
-                // 진행률 업데이트 (10% ~ 50% 구간 할당)
                 const currentProgress = 10 + Math.floor((frameCount / totalFramesToRender) * 40);
-                if(frameCount % 30 === 0) { // 너무 자주 업데이트하지 않도록 조절
+                if(frameCount % 30 === 0) {
                     await updateJobStatus(jobId, 'processing', `${cardIndex + 1}번째 클립 렌더링 중...`, currentProgress);
                 }
             }
@@ -227,7 +212,6 @@ async function renderVideo(jobId, projectData) {
         }
         await browser.close();
         
-        // --- 2. 오디오 트랙 생성 및 믹싱 ---
         await updateJobStatus(jobId, 'processing', '오디오 트랙을 처리하고 있습니다.', 55);
         const audioRenderPromise = (async () => {
             const audioTracks = [];
@@ -257,20 +241,17 @@ async function renderVideo(jobId, projectData) {
         })();
         await audioRenderPromise;
 
-        // --- 3. 비디오와 오디오 최종 합성 ---
         await updateJobStatus(jobId, 'processing', '최종 영상으로 합성하고 있습니다.', 80);
         const hasAudio = await fs.pathExists(finalAudioPath);
         const audioInput = hasAudio ? `-i "${finalAudioPath}"` : '';
         const ffmpegCommand = `ffmpeg -y -framerate ${fps} -i "${framesDir}/frame_%06d.png" ${audioInput} -c:v libx264 -crf 18 -preset slow -pix_fmt yuv420p -c:a aac -movflags +faststart ${hasAudio ? '-shortest' : ''} "${outputVideoPath}"`;
         await new Promise((resolve, reject) => exec(ffmpegCommand, (err, stdout, stderr) => { if (err) { console.error('FFMPEG 최종 합성 오류:', stderr); reject(new Error(stderr)); } else resolve(stdout); }));
 
-        // --- 4. 최종 파일을 Cloud Storage에 업로드 ---
         await updateJobStatus(jobId, 'processing', '완성된 영상을 스토리지에 업로드합니다.', 95);
         const destination = `videos/${jobId}/${projectData.projectSettings.project.title || 'sunsak-video'}.mp4`;
         await storage.bucket(OUTPUT_BUCKET_NAME).upload(outputVideoPath, { destination, public: true });
         const videoUrl = `https://storage.googleapis.com/${OUTPUT_BUCKET_NAME}/${destination}`;
         
-        // --- 5. Firestore에 최종 상태와 영상 URL 기록 ---
         await updateJobStatus(jobId, 'completed', '영상 제작이 완료되었습니다.', 100);
         await firestore.collection('renderJobs').doc(jobId).set({ videoUrl, completedAt: new Date() }, { merge: true });
         console.log(`[${jobId}] 작업 완료! 최종 영상 URL: ${videoUrl}`);
@@ -279,7 +260,6 @@ async function renderVideo(jobId, projectData) {
         console.error(`[${jobId}] 렌더링 워커 오류 발생:`, error);
         await updateJobStatus(jobId, 'failed', `오류가 발생했습니다: ${error.message}`);
     } finally {
-        // --- 6. 임시 파일 정리 ---
         if (browser) await browser.close();
         if (await fs.pathExists(tempDir)) await fs.remove(tempDir);
         console.log(`[${jobId}] 임시 파일 정리를 완료했습니다.`);
@@ -287,71 +267,67 @@ async function renderVideo(jobId, projectData) {
 }
 
 /**
- * Pub/Sub 구독 리스너를 설정하고 메시지 처리를 시작하는 함수
+ * Pub/Sub 구독을 확인하고, 없으면 생성한 뒤, 메시지 리스너를 시작하는 최종 함수
  */
-/**
- * Pub/Sub 구독 리스너를 설정하고 메시지 처리를 시작하는 함수
- */
-// =================== [worker.js 하단 최종 수정] ===================
-
-/**
- * Pub/Sub 구독 리스너를 설정하고 메시지 처리를 시작하는 함수 (재시도 로직 추가)
- */
-function listenForMessages() {
-    const subscription = pubSubClient.subscription(SUBSCRIPTION_NAME);
-
-    const messageHandler = async (message) => {
-        console.log(`[Pub/Sub] 수신된 메시지 ID: ${message.id}`);
-        try {
-            const { jobId, projectData } = JSON.parse(message.data);
-            console.log(`[${jobId}] 렌더링 작업 처리 시작`);
-            await renderVideo(jobId, projectData);
-            message.ack();
-            console.log(`[${jobId}] 메시지 처리 완료 (ack)`);
-        } catch (error) {
-            console.error('[Pub/Sub] 메시지 처리 중 심각한 오류:', error);
-            message.ack(); 
+async function initializeAndListen() {
+    try {
+        console.log(`Pub/Sub 초기화를 시작합니다... 토픽: ${RENDER_TOPIC_NAME}, 구독: ${SUBSCRIPTION_NAME}`);
+        
+        const topic = pubSubClient.topic(RENDER_TOPIC_NAME);
+        const [topicExists] = await topic.exists();
+        if (!topicExists) {
+            console.log(`토픽 '${RENDER_TOPIC_NAME}'이(가) 존재하지 않아 새로 생성합니다.`);
+            await topic.create();
         }
-    };
+        console.log(`토픽 '${RENDER_TOPIC_NAME}'이(가) 준비되었습니다.`);
 
-    const errorHandler = (error) => {
-        console.error(`[Pub/Sub] 심각한 오류 발생: ${error.message}`);
-        // "구독을 찾을 수 없음" 오류가 발생하면, 잠시 후 다시 연결을 시도합니다.
-        if (error.code === 5) { // 5 = NOT_FOUND
-            console.log('구독을 찾지 못했습니다. 10초 후에 다시 시도합니다...');
-            setTimeout(() => {
-                subscription.removeListener('error', errorHandler); // 기존 리스너 제거
-                subscription.on('error', errorHandler); // 새 리스너 등록
-            }, 10000);
+        const subscription = topic.subscription(SUBSCRIPTION_NAME);
+        const [subscriptionExists] = await subscription.exists();
+        if (!subscriptionExists) {
+            console.log(`구독 '${SUBSCRIPTION_NAME}'이(가) 존재하지 않아 새로 생성합니다.`);
+            await subscription.create();
         }
-    };
+        console.log(`구독 '${SUBSCRIPTION_NAME}'이(가) 준비되었습니다.`);
 
-    subscription.on('message', messageHandler);
-    subscription.on('error', errorHandler);
+        const messageHandler = async (message) => {
+            console.log(`[Pub/Sub] 수신된 메시지 ID: ${message.id}`);
+            try {
+                const { jobId, projectData } = JSON.parse(message.data);
+                console.log(`[${jobId}] 렌더링 작업 처리 시작`);
+                await renderVideo(jobId, projectData);
+                message.ack();
+                console.log(`[${jobId}] 메시지 처리 완료 (ack)`);
+            } catch (error) {
+                console.error('[Pub/Sub] 메시지 처리 중 심각한 오류:', error);
+                message.ack(); 
+            }
+        };
 
-    console.log(`=======================================================`);
-    console.log(`  SunsakTool 렌더링 워커가 시작되었습니다.`);
-    console.log(`  Pub/Sub 구독(${SUBSCRIPTION_NAME})을 수신 대기합니다...`);
-    console.log(`=======================================================`);
+        const errorHandler = (error) => {
+            console.error(`[Pub/Sub] 심각한 리스너 오류 발생:`, error);
+        };
+
+        subscription.on('message', messageHandler);
+        subscription.on('error', errorHandler);
+
+        console.log(`=======================================================`);
+        console.log(`  SunsakTool 렌더링 워커가 성공적으로 시작되었습니다.`);
+        console.log(`  Pub/Sub 구독(${SUBSCRIPTION_NAME})을 수신 대기합니다...`);
+        console.log(`=======================================================`);
+
+    } catch (error) {
+        console.error('Pub/Sub 초기화 중 치명적인 오류 발생:', error);
+        process.exit(1);
+    }
 }
 
-// ================== [worker.js 하단 수정] ===================
-
-// [신규] Cloud Run의 Health Check를 통과하기 위한 최소한의 웹 서버
+// Health Check 서버가 시작된 후에 Pub/Sub 초기화를 시작합니다.
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-// Health Check용 엔드포인트. GET / 요청이 오면 "Worker is alive"라고 응답.
 app.get('/', (req, res) => {
   res.status(200).send('SunsakTool Worker is alive and listening for jobs.');
 });
-
-// 서버를 시작하고, 시작된 후에 Pub/Sub 리스너를 실행합니다.
 app.listen(PORT, () => {
-  console.log(`=======================================================`);
-  console.log(`  SunsakTool 렌더링 워커의 Health Check 서버가 ${PORT} 포트에서 실행되었습니다.`);
-  console.log(`=======================================================`);
-  
-  // 웹 서버가 성공적으로 시작된 후에 Pub/Sub 메시지 수신을 시작합니다.
-  listenForMessages();
+  console.log(`워커 Health Check 서버가 ${PORT} 포트에서 실행되었습니다.`);
+  initializeAndListen();
 });
