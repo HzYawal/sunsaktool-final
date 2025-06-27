@@ -290,47 +290,47 @@ async function renderVideo(jobId, projectData) {
 /**
  * Pub/Sub 구독 리스너를 설정하고 메시지 처리를 시작하는 함수
  */
+// =================== [worker.js 하단 최종 수정] ===================
+
+/**
+ * Pub/Sub 구독 리스너를 설정하고 메시지 처리를 시작하는 함수 (재시도 로직 추가)
+ */
 function listenForMessages() {
-    // [수정] 구독 객체를 가져올 때, 자동으로 생성하지 않도록 옵션을 추가합니다.
-    const subscription = pubSubClient.subscription(SUBSCRIPTION_NAME, {
-      gaxOpts: {
-        autoCreate: false,
-      },
-    });
+    const subscription = pubSubClient.subscription(SUBSCRIPTION_NAME);
 
-    // 구독이 실제로 존재하는지 확인하는 로직 추가
-    subscription.exists().then(([exists]) => {
-        if (!exists) {
-            console.error(`오류: 구독 '${SUBSCRIPTION_NAME}'을(를) 찾을 수 없습니다. GCP 콘솔에서 생성했는지 확인하세요.`);
-            // 구독이 없으면 프로세스를 종료하여 문제를 명확히 알림
-            process.exit(1);
+    const messageHandler = async (message) => {
+        console.log(`[Pub/Sub] 수신된 메시지 ID: ${message.id}`);
+        try {
+            const { jobId, projectData } = JSON.parse(message.data);
+            console.log(`[${jobId}] 렌더링 작업 처리 시작`);
+            await renderVideo(jobId, projectData);
+            message.ack();
+            console.log(`[${jobId}] 메시지 처리 완료 (ack)`);
+        } catch (error) {
+            console.error('[Pub/Sub] 메시지 처리 중 심각한 오류:', error);
+            message.ack(); 
         }
+    };
 
-        // 구독이 존재할 때만 메시지 핸들러를 등록합니다.
-        const messageHandler = async (message) => {
-            console.log(`[Pub/Sub] 수신된 메시지 ID: ${message.id}`);
-            try {
-                const { jobId, projectData } = JSON.parse(message.data);
-                console.log(`[${jobId}] 렌더링 작업 처리 시작`);
-                await renderVideo(jobId, projectData);
-                message.ack();
-                console.log(`[${jobId}] 메시지 처리 완료 (ack)`);
-            } catch (error) {
-                console.error('[Pub/Sub] 메시지 처리 중 심각한 오류:', error);
-                message.ack(); 
-            }
-        };
+    const errorHandler = (error) => {
+        console.error(`[Pub/Sub] 심각한 오류 발생: ${error.message}`);
+        // "구독을 찾을 수 없음" 오류가 발생하면, 잠시 후 다시 연결을 시도합니다.
+        if (error.code === 5) { // 5 = NOT_FOUND
+            console.log('구독을 찾지 못했습니다. 10초 후에 다시 시도합니다...');
+            setTimeout(() => {
+                subscription.removeListener('error', errorHandler); // 기존 리스너 제거
+                subscription.on('error', errorHandler); // 새 리스너 등록
+            }, 10000);
+        }
+    };
 
-        subscription.on('message', messageHandler);
-        console.log(`=======================================================`);
-        console.log(`  SunsakTool 렌더링 워커가 시작되었습니다.`);
-        console.log(`  Pub/Sub 구독(${SUBSCRIPTION_NAME})을 성공적으로 연결했습니다.`);
-        console.log(`=======================================================`);
+    subscription.on('message', messageHandler);
+    subscription.on('error', errorHandler);
 
-    }).catch(err => {
-        console.error("구독 확인 중 오류 발생:", err);
-        process.exit(1);
-    });
+    console.log(`=======================================================`);
+    console.log(`  SunsakTool 렌더링 워커가 시작되었습니다.`);
+    console.log(`  Pub/Sub 구독(${SUBSCRIPTION_NAME})을 수신 대기합니다...`);
+    console.log(`=======================================================`);
 }
 
 // ================== [worker.js 하단 수정] ===================
