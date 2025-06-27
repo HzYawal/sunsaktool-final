@@ -1,4 +1,6 @@
-// ================== [worker.js - 최종 안정화 버전 / 전체 코드] ==================
+// ================== [worker.js - 생존 신호 포함 버전] ==================
+console.log('--- [1] worker.js 파일 실행 시작 ---');
+
 const express = require('express');
 const path = require('path');
 const fs = require('fs-extra');
@@ -10,6 +12,8 @@ const { PubSub } = require('@google-cloud/pubsub');
 const { Storage } = require('@google-cloud/storage');
 const { Firestore } = require('@google-cloud/firestore');
 
+console.log('--- [2] 모듈 로딩 완료, GCP 클라이언트 초기화 시작 ---');
+
 // --- 환경 설정 및 클라이언트 초기화 ---
 const GCP_PROJECT_ID = 'sunsak-tool-gcp';
 const pubSubClient = new PubSub({ projectId: GCP_PROJECT_ID });
@@ -19,6 +23,8 @@ const firestore = new Firestore({ projectId: GCP_PROJECT_ID });
 const RENDER_TOPIC_NAME = 'sunsak-render-jobs';
 const OUTPUT_BUCKET_NAME = 'sunsak-output-videos';
 const SUBSCRIPTION_NAME = 'sunsak-render-jobs-sub';
+
+console.log('--- [3] 클라이언트 초기화 완료, 함수 선언 시작 ---');
 
 // --- 핵심 로직 함수 ---
 async function updateJobStatus(jobId, status, message, progress = null) {
@@ -113,7 +119,6 @@ async function renderVideo(jobId, projectData) {
 async function listenForMessages() {
     try {
         const subscription = pubSubClient.subscription(SUBSCRIPTION_NAME);
-
         const messageHandler = async (message) => {
             console.log(`[Pub/Sub] 수신된 메시지 ID: ${message.id}`);
             try {
@@ -127,18 +132,13 @@ async function listenForMessages() {
                 message.ack();
             }
         };
-
         const errorHandler = (error) => {
             console.error(`[Pub/Sub] 심각한 리스너 오류 발생:`, error);
         };
-
         subscription.on('message', messageHandler);
         subscription.on('error', errorHandler);
-
-        console.log(`=======================================================`);
-        console.log(`  SunsakTool 렌더링 워커가 성공적으로 시작되었습니다.`);
-        console.log(`  Pub/Sub 구독(${SUBSCRIPTION_NAME})을 수신 대기합니다...`);
-        console.log(`=======================================================`);
+        
+        console.log('--- [5] Pub/Sub 리스너 설정 완료, 메시지 수신 대기 시작 ---');
 
     } catch (error) {
         console.error('Pub/Sub 리스너 설정 중 치명적인 오류 발생:', error);
@@ -153,6 +153,6 @@ app.get('/', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`워커 Health Check 서버가 ${PORT} 포트에서 실행되었습니다.`);
-  listenForMessages();
+    console.log('--- [4] Health-check 서버 실행 완료, 메시지 리스너 설정 시작 ---');
+    listenForMessages();
 });
