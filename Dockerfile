@@ -74,4 +74,4 @@ EXPOSE 8080
 # 9. 컨테이너 시작 명령어 (동적 실행)
 # 셸 형식으로 작성하여 환경 변수($SERVICE_TO_RUN)를 동적으로 해석하도록 합니다.
 # 만약 SERVICE_TO_RUN이 'worker'이면 'node worker.js'가 실행됩니다.
-CMD node $SERVICE_TO_RUN.js
+CMD ["node", "server.js"]
