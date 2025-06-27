@@ -4,8 +4,8 @@
   "description": "SunsakTool with Backend server for rendering",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
-    "start:worker": "node worker.js",  // <--- 이 줄을 추가하세요
+    "start": "node server.js",
+    "start:worker": "node worker.js"
   },
   "dependencies": {
     "@google-cloud/firestore": "^7.11.2",
