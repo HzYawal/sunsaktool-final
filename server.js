@@ -1,43 +1,46 @@
-// ================== [server.js - 최종 완성본] ==================
+// ================== [server.js - 진짜 최종 수정본] ==================
 const express = require('express');
-const path = require('path'); // path 추가
+const path = require('path');
 const { TextToSpeechClient } = require('@google-cloud/text-to-speech');
 const { PubSub } = require('@google-cloud/pubsub');
 const { Firestore } = require('@google-cloud/firestore');
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
 
-const GCP_PROJECT_ID = 'sunsak-tool-gcp';
-const KEY_FILE_PATH = path.join(__dirname, 'sunsak-key.json');
+// --- 환경 설정 및 클라이언트 초기화 ---
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+// [1] GCP 프로젝트 정보
+const GCP_PROJECT_ID = 'sunsak-tool-gcp'; // 대표님의 GCP 프로젝트 ID
+const KEY_FILE_PATH = path.join(__dirname, 'sunsak-key.json'); // 인증 키 파일 경로
 
-// [핵심 수정] 프로젝트 ID를 코드에 명시적으로 지정합니다.
-const GCP_PROJECT_ID = 'sunsak-tool-gcp'; 
-
+// [2] Google Cloud 서비스 클라이언트 초기화 (신분증 파일 사용)
 const ttsClient = new TextToSpeechClient({ projectId: GCP_PROJECT_ID, keyFilename: KEY_FILE_PATH });
 const pubSubClient = new PubSub({ projectId: GCP_PROJECT_ID, keyFilename: KEY_FILE_PATH });
 const firestore = new Firestore({ projectId: GCP_PROJECT_ID, keyFilename: KEY_FILE_PATH });
 
-
-// --- 환경 설정 ---
+// [3] 기타 서버 설정
 const RENDER_TOPIC_NAME = 'sunsak-render-jobs';
+const app = express();
+const PORT = process.env.PORT || 3000;
 
+
+// --- 미들웨어 설정 ---
 app.use(cors());
 app.use(express.json({ limit: '100mb' }));
 app.use(express.static(__dirname));
 
+
+// --- API 엔드포인트 ---
+
 // 구글 TTS API
 app.post('/api/create-tts', async (req, res) => {
-    // ... (이하 내용은 기존과 동일)
     const { text, voice, speed } = req.body;
     if (!text || !text.trim()) { return res.status(400).json({ error: 'TTS로 변환할 텍스트가 없습니다.' }); }
     const selectedVoice = voice || 'ko-KR-Standard-C';
-    const speakingRate = parseFloat(speed) || 1.0; 
+    const speakingRate = parseFloat(speed) || 1.0;
     const ssmlText = `<speak><prosody rate="${speakingRate}">${text}</prosody></speak>`;
     try {
-        const request = { input: { ssml: ssmlText }, voice: { languageCode: 'ko-KR', name: selectedVoice }, audioConfig: { audioEncoding: 'MP3' }, };
+        const request = { input: { ssml: ssmlText }, voice: { languageCode: 'ko-KR', name: selectedVoice }, audioConfig: { audioEncoding: 'MP3' } };
         const [response] = await ttsClient.synthesizeSpeech(request);
         const audioBase64 = response.audioContent.toString('base64');
         const audioUrl = `data:audio/mp3;base64,${audioBase64}`;
@@ -82,6 +85,8 @@ app.get('/render-status/:jobId', async (req, res) => {
     }
 });
 
+
+// --- 서버 실행 ---
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`=============================================`);
     console.log(`  SunsakTool API 서버가 ${PORT} 포트에서 실행되었습니다!`);
