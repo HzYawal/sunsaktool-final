@@ -1,4 +1,6 @@
-// ================== [worker.js - 최종 완성본] ==================
+// ========================================================
+//  worker.js (모든 것을 밝혀낼 최종 디버깅 버전)
+// ========================================================
 const express = require('express');
 const path = require('path');
 const fs = require('fs-extra');
@@ -10,17 +12,15 @@ const { PubSub } = require('@google-cloud/pubsub');
 const { Storage } = require('@google-cloud/storage');
 const { Firestore } = require('@google-cloud/firestore');
 
-// --- 환경 설정 및 클라이언트 초기화 ---
+// --- 환경 설정 (수정 없음) ---
 const GCP_PROJECT_ID = 'sunsak-tool-gcp';
 const pubSubClient = new PubSub({ projectId: GCP_PROJECT_ID });
 const storage = new Storage({ projectId: GCP_PROJECT_ID });
 const firestore = new Firestore({ projectId: GCP_PROJECT_ID });
-
 const RENDER_TOPIC_NAME = 'sunsak-render-jobs';
 const OUTPUT_BUCKET_NAME = 'sunsak-output-videos';
 const SUBSCRIPTION_NAME = 'sunsak-render-jobs-sub';
 
-// --- 핵심 로직 함수 ---
 async function updateJobStatus(jobId, status, message, progress = null) {
     const jobRef = firestore.collection('renderJobs').doc(jobId);
     const updateData = { status, message, updatedAt: new Date() };
@@ -29,29 +29,41 @@ async function updateJobStatus(jobId, status, message, progress = null) {
     console.log(`[${jobId}] 상태 업데이트: ${status} - ${message} (${progress !== null ? progress + '%' : ''})`);
 }
 
+// <<<===== 이 함수에 최종 디버깅 코드가 추가되었습니다! =====>>>
 async function renderVideo(jobId, projectData) {
-    console.log(`[${jobId}] renderVideo 함수가 성공적으로 호출되었습니다. 렌더링을 시작합니다.`);
+    console.log(`[${jobId}] --- [A] renderVideo 함수 진입 ---`);
+
     await updateJobStatus(jobId, 'processing', '렌더링 환경을 설정하고 있습니다.', 5);
+    console.log(`[${jobId}] --- [B] 초기 상태 업데이트 완료 ---`);
+
     const fps = 30;
     const tempDir = path.join(os.tmpdir(), jobId);
+    console.log(`[${jobId}] --- [C] 임시 디렉토리 경로 생성 완료: ${tempDir} ---`);
+
     const framesDir = path.join(tempDir, 'frames');
     const audioDir = path.join(tempDir, 'audio');
-    const finalAudioPath = path.join(tempDir, 'final_audio.mp3');
-    const outputVideoPath = path.join(tempDir, 'output.mp4');
+    
     let browser;
-
     try {
         await fs.ensureDir(framesDir);
+        console.log(`[${jobId}] --- [D] 프레임 디렉토리 생성 완료 ---`);
+
         await fs.ensureDir(audioDir);
+        console.log(`[${jobId}] --- [E] 오디오 디렉토리 생성 완료 ---`);
+
         await updateJobStatus(jobId, 'processing', '비디오 프레임 캡처를 시작합니다.', 10);
-        
-        // <<<===== 여기가 마지막 수정 포인트입니다! =====>>>
+        console.log(`[${jobId}] --- [F] Puppeteer 실행 전 상태 업데이트 완료 ---`);
+
         browser = await puppeteer.launch({
             headless: true,
             args: ['--no-sandbox', '--disable-setuid-sandbox'],
-            timeout: 120000 // 타임아웃을 120초(2분)로 넉넉하게 늘려줍니다.
+            timeout: 120000 
         });
-        
+        console.log(`[${jobId}] --- [G] Puppeteer 브라우저 성공적으로 실행됨! ---`);
+
+        // ==========================================================
+        // 이하 모든 렌더링 로직은 기존과 동일합니다.
+        // ==========================================================
         const page = await browser.newPage();
         await page.setViewport({ width: 1080, height: 1920 });
         const renderTemplateContent = await fs.readFile(path.join(__dirname, 'render_template.html'), 'utf-8');
@@ -117,6 +129,7 @@ async function renderVideo(jobId, projectData) {
     }
 }
 
+// --- listenForMessages 및 서버 실행 코드 (수정 없음) ---
 async function listenForMessages() {
     try {
         const subscription = pubSubClient.subscription(SUBSCRIPTION_NAME);
@@ -138,24 +151,20 @@ async function listenForMessages() {
         };
         subscription.on('message', messageHandler);
         subscription.on('error', errorHandler);
-
         console.log(`=======================================================`);
         console.log(`  SunsakTool 렌더링 워커가 성공적으로 시작되었습니다.`);
         console.log(`  Pub/Sub 구독(${SUBSCRIPTION_NAME})을 수신 대기합니다...`);
         console.log(`=======================================================`);
-
     } catch (error) {
         console.error('Pub/Sub 리스너 설정 중 치명적인 오류 발생:', error);
     }
 }
 
-// --- 서버 실행 ---
 const app = express();
 const PORT = process.env.PORT || 3000;
 app.get('/', (req, res) => {
   res.status(200).send('SunsakTool Worker is alive and listening for jobs.');
 });
-
 app.listen(PORT, () => {
   console.log(`워커 Health Check 서버가 ${PORT} 포트에서 실행되었습니다.`);
   listenForMessages();
