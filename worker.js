@@ -1,19 +1,23 @@
-// ================== [worker.js - 최종 완성본 전체 코드] ==================
+// ================== [worker.js - 진짜 최종 완성본] ==================
 const express = require('express');
 const path = require('path');
 const fs = require('fs-extra');
 const { exec } = require('child_process');
 const fetch = require('node-fetch');
 const puppeteer = require('puppeteer');
-const os = require('os');
+const os =require('os');
 const { PubSub } = require('@google-cloud/pubsub');
 const { Storage } = require('@google-cloud/storage');
 const { Firestore } = require('@google-cloud/firestore');
 
-// --- Google Cloud 서비스 클라이언트 초기화 ---
-const pubSubClient = new PubSub();
-const storage = new Storage();
-const firestore = new Firestore();
+// [!!!!!!!!!!!! 가장 중요한 부분 !!!!!!!!!!!!]
+// 대표님의 실제 GCP 프로젝트 ID를 여기에 입력해주세요.
+const GCP_PROJECT_ID = 'sunsak-tool-gcp'; // <== 대표님의 실제 GCP 프로젝트 ID로 수정해주세요!
+
+// --- Google Cloud 서비스 클라이언트 초기화 (프로젝트 ID 지정) ---
+const pubSubClient = new PubSub({ projectId: GCP_PROJECT_ID });
+const storage = new Storage({ projectId: GCP_PROJECT_ID });
+const firestore = new Firestore({ projectId: GCP_PROJECT_ID });
 
 // --- 환경 설정 ---
 const RENDER_TOPIC_NAME = 'sunsak-render-jobs';
