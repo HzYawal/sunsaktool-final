@@ -1,11 +1,3 @@
-// ================== [server.js - 최종 수정본] ==================
-const express = require('express');
-const path = require('path');
-const { TextToSpeechClient } = require('@google-cloud/text-to-speech');
-const { PubSub } = require('@google-cloud/pubsub');
-const { Firestore } = require('@google-cloud/firestore');
-const cors = require('cors');
-const { v4: uuidv4 } = require('uuid');
 
 // ================== [server.js - 키 파일 없는 버전] ==================
 const express = require('express');
