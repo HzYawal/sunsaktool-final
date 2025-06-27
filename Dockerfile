@@ -58,5 +58,5 @@ COPY . .
 # 7. Railway가 외부 트래픽을 이 포트로 전달하도록 함 (기존과 동일)
 EXPOSE 3000
 
-CMD ["node", "server.js"]
+CMD ["node", "worker.js"]
 
