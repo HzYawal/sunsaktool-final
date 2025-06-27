@@ -46,7 +46,9 @@ async function updateJobStatus(jobId, status, message, progress = null) {
  * @param {object} projectData - 프론트에서 받은 렌더링 데이터
  */
 async function renderVideo(jobId, projectData) {
-    // 여기부터는 대표님의 기존 /render-video 로직과 거의 동일합니다.
+    // [최종 디버깅용 로그 추가]
+    console.log(`[${jobId}] renderVideo 함수가 성공적으로 호출되었습니다. 렌더링을 시작합니다.`);
+
     await updateJobStatus(jobId, 'processing', '렌더링 환경을 설정하고 있습니다.', 5);
     const fps = 30;
     const tempDir = path.join(os.tmpdir(), jobId); // renderId 대신 jobId 사용
