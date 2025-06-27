@@ -9,6 +9,24 @@ const cors = require('cors');
 const puppeteer = require('puppeteer'); 
 const os = require('os');
 
+// [추가된 부분 시작]
+const { PubSub } = require('@google-cloud/pubsub');
+const { Storage } = require('@google-cloud/storage');
+const { Firestore } = require('@google-cloud/firestore');
+const { v4: uuidv4 } = require('uuid');
+
+// --- Google Cloud 서비스 클라이언트 초기화 ---
+// 한 번만 생성하여 재사용합니다.
+const ttsClient = new TextToSpeechClient();
+const pubSubClient = new PubSub();
+const storage = new Storage();
+const firestore = new Firestore();
+
+// --- 환경 설정 ---
+// Pub/Sub 토픽 이름과 스토리지 버킷 이름. 실제 GCP 프로젝트에 맞게 설정해야 합니다.
+const RENDER_TOPIC_NAME = 'sunsak-render-jobs';
+const OUTPUT_BUCKET_NAME = 'sunsak-output-videos'; 
+// [추가된 부분 끝]
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -33,305 +51,69 @@ app.post('/api/create-tts', async (req, res) => {
     } catch (error) { console.error('구글 TTS API 호출 중 오류 발생:', error); res.status(500).json({ error: error.message }); }
 });
 
-// 영상 렌더링 API (레이아웃, 확대, 회전 완벽 동기화 버전)
+// =================== [붙여넣을 코드 블록 시작] ===================
+
+// [수정된 API] 영상 렌더링 '요청 접수' API
 app.post('/render-video', async (req, res) => {
-    console.log("영상 렌더링 요청 시작 (레이아웃/기능 동기화 버전)");
-    const projectData = req.body;
-    const fps = 30;
-    const renderId = `render_${Date.now()}`;
-    
-    // Cloud Run 호환을 위해 /tmp 디렉토리 사용
-    const tempDir = path.join(os.tmpdir(), renderId);
-    const framesDir = path.join(tempDir, 'frames');
-    const audioDir = path.join(tempDir, 'audio');
-    const finalAudioPath = path.join(tempDir, 'final_audio.mp3');
-    const outputVideoPath = path.join(tempDir, 'output.mp4');
-    let browser;
-
     try {
-        await fs.ensureDir(framesDir);
-        await fs.ensureDir(audioDir);
-        console.log(`[${renderId}] 임시 폴더 생성: ${tempDir}`);
+        const projectData = req.body;
+        if (!projectData || !projectData.scriptCards || projectData.scriptCards.length === 0) {
+            return res.status(400).json({ message: '렌더링할 데이터가 없습니다.' });
+        }
 
-        // --- 1. Puppeteer로 비디오 프레임 캡처 ---
-        const videoRenderPromise = (async () => {
-            console.log(`[${renderId}] Puppeteer 실행`);
-            browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
-            const page = await browser.newPage();
-            await page.setViewport({ width: 1080, height: 1920 });
-            
-            const renderTemplateContent = await fs.readFile(path.join(__dirname, 'render_template.html'), 'utf-8');
-            await page.setContent(renderTemplateContent, { waitUntil: 'networkidle0' });
+        // 1. 고유한 작업 ID 생성
+        const jobId = uuidv4();
+        console.log(`[${jobId}] 신규 렌더링 작업 접수`);
 
-            await page.evaluate(async () => {
-                const fontPromises = Array.from(document.fonts).map(font => font.load());
-                await Promise.all(fontPromises);
-            });
-            console.log(`[${renderId}] 렌더링 템플릿 및 폰트 로드 완료`);
-            
-            let frameCount = 0;
-            let currentPersistentMedia = null;
+        // 2. 작업 상태를 Firestore에 '대기중(pending)'으로 기록
+        const jobRef = firestore.collection('renderJobs').doc(jobId);
+        await jobRef.set({
+            jobId: jobId,
+            status: 'pending',
+            message: '렌더링 대기 중입니다.',
+            createdAt: new Date(),
+            progress: 0
+        });
 
-            for (const card of projectData.scriptCards) {
-                if (card.media.url && card.media.persistUntilCardId) {
-                    currentPersistentMedia = { 
-                        media: card.media, 
-                        layout: card.layout.media,
-                        animations: card.animations.media,
-                        endCardId: card.media.persistUntilCardId 
-                    };
-                }
+        // 3. 렌더링할 데이터(projectData)와 jobId를 Pub/Sub 토픽에 발행(전송)
+        const dataBuffer = Buffer.from(JSON.stringify({ jobId, projectData }));
+        const messageId = await pubSubClient.topic(RENDER_TOPIC_NAME).publishMessage({ data: dataBuffer });
+        console.log(`[${jobId}] Pub/Sub에 메시지 발행 완료 (Message ID: ${messageId})`);
 
-                const mediaToRender = currentPersistentMedia ? currentPersistentMedia : { media: card.media, layout: card.layout.media, animations: card.animations.media };
-                const cardFrames = Math.floor(card.duration * fps);
-
-                for (let i = 0; i < cardFrames; i++) {
-                    const timeInCard = i / fps;
-                    
-                    await page.evaluate((project, currentCard, mediaInfo, t) => {
-                        const scale = 1080 / project.renderMetadata.sourceWidth;
-                        const pSettings = project.projectSettings;
-                        
-                        // 헤더
-                        const headerEl = document.querySelector('.st-preview-header');
-                        const headerTitleEl = headerEl.querySelector('.header-title');
-                        const headerIconEl = headerEl.querySelector('.header-icon');
-                        const headerLogoEl = headerEl.querySelector('.header-logo');
-                        headerEl.style.height = `${65 * scale}px`;
-                        headerEl.style.padding = `0 ${15 * scale}px`;
-                        headerEl.style.backgroundColor = pSettings.header.backgroundColor;
-                        headerTitleEl.innerText = pSettings.header.text;
-                        headerTitleEl.style.color = pSettings.header.color;
-                        headerTitleEl.style.fontFamily = pSettings.header.fontFamily;
-                        headerTitleEl.style.fontSize = `${pSettings.header.fontSize * scale}px`;
-                        const iconSVG = {
-                            back: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${pSettings.header.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>`,
-                            menu: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${pSettings.header.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>`
-                        };
-                        headerIconEl.innerHTML = iconSVG[pSettings.header.icon] || '';
-                        if (pSettings.header.logo.url) {
-                            headerLogoEl.src = pSettings.header.logo.url;
-                            headerLogoEl.style.width = `${pSettings.header.logo.size * scale}px`;
-                            headerLogoEl.style.height = `${pSettings.header.logo.size * scale}px`;
-                            headerLogoEl.style.display = 'block';
-                        } else {
-                            headerLogoEl.style.display = 'none';
-                        }
-
-                        // 프로젝트 정보
-                        const projectInfoEl = document.querySelector('.st-project-info');
-                        projectInfoEl.style.paddingBottom = `${16 * scale}px`;
-                        projectInfoEl.style.marginBottom = `${16 * scale}px`;
-                        const projectInfoTitleEl = projectInfoEl.querySelector('.title');
-                        projectInfoTitleEl.innerText = pSettings.project.title;
-                        projectInfoTitleEl.style.color = pSettings.project.titleColor;
-                        projectInfoTitleEl.style.fontFamily = pSettings.project.titleFontFamily;
-                        projectInfoTitleEl.style.fontSize = `${pSettings.project.titleFontSize * scale}px`;
-                        projectInfoTitleEl.style.marginBottom = `${5 * scale}px`;
-                        const projectInfoSpanEl = projectInfoEl.querySelector('span');
-                        projectInfoSpanEl.innerText = `${pSettings.project.author || ''} | 조회수 ${Number(pSettings.project.views || 0).toLocaleString()}`;
-                        projectInfoSpanEl.style.color = pSettings.project.metaColor;
-                        projectInfoSpanEl.style.fontSize = `${13 * scale}px`;
-
-                        // 텍스트/미디어 요소
-                        const textWrapper = document.querySelector('#st-preview-text-container-wrapper');
-                        const textEl = document.querySelector('#st-preview-text');
-                        const mediaWrapper = document.querySelector('#st-preview-media-container-wrapper');
-                        const imageEl = document.querySelector('#st-preview-image');
-                        const videoEl = document.querySelector('#st-preview-video');
-
-                        // 텍스트/미디어 레이아웃
-                        const scaledStyle = { ...currentCard.style };
-                        scaledStyle.fontSize = `${parseFloat(currentCard.style.fontSize) * scale}px`;
-                        scaledStyle.lineHeight = currentCard.style.lineHeight;
-                        scaledStyle.letterSpacing = `${parseFloat(currentCard.style.letterSpacing) * scale}px`;
-                        Object.assign(textEl.style, scaledStyle);
-                        
-                        // [핵심 수정] 텍스트와 미디어의 모든 transform 값을 정확히 반영
-                        textWrapper.style.transform = `translate(${currentCard.layout.text.x * scale}px, ${currentCard.layout.text.y * scale}px) scale(${currentCard.layout.text.scale || 1}) rotate(${currentCard.layout.text.angle || 0}deg)`;
-
-                        let showMedia = false;
-                        if(mediaInfo.media && mediaInfo.media.url) {
-                            const showOnSegmentIndex = mediaInfo.media.showOnSegment - 1;
-                            const showTime = (currentCard.segments[showOnSegmentIndex] || {startTime: 0}).startTime;
-                            if (t >= showTime) showMedia = true;
-                        }
-
-                        if(showMedia) {
-                            mediaWrapper.style.display = 'flex';
-                            // [핵심 수정] 미디어의 모든 transform 값을 정확히 반영
-                            mediaWrapper.style.transform = `translate(${mediaInfo.layout.x * scale}px, ${mediaInfo.layout.y * scale}px) scale(${mediaInfo.layout.scale || 1}) rotate(${mediaInfo.layout.angle || 0}deg)`;
-                             if (mediaInfo.media.type === 'video') {
-                                imageEl.style.display = 'none';
-                                videoEl.style.display = 'block';
-                                videoEl.style.objectFit = mediaInfo.media.fit;
-                                if (videoEl.src !== mediaInfo.media.url) videoEl.src = mediaInfo.media.url;
-                                videoEl.currentTime = (mediaInfo.media.startTime || 0) + t;
-                            } else {
-                                videoEl.style.display = 'none';
-                                imageEl.style.display = 'block';
-                                imageEl.style.objectFit = mediaInfo.media.fit;
-                                if (imageEl.src !== mediaInfo.media.url) imageEl.src = mediaInfo.media.url;
-                            }
-                        } else {
-                            mediaWrapper.style.display = 'none';
-                        }
-                        
-                        // 텍스트 내용 적용
-                        textEl.innerHTML = '';
-                        const hasCustomSequence = currentCard.animationSequence && currentCard.animationSequence.length > 0;
-                        if (hasCustomSequence) {
-                            (currentCard.segments || []).forEach(segment => {
-                                if (t >= segment.startTime) {
-                                    const p = document.createElement('p');
-                                    p.textContent = segment.text || ' ';
-                                    p.style.margin = 0;
-                                    textEl.appendChild(p);
-                                }
-                            });
-                        } else {
-                            currentCard.text.split('\n').forEach(line => {
-                                const p = document.createElement('p');
-                                p.textContent = line || ' ';
-                                p.style.margin = 0;
-                                textEl.appendChild(p);
-                            });
-                        }
-
-                        // 애니메이션 적용
-                        const applyAnimation = (el, anims, duration, time) => {
-                            const baseTransform = el.style.transform.split(' ').filter(s => !s.startsWith('translateY') && !s.startsWith('scale')).join(' ');
-                            el.style.opacity = 1;
-                            el.style.transform = baseTransform;
-
-                            const inDuration = anims.in.duration;
-                            const outStartTime = duration - anims.out.duration;
-                            let progress, newTransform = '';
-                            
-                            if (time < inDuration && anims.in.name !== 'none') {
-                                progress = Math.min(1, time / inDuration);
-                                if(anims.in.name === 'fadeIn') el.style.opacity = progress;
-                                if(anims.in.name === 'slideInUp') newTransform = ` translateY(${(1 - progress) * 50 * scale}px)`;
-                                if(anims.in.name === 'zoomIn') { el.style.opacity = progress; newTransform = ` scale(${0.8 + 0.2 * progress})`; }
-                            } else if (time >= outStartTime && anims.out.name !== 'none') {
-                                progress = Math.min(1, (time - outStartTime) / anims.out.duration);
-                                if(anims.out.name === 'fadeOut') el.style.opacity = 1 - progress;
-                                if(anims.out.name === 'slideOutDown') newTransform = ` translateY(${progress * 50 * scale}px)`;
-                                if(anims.out.name === 'zoomOut') { el.style.opacity = 1 - progress; newTransform = ` scale(${1 - 0.2 * progress})`; }
-                            }
-                            el.style.transform = `${baseTransform} ${newTransform}`;
-                        };
-                        
-                        applyAnimation(textWrapper, currentCard.animations.text, currentCard.duration, t);
-                        if(showMedia) applyAnimation(mediaWrapper, mediaInfo.animations, currentCard.duration, t);
-
-                    }, projectData, card, mediaToRender, timeInCard);
-
-                    const framePath = path.join(framesDir, `frame_${String(frameCount).padStart(6, '0')}.png`);
-                    await page.screenshot({ path: framePath });
-                    frameCount++;
-                }
-                if (currentPersistentMedia && currentPersistentMedia.endCardId === card.id) currentPersistentMedia = null;
-            }
-            await browser.close();
-            console.log(`[${renderId}] 프레임 캡처 완료 (${frameCount}개)`);
-        })();
-        
-        // --- 2. 오디오 트랙 생성 및 믹싱 ---
-        const audioRenderPromise = (async () => {
-            const audioTracks = [];
-            let currentTime = 0;
-
-            if (projectData.globalBGM && projectData.globalBGM.url) {
-                try {
-                    const response = await fetch(projectData.globalBGM.url);
-                    const path = `${audioDir}/bgm.mp3`;
-                    await fs.writeFile(path, await response.buffer());
-                    audioTracks.push({ type: 'bgm', path, volume: projectData.globalBGM.volume || 0.3 });
-                } catch (e) { console.error('BGM 다운로드 실패:', e); }
-            }
-            for (const [index, card] of projectData.scriptCards.entries()) {
-                if (card.audioUrl && card.audioUrl.startsWith('data:audio/')) {
-                    try {
-                        const ttsPath = `${audioDir}/tts_${index}.mp3`;
-                        const base64Data = card.audioUrl.split(',')[1];
-                        await fs.writeFile(ttsPath, Buffer.from(base64Data, 'base64'));
-                        audioTracks.push({ type: 'effect', path: ttsPath, time: currentTime, volume: card.ttsVolume || 1.0 });
-                    } catch (e) { console.error('TTS Base64 파일 저장 실패:', e); }
-                }
-                if (card.sfxUrl) {
-                    try {
-                        const response = await fetch(card.sfxUrl);
-                        const sfxPath = `${audioDir}/sfx_${index}.mp3`;
-                        await fs.writeFile(sfxPath, await response.buffer());
-                        audioTracks.push({ type: 'effect', path: sfxPath, time: currentTime, volume: card.sfxVolume || 1.0 });
-                    } catch (e) { console.error('SFX 다운로드 실패:', e); }
-                }
-                currentTime += card.duration;
-            }
-            if (audioTracks.length === 0) {
-                console.log(`[${renderId}] 오디오 트랙 없음, 오디오 믹싱 건너뜀`);
-                return;
-            }
-
-            const inputClauses = audioTracks.map(t => `-i "${t.path}"`).join(' ');
-            let filterComplex = '';
-
-            if (audioTracks.length > 1) {
-                const outputStreams = [];
-                audioTracks.forEach((track, i) => {
-                    let stream = `[${i}:a]`;
-                    if (track.type === 'bgm') {
-                        stream += `volume=${track.volume}[a${i}]`;
-                    } else {
-                        stream += `volume=${track.volume},adelay=${track.time * 1000}|${track.time * 1000}[a${i}]`;
-                    }
-                    filterComplex += stream;
-                    outputStreams.push(`[a${i}]`);
-                    if(i < audioTracks.length - 1) filterComplex += ';';
-                });
-                filterComplex += `;${outputStreams.join('')}amix=inputs=${outputStreams.length}:duration=longest`;
-            } else {
-                const track = audioTracks[0];
-                filterComplex = `[0:a]volume=${track.volume}`;
-            }
-
-            const mixCommand = `ffmpeg ${inputClauses} -filter_complex "${filterComplex}" -y "${finalAudioPath}"`;
-            
-            console.log(`[${renderId}] 오디오 믹싱 실행`);
-            await new Promise((resolve, reject) => {
-                exec(mixCommand, (error, stdout, stderr) => {
-                    if (error) { console.error('오디오 믹싱 오류:', stderr); return reject(new Error(stderr)); }
-                    resolve(stdout);
-                });
-            });
-            console.log(`[${renderId}] 최종 오디오 파일 생성 완료`);
-        })();
-
-        // --- 3. 비디오와 오디오 최종 합성 ---
-        await Promise.all([videoRenderPromise, audioRenderPromise]);
-        
-        const hasAudio = await fs.pathExists(finalAudioPath);
-        const audioInput = hasAudio ? `-i "${finalAudioPath}"` : '';
-        const ffmpegCommand = `ffmpeg -y -framerate ${fps} -i "${framesDir}/frame_%06d.png" ${audioInput} -c:v libx264 -crf 18 -preset slow -pix_fmt yuv420p -c:a aac -movflags +faststart ${hasAudio ? '-shortest' : ''} "${outputVideoPath}"`;
-        
-        console.log(`[${renderId}] 최종 영상 합성 실행`);
-        await new Promise((resolve, reject) => exec(ffmpegCommand, (err, stdout, stderr) => { if (err) { console.error('FFMPEG 최종 합성 오류:', stderr); reject(new Error(stderr)); } else resolve(stdout); }));
-        console.log(`[${renderId}] 최종 영상 합성 완료`);
-
-        res.download(outputVideoPath, `${projectData.projectSettings.project.title || 'sunsak-video'}.mp4`, async (err) => {
-            if (err) console.error('파일 다운로드 오류:', err);
-            await fs.remove(tempDir);
-            console.log(`[${renderId}] 임시 폴더 삭제 및 작업 완료`);
+        // 4. 사용자에게 즉시 jobId와 함께 성공 응답 전송
+        res.status(202).json({ 
+            success: true, 
+            message: '영상 제작 요청이 성공적으로 접수되었습니다.',
+            jobId: jobId
         });
 
     } catch (error) {
-        console.error(`[${renderId}] 렌더링 프로세스 전체에서 오류 발생:`, error);
-        if (browser) await browser.close();
-        if (await fs.pathExists(tempDir)) await fs.remove(tempDir);
-        if (!res.headersSent) res.status(500).json({ success: false, message: '영상 생성 중 심각한 오류가 발생했습니다.' });
+        console.error('렌더링 요청 접수 중 오류:', error);
+        res.status(500).json({ success: false, message: '서버 내부 오류가 발생했습니다.' });
     }
 });
+
+// [신규 API] 작업 상태 확인 API
+app.get('/render-status/:jobId', async (req, res) => {
+    try {
+        const { jobId } = req.params;
+        const jobRef = firestore.collection('renderJobs').doc(jobId);
+        const doc = await jobRef.get();
+
+        if (!doc.exists) {
+            return res.status(404).json({ message: '해당 작업을 찾을 수 없습니다.' });
+        }
+        
+        // Firestore에 저장된 작업 데이터를 그대로 반환
+        res.status(200).json(doc.data());
+
+    } catch (error) {
+        console.error(`[${req.params.jobId}] 상태 확인 중 오류:`, error);
+        res.status(500).json({ message: '서버 내부 오류가 발생했습니다.' });
+    }
+});
+
+// =================== [붙여넣을 코드 블록 끝] ===================
 
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`=============================================`);
