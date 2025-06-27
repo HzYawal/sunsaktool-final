@@ -1,4 +1,4 @@
-// ================== [server.js - 진짜 최종 수정본] ==================
+// ================== [server.js - 최종 수정본] ==================
 const express = require('express');
 const path = require('path');
 const { TextToSpeechClient } = require('@google-cloud/text-to-speech');
@@ -8,31 +8,23 @@ const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
 
 // --- 환경 설정 및 클라이언트 초기화 ---
+const GCP_PROJECT_ID = 'sunsak-tool-gcp';
+const KEY_FILE_PATH = path.join(__dirname, 'sunsak-key.json');
 
-// [1] GCP 프로젝트 정보
-const GCP_PROJECT_ID = 'sunsak-tool-gcp'; // 대표님의 GCP 프로젝트 ID
-const KEY_FILE_PATH = path.join(__dirname, 'sunsak-key.json'); // 인증 키 파일 경로
-
-// [2] Google Cloud 서비스 클라이언트 초기화 (신분증 파일 사용)
 const ttsClient = new TextToSpeechClient({ projectId: GCP_PROJECT_ID, keyFilename: KEY_FILE_PATH });
 const pubSubClient = new PubSub({ projectId: GCP_PROJECT_ID, keyFilename: KEY_FILE_PATH });
 const firestore = new Firestore({ projectId: GCP_PROJECT_ID, keyFilename: KEY_FILE_PATH });
 
-// [3] 기타 서버 설정
 const RENDER_TOPIC_NAME = 'sunsak-render-jobs';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-
-// --- 미들웨어 설정 ---
+// --- 미들웨어 ---
 app.use(cors());
 app.use(express.json({ limit: '100mb' }));
 app.use(express.static(__dirname));
 
-
 // --- API 엔드포인트 ---
-
-// 구글 TTS API
 app.post('/api/create-tts', async (req, res) => {
     const { text, voice, speed } = req.body;
     if (!text || !text.trim()) { return res.status(400).json({ error: 'TTS로 변환할 텍스트가 없습니다.' }); }
@@ -48,7 +40,6 @@ app.post('/api/create-tts', async (req, res) => {
     } catch (error) { console.error('구글 TTS API 호출 중 오류 발생:', error); res.status(500).json({ error: error.message }); }
 });
 
-// 영상 렌더링 '요청 접수' API
 app.post('/render-video', async (req, res) => {
     try {
         const projectData = req.body;
@@ -69,7 +60,6 @@ app.post('/render-video', async (req, res) => {
     }
 });
 
-// 작업 상태 확인 API
 app.get('/render-status/:jobId', async (req, res) => {
     try {
         const { jobId } = req.params;
@@ -84,7 +74,6 @@ app.get('/render-status/:jobId', async (req, res) => {
         res.status(500).json({ message: '서버 내부 오류가 발생했습니다.' });
     }
 });
-
 
 // --- 서버 실행 ---
 app.listen(PORT, '0.0.0.0', () => {
