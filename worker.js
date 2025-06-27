@@ -1,4 +1,5 @@
 // ================== [worker.js - 렌더링 워커 서비스 전체 코드] ==================
+const express = require('express'); // express 추가
 const path = require('path');
 const fs = require('fs-extra');
 const { exec } = require('child_process');
@@ -312,4 +313,23 @@ function listenForMessages() {
     console.log(`=======================================================`);
 }
 
-listenForMessages();
+// ================== [worker.js 하단 수정] ===================
+
+// [신규] Cloud Run의 Health Check를 통과하기 위한 최소한의 웹 서버
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Health Check용 엔드포인트. GET / 요청이 오면 "Worker is alive"라고 응답.
+app.get('/', (req, res) => {
+  res.status(200).send('SunsakTool Worker is alive and listening for jobs.');
+});
+
+// 서버를 시작하고, 시작된 후에 Pub/Sub 리스너를 실행합니다.
+app.listen(PORT, () => {
+  console.log(`=======================================================`);
+  console.log(`  SunsakTool 렌더링 워커의 Health Check 서버가 ${PORT} 포트에서 실행되었습니다.`);
+  console.log(`=======================================================`);
+  
+  // 웹 서버가 성공적으로 시작된 후에 Pub/Sub 메시지 수신을 시작합니다.
+  listenForMessages();
+});
