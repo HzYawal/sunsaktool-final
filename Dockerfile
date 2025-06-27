@@ -58,7 +58,5 @@ COPY . .
 # 7. Railway가 외부 트래픽을 이 포트로 전달하도록 함 (기존과 동일)
 EXPOSE 3000
 
-# 8. 서버 시작 명령어 (기존과 동일)
-CMD ["node", "server.js"]
-
+# Dockerfile의 가장 마지막 줄을 아래와 같이 수정하세요.
 CMD ["node", "worker.js"]
