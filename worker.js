@@ -93,11 +93,12 @@ try {
            // =================== [수정 후] ===================
            browser = await puppeteer.launch({
                 headless: true,
-                // [핵심] 모든 복잡한 인수를 제거하고, 가장 필수적인 인수 두 개만 남깁니다.
                 args: [
                     '--no-sandbox',
                     '--disable-setuid-sandbox'
-                ]
+                ],
+                // [핵심] 브라우저가 실행될 충분한 시간(2분)을 다시 부여합니다.
+                timeout: 120000
             });
             console.log(`[${jobId}] --- [G] Puppeteer 브라우저 성공적으로 실행됨! ---`);
 
