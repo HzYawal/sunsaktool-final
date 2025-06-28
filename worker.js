@@ -1,5 +1,5 @@
 // ===============================================
-//  worker.js (최종 수정 완료 버전)
+//  worker.js (최종 최적화 버전)
 // ===============================================
 console.log('--- [0/11] 워커 프로세스 시작 ---');
 
@@ -46,7 +46,6 @@ try {
 
     console.log('--- [11/11] 모든 모듈 로딩 성공! 실제 코드 실행 시작 ---');
 
-    // --- 환경 설정 ---
     const GCP_PROJECT_ID = 'sunsak-tool-gcp';
     const pubSubClient = new PubSub({ projectId: GCP_PROJECT_ID });
     const storage = new Storage({ projectId: GCP_PROJECT_ID });
@@ -65,7 +64,6 @@ try {
 
     async function renderVideo(jobId, projectData) {
         console.log(`[${jobId}] --- [A] renderVideo 함수 진입 ---`);
-
         await updateJobStatus(jobId, 'processing', '렌더링 환경을 설정하고 있습니다.', 5);
         console.log(`[${jobId}] --- [B] 초기 상태 업데이트 완료 ---`);
 
@@ -73,7 +71,6 @@ try {
         const tempDir = path.join(os.tmpdir(), jobId);
         const finalAudioPath = path.join(tempDir, 'final_audio.aac');
         const outputVideoPath = path.join(tempDir, 'output.mp4');
-
         console.log(`[${jobId}] --- [C] 임시 디렉토리 경로 생성 완료: ${tempDir} ---`);
 
         const framesDir = path.join(tempDir, 'frames');
@@ -81,23 +78,16 @@ try {
         
         let browser;
         try {
-            // [수정] 부모 디렉토리를 먼저 명시적으로 생성하여 안정성을 높입니다.
             await fs.ensureDir(tempDir);
             console.log(`[${jobId}] --- [C-1] 기본 임시 디렉토리 생성 완료 ---`);
-
             await fs.ensureDir(framesDir);
             console.log(`[${jobId}] --- [D] 프레임 디렉토리 생성 완료 ---`);
-
             await fs.ensureDir(audioDir);
             console.log(`[${jobId}] --- [E] 오디오 디렉토리 생성 완료 ---`);
-            
-            // [수정 완료] 중복 코드를 제거하고 올바르게 하나로 합친 부분
-            browser = await chromium.launch({
-                args: [
-                    '--no-sandbox',
-                    '--disable-dev-shm-usage'
-                ]
-            });
+            await updateJobStatus(jobId, 'processing', '비디오 프레임 캡처를 시작합니다.', 10);
+            console.log(`[${jobId}] --- [F] Playwright 실행 시도 ---`);
+
+            browser = await chromium.launch({ args: ['--no-sandbox', '--disable-dev-shm-usage'] });
             console.log(`[${jobId}] --- [G] Playwright 브라우저 성공적으로 실행됨! ---`);
 
             const page = await browser.newPage();
@@ -105,7 +95,12 @@ try {
             const renderTemplateContent = await fs.readFile(path.join(__dirname, 'render_template.html'), 'utf-8');
             await page.setContent(renderTemplateContent, { waitUntil: 'networkidle' });
             
-            await page.evaluate(async () => { await Promise.all(Array.from(document.fonts).map(font => font.load())); });
+            // [최적화] 폰트 로딩을 캡처 루프 시작 전에 단 한 번만 실행합니다.
+            console.log(`[${jobId}] --- [H] 렌더링에 필요한 모든 폰트를 미리 로드합니다... ---`);
+            await page.evaluate(async () => {
+                await document.fonts.ready;
+            });
+            console.log(`[${jobId}] --- [I] 폰트 로딩 완료! 프레임 캡처를 시작합니다. ---`);
 
             let frameCount = 0;
             let currentPersistentMedia = null;
@@ -117,12 +112,10 @@ try {
                 for (let i = 0; i < cardFrames; i++) {
                     const timeInCard = i / fps;
                     
-                    // [수정 완료] page.evaluate 내부의 변수명을 'card'로 모두 통일했습니다.
                     await page.evaluate((args) => {
-                        const { project, card, mediaInfo, t } = args;
-                        const scale = 1080 / project.renderMetadata.sourceWidth; const pSettings = project.projectSettings; const headerEl = document.querySelector('.st-preview-header'); const headerTitleEl = headerEl.querySelector('.header-title'); const headerIconEl = headerEl.querySelector('.header-icon'); const headerLogoEl = headerEl.querySelector('.header-logo'); headerEl.style.height = `${65 * scale}px`; headerEl.style.padding = `0 ${15 * scale}px`; headerEl.style.backgroundColor = pSettings.header.backgroundColor; headerTitleEl.innerText = pSettings.header.text; headerTitleEl.style.color = pSettings.header.color; headerTitleEl.style.fontFamily = pSettings.header.fontFamily; headerTitleEl.style.fontSize = `${pSettings.header.fontSize * scale}px`; const iconSVG = { back: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${pSettings.header.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>`, menu: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${pSettings.header.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>` }; headerIconEl.innerHTML = iconSVG[pSettings.header.icon] || ''; if (pSettings.header.logo.url) { headerLogoEl.src = pSettings.header.logo.url; headerLogoEl.style.width = `${pSettings.header.logo.size * scale}px`; headerLogoEl.style.height = `${pSettings.header.logo.size * scale}px`; headerLogoEl.style.display = 'block'; } else { headerLogoEl.style.display = 'none'; } const projectInfoEl = document.querySelector('.st-project-info'); projectInfoEl.style.paddingBottom = `${16 * scale}px`; projectInfoEl.style.marginBottom = `${16 * scale}px`; const projectInfoTitleEl = projectInfoEl.querySelector('.title'); projectInfoTitleEl.innerText = pSettings.project.title; projectInfoTitleEl.style.color = pSettings.project.titleColor; projectInfoTitleEl.style.fontFamily = pSettings.project.titleFontFamily; projectInfoTitleEl.style.fontSize = `${pSettings.project.titleFontSize * scale}px`; projectInfoTitleEl.style.marginBottom = `${5 * scale}px`; const projectInfoSpanEl = projectInfoEl.querySelector('span'); projectInfoSpanEl.innerText = `${pSettings.project.author || ''} | 조회수 ${Number(pSettings.project.views || 0).toLocaleString()}`; projectInfoSpanEl.style.color = pSettings.project.metaColor; projectInfoSpanEl.style.fontSize = `${13 * scale}px`; const textWrapper = document.querySelector('#st-preview-text-container-wrapper'); const textEl = document.querySelector('#st-preview-text'); const mediaWrapper = document.querySelector('#st-preview-media-container-wrapper'); const imageEl = document.querySelector('#st-preview-image'); const videoEl = document.querySelector('#st-preview-video'); const scaledStyle = { ...card.style }; scaledStyle.fontSize = `${parseFloat(card.style.fontSize) * scale}px`; scaledStyle.lineHeight = card.style.lineHeight; scaledStyle.letterSpacing = `${parseFloat(card.style.letterSpacing) * scale}px`; Object.assign(textEl.style, scaledStyle); textWrapper.style.transform = `translate(${card.layout.text.x * scale}px, ${card.layout.text.y * scale}px) scale(${card.layout.text.scale || 1}) rotate(${card.layout.text.angle || 0}deg)`; let showMedia = false; if(mediaInfo.media && mediaInfo.media.url) { const showOnSegmentIndex = mediaInfo.media.showOnSegment - 1; const showTime = (card.segments[showOnSegmentIndex] || {startTime: 0}).startTime; if (t >= showTime) showMedia = true; } if(showMedia) { mediaWrapper.style.display = 'flex'; mediaWrapper.style.transform = `translate(${mediaInfo.layout.x * scale}px, ${mediaInfo.layout.y * scale}px) scale(${mediaInfo.layout.scale || 1}) rotate(${mediaInfo.layout.angle || 0}deg)`; if (mediaInfo.media.type === 'video') { imageEl.style.display = 'none'; videoEl.style.display = 'block'; videoEl.style.objectFit = mediaInfo.media.fit; if (videoEl.src !== mediaInfo.media.url) videoEl.src = mediaInfo.media.url; videoEl.currentTime = (mediaInfo.media.startTime || 0) + t; } else { videoEl.style.display = 'none'; imageEl.style.display = 'block'; imageEl.style.objectFit = mediaInfo.media.fit; if (imageEl.src !== mediaInfo.media.url) imageEl.src = mediaInfo.media.url; } } else { mediaWrapper.style.display = 'none'; } textEl.innerHTML = ''; const hasCustomSequence = card.animationSequence && card.animationSequence.length > 0; if (hasCustomSequence) { (card.segments || []).forEach(segment => { if (t >= segment.startTime) { const p = document.createElement('p'); p.textContent = segment.text || ' '; p.style.margin = 0; textEl.appendChild(p); } }); } else { card.text.split('\n').forEach(line => { const p = document.createElement('p'); p.textContent = line || ' '; p.style.margin = 0; textEl.appendChild(p); }); } const applyAnimation = (el, anims, duration, time) => { const baseTransform = el.style.transform.split(' ').filter(s => !s.startsWith('translateY') && !s.startsWith('scale')).join(' '); el.style.opacity = 1; el.style.transform = baseTransform; const inDuration = anims.in.duration; const outStartTime = duration - anims.out.duration; let progress, newTransform = ''; if (time < inDuration && anims.in.name !== 'none') { progress = Math.min(1, time / inDuration); if(anims.in.name === 'fadeIn') el.style.opacity = progress; if(anims.in.name === 'slideInUp') newTransform = ` translateY(${(1 - progress) * 50 * scale}px)`; if(anims.in.name === 'zoomIn') { el.style.opacity = progress; newTransform = ` scale(${0.8 + 0.2 * progress})`; } } else if (time >= outStartTime && anims.out.name !== 'none') { progress = Math.min(1, (time - outStartTime) / anims.out.duration); if(anims.out.name === 'fadeOut') el.style.opacity = 1 - progress; if(anims.out.name === 'slideOutDown') newTransform = ` translateY(${progress * 50 * scale}px)`; if(anims.out.name === 'zoomOut') { el.style.opacity = 1 - progress; newTransform = ` scale(${1 - 0.2 * progress})`; } } el.style.transform = `${baseTransform} ${newTransform}`; }; applyAnimation(textWrapper, card.animations.text, card.duration, t); if(showMedia) applyAnimation(mediaWrapper, mediaInfo.animations, card.duration, t);
+                        const { project, card, mediaInfo, t } = args; const scale = 1080 / project.renderMetadata.sourceWidth; const pSettings = project.projectSettings; const headerEl = document.querySelector('.st-preview-header'); const headerTitleEl = headerEl.querySelector('.header-title'); const headerIconEl = headerEl.querySelector('.header-icon'); const headerLogoEl = headerEl.querySelector('.header-logo'); headerEl.style.height = `${65 * scale}px`; headerEl.style.padding = `0 ${15 * scale}px`; headerEl.style.backgroundColor = pSettings.header.backgroundColor; headerTitleEl.innerText = pSettings.header.text; headerTitleEl.style.color = pSettings.header.color; headerTitleEl.style.fontFamily = pSettings.header.fontFamily; headerTitleEl.style.fontSize = `${pSettings.header.fontSize * scale}px`; const iconSVG = { back: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${pSettings.header.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>`, menu: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${pSettings.header.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>` }; headerIconEl.innerHTML = iconSVG[pSettings.header.icon] || ''; if (pSettings.header.logo.url) { headerLogoEl.src = pSettings.header.logo.url; headerLogoEl.style.width = `${pSettings.header.logo.size * scale}px`; headerLogoEl.style.height = `${pSettings.header.logo.size * scale}px`; headerLogoEl.style.display = 'block'; } else { headerLogoEl.style.display = 'none'; } const projectInfoEl = document.querySelector('.st-project-info'); projectInfoEl.style.paddingBottom = `${16 * scale}px`; projectInfoEl.style.marginBottom = `${16 * scale}px`; const projectInfoTitleEl = projectInfoEl.querySelector('.title'); projectInfoTitleEl.innerText = pSettings.project.title; projectInfoTitleEl.style.color = pSettings.project.titleColor; projectInfoTitleEl.style.fontFamily = pSettings.project.titleFontFamily; projectInfoTitleEl.style.fontSize = `${pSettings.project.titleFontSize * scale}px`; projectInfoTitleEl.style.marginBottom = `${5 * scale}px`; const projectInfoSpanEl = projectInfoEl.querySelector('span'); projectInfoSpanEl.innerText = `${pSettings.project.author || ''} | 조회수 ${Number(pSettings.project.views || 0).toLocaleString()}`; projectInfoSpanEl.style.color = pSettings.project.metaColor; projectInfoSpanEl.style.fontSize = `${13 * scale}px`; const textWrapper = document.querySelector('#st-preview-text-container-wrapper'); const textEl = document.querySelector('#st-preview-text'); const mediaWrapper = document.querySelector('#st-preview-media-container-wrapper'); const imageEl = document.querySelector('#st-preview-image'); const videoEl = document.querySelector('#st-preview-video'); const scaledStyle = { ...card.style }; scaledStyle.fontSize = `${parseFloat(card.style.fontSize) * scale}px`; scaledStyle.lineHeight = card.style.lineHeight; scaledStyle.letterSpacing = `${parseFloat(card.style.letterSpacing) * scale}px`; Object.assign(textEl.style, scaledStyle); textWrapper.style.transform = `translate(${card.layout.text.x * scale}px, ${card.layout.text.y * scale}px) scale(${card.layout.text.scale || 1}) rotate(${card.layout.text.angle || 0}deg)`; let showMedia = false; if(mediaInfo.media && mediaInfo.media.url) { const showOnSegmentIndex = mediaInfo.media.showOnSegment - 1; const showTime = (card.segments[showOnSegmentIndex] || {startTime: 0}).startTime; if (t >= showTime) showMedia = true; } if(showMedia) { mediaWrapper.style.display = 'flex'; mediaWrapper.style.transform = `translate(${mediaInfo.layout.x * scale}px, ${mediaInfo.layout.y * scale}px) scale(${mediaInfo.layout.scale || 1}) rotate(${mediaInfo.layout.angle || 0}deg)`; if (mediaInfo.media.type === 'video') { imageEl.style.display = 'none'; videoEl.style.display = 'block'; videoEl.style.objectFit = mediaInfo.media.fit; if (videoEl.src !== mediaInfo.media.url) videoEl.src = mediaInfo.media.url; videoEl.currentTime = (mediaInfo.media.startTime || 0) + t; } else { videoEl.style.display = 'none'; imageEl.style.display = 'block'; imageEl.style.objectFit = mediaInfo.media.fit; if (imageEl.src !== mediaInfo.media.url) imageEl.src = mediaInfo.media.url; } } else { mediaWrapper.style.display = 'none'; } textEl.innerHTML = ''; const hasCustomSequence = card.animationSequence && card.animationSequence.length > 0; if (hasCustomSequence) { (card.segments || []).forEach(segment => { if (t >= segment.startTime) { const p = document.createElement('p'); p.textContent = segment.text || ' '; p.style.margin = 0; textEl.appendChild(p); } }); } else { card.text.split('\n').forEach(line => { const p = document.createElement('p'); p.textContent = line || ' '; p.style.margin = 0; textEl.appendChild(p); }); } const applyAnimation = (el, anims, duration, time) => { const baseTransform = el.style.transform.split(' ').filter(s => !s.startsWith('translateY') && !s.startsWith('scale')).join(' '); el.style.opacity = 1; el.style.transform = baseTransform; const inDuration = anims.in.duration; const outStartTime = duration - anims.out.duration; let progress, newTransform = ''; if (time < inDuration && anims.in.name !== 'none') { progress = Math.min(1, time / inDuration); if(anims.in.name === 'fadeIn') el.style.opacity = progress; if(anims.in.name === 'slideInUp') newTransform = ` translateY(${(1 - progress) * 50 * scale}px)`; if(anims.in.name === 'zoomIn') { el.style.opacity = progress; newTransform = ` scale(${0.8 + 0.2 * progress})`; } } else if (time >= outStartTime && anims.out.name !== 'none') { progress = Math.min(1, (time - outStartTime) / anims.out.duration); if(anims.out.name === 'fadeOut') el.style.opacity = 1 - progress; if(anims.out.name === 'slideOutDown') newTransform = ` translateY(${progress * 50 * scale}px)`; if(anims.out.name === 'zoomOut') { el.style.opacity = 1 - progress; newTransform = ` scale(${1 - 0.2 * progress})`; } } el.style.transform = `${baseTransform} ${newTransform}`; }; applyAnimation(textWrapper, card.animations.text, card.duration, t); if(showMedia) applyAnimation(mediaWrapper, mediaInfo.animations, card.duration, t);
                     }, { project: projectData, card: card, mediaInfo: mediaToRender, t: timeInCard });
-
+                    
                     const framePath = path.join(framesDir, `frame_${String(frameCount).padStart(6, '0')}.png`);
                     await page.screenshot({ path: framePath });
                     frameCount++;
@@ -188,9 +181,7 @@ try {
                     message.ack();
                 }
             };
-            const errorHandler = (error) => {
-                console.error(`[Pub/Sub] 심각한 리스너 오류 발생:`, error);
-            };
+            const errorHandler = (error) => { console.error(`[Pub/Sub] 심각한 리스너 오류 발생:`, error); };
             subscription.on('message', messageHandler);
             subscription.on('error', errorHandler);
             console.log(`=======================================================`);
@@ -204,9 +195,7 @@ try {
 
     const app = express();
     const PORT = process.env.PORT || 3000;
-    app.get('/', (req, res) => {
-      res.status(200).send('SunsakTool Worker is alive and listening for jobs.');
-    });
+    app.get('/', (req, res) => { res.status(200).send('SunsakTool Worker is alive and listening for jobs.'); });
     app.listen(PORT, () => {
       console.log(`워커 Health Check 서버가 ${PORT} 포트에서 실행되었습니다.`);
       listenForMessages();
