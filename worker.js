@@ -38,6 +38,12 @@ async function renderVideo(jobId, projectData) {
 
     const fps = 30;
     const tempDir = path.join(os.tmpdir(), jobId);
+
+    // ===== [수정] 아래 두 줄을 추가하세요! =====
+    const finalAudioPath = path.join(tempDir, 'final_audio.aac');
+    const outputVideoPath = path.join(tempDir, 'output.mp4');
+    // =======================================
+    
     console.log(`[${jobId}] --- [C] 임시 디렉토리 경로 생성 완료: ${tempDir} ---`);
 
     const framesDir = path.join(tempDir, 'frames');
