@@ -151,11 +151,10 @@ try {
             await updateJobStatus(jobId, 'processing', '완성된 영상을 스토리지에 업로드합니다.', 95);
             const destination = `videos/${jobId}/${projectData.projectSettings.project.title || 'sunsak-video'}.mp4`;
 
-            // [수정 완료] 중복 코드를 제거하고 올바르게 합친 부분
+            // [최종 수정] 버킷 자체가 공개이므로, 어떤 옵션도 필요 없이 간단하게 업로드만 합니다.
             await storage.bucket(OUTPUT_BUCKET_NAME).upload(outputVideoPath, {
                 destination: destination,
             });
-            await storage.bucket(OUTPUT_BUCKET_NAME).file(destination).makePublic();
 
             const videoUrl = `https://storage.googleapis.com/${OUTPUT_BUCKET_NAME}/${destination}`;
             
