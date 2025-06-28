@@ -145,7 +145,7 @@ try {
             await updateJobStatus(jobId, 'processing', '최종 영상으로 합성하고 있습니다.', 80);
             const hasAudio = await fs.pathExists(finalAudioPath);
             const audioInput = hasAudio ? `-i "${finalAudioPath}"` : '';
-            const ffmpegCommand = `ffmpeg -y -framerate ${fps} -i "${framesDir}/frame_%06d.png" ${audioInput} -c:v libx264 -crf 18 -preset slow -pix_fmt yuv420p -vf "scale=1080:1920,format=yuv420p,colormatrix=bt709" -c:a aac -movflags +faststart ${hasAudio ? '-shortest' : ''} "${outputVideoPath}"`;
+            const ffmpegCommand = `ffmpeg -y -framerate ${fps} -i "${framesDir}/frame_%06d.png" ${audioInput} -c:v libx264 -crf 18 -preset slow -vf "scale=w=1080:h=1920:in_color_matrix=srgb:out_color_matrix=bt709,format=yuv420p" -c:a aac -movflags +faststart ${hasAudio ? '-shortest' : ''} "${outputVideoPath}"`;
             await new Promise((resolve, reject) => exec(ffmpegCommand, (err, stdout, stderr) => { if (err) { console.error('FFMPEG 최종 합성 오류:', stderr); reject(new Error(stderr)); } else resolve(stdout); }));
             
             await updateJobStatus(jobId, 'processing', '완성된 영상을 스토리지에 업로드합니다.', 95);
