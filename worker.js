@@ -1,7 +1,7 @@
 // ▼▼▼▼▼▼▼▼▼▼▼ 이 코드로 worker.js 전체를 교체하세요 ▼▼▼▼▼▼▼▼▼▼▼
 
 // ===============================================
-//  worker.js (Playwright 최종 완성 버전 - 생략 없음)
+//  worker.js (진짜 최종 완성 버전 - 생략 없음)
 // ===============================================
 const express = require('express');
 const path = require('path');
@@ -10,12 +10,10 @@ const { exec } = require('child_process');
 const os = require('os');
 const playwright = require('playwright');
 
-// Google Cloud 클라이언트
 const { PubSub } = require('@google-cloud/pubsub');
 const { Storage } = require('@google-cloud/storage');
 const { Firestore } = require('@google-cloud/firestore');
 
-// --- 환경 설정 및 클라이언트 초기화 ---
 const GCP_PROJECT_ID = process.env.GCP_PROJECT || 'sunsak-tool-gcp';
 
 const pubSubClient = new PubSub({ projectId: GCP_PROJECT_ID });
@@ -26,7 +24,6 @@ const OUTPUT_BUCKET_NAME = 'sunsak-output-videos';
 const JOB_DATA_BUCKET_NAME = 'sunsak-job-data';
 const SUBSCRIPTION_NAME = 'sunsak-render-jobs-sub';
 
-// --- 헬퍼 함수 ---
 async function updateJobStatus(jobId, status, message, progress = null) {
     const jobRef = firestore.collection('renderJobs').doc(jobId);
     const updateData = { status, message, updatedAt: new Date() };
@@ -37,7 +34,6 @@ async function updateJobStatus(jobId, status, message, progress = null) {
     console.log(`[${jobId}] 상태: ${status} - ${message} (${progress !== null ? progress + '%' : ''})`);
 }
 
-// --- 핵심 영상 제작 함수 (Playwright 버전) ---
 async function renderVideo(jobId) {
     const fps = 30;
     const tempDir = path.join(os.tmpdir(), jobId);
@@ -53,7 +49,6 @@ async function renderVideo(jobId) {
         await fs.ensureDir(framesDir);
         await fs.ensureDir(audioDir);
 
-        // 단계 1: GCS에서 작업 데이터 다운로드
         await updateJobStatus(jobId, 'processing', '작업 데이터 다운로드 중...', 5);
         const bucket = storage.bucket(JOB_DATA_BUCKET_NAME);
         const file = bucket.file(`${jobId}.json`);
@@ -62,9 +57,7 @@ async function renderVideo(jobId) {
         console.log(`[${jobId}] 작업 데이터 다운로드 완료`);
         await file.delete();
 
-        // [핵심] 단계 2: Playwright로 프레임 생성
         await updateJobStatus(jobId, 'processing', '영상 프레임 생성 중...', 10);
-        console.log(`[${jobId}] Playwright 실행`);
         browser = await playwright.chromium.launch();
         const context = await browser.newContext({ bypassCSP: true });
         const page = await context.newPage();
@@ -72,7 +65,6 @@ async function renderVideo(jobId) {
         
         const renderTemplatePath = `file://${path.join(__dirname, 'render_template.html')}`;
         await page.goto(renderTemplatePath, { waitUntil: 'networkidle' });
-        console.log(`[${jobId}] 렌더링 템플릿 로드 완료`);
         
         let frameCount = 0;
         const totalFrames = projectData.scriptCards.reduce((sum, card) => sum + Math.floor(card.duration * fps), 0);
@@ -94,123 +86,16 @@ async function renderVideo(jobId) {
             for (let i = 0; i < cardFrames; i++) {
                 const timeInCard = i / fps;
                 
-               // ▼▼▼▼▼▼▼▼▼▼▼ 이 코드로 page.evaluate(...) 부분을 교체하세요 ▼▼▼▼▼▼▼▼▼▼▼
+                await page.evaluate(async (args) => {
+                    const { project, currentCard, mediaInfo, t } = args;
+                    const scale = 1080 / (project.renderMetadata.sourceWidth || 420);
+                    const pSettings = project.projectSettings;
+                    
+                    document.querySelector('.st-preview-header').style.backgroundColor = pSettings.header.backgroundColor;
+                    document.querySelector('.header-title').innerText = pSettings.header.text;
+                    document.querySelector('#st-preview-text').innerText = currentCard.text;
+                }, { project: projectData, currentCard: card, mediaInfo: mediaToRender, t: timeInCard });
 
-// [핵심] Playwright의 브라우저 내부에서 모든 렌더링 로직 실행
-await page.evaluate(async (args) => {
-    const { project, currentCard, mediaInfo, t } = args;
-    const scale = 1080 / (project.renderMetadata.sourceWidth || 420);
-    const pSettings = project.projectSettings;
-
-    // --- DOM 요소 선택 ---
-    const headerEl = document.querySelector('.st-preview-header');
-    const headerTitleEl = headerEl.querySelector('.header-title');
-    const headerIconEl = headerEl.querySelector('.header-icon');
-    const headerLogoEl = document.getElementById('header-logo');
-    const projectInfoEl = document.querySelector('.st-project-info');
-    const projectInfoTitleEl = projectInfoEl.querySelector('.title');
-    const projectInfoSpanEl = projectInfoEl.querySelector('span');
-    const textWrapper = document.querySelector('#st-preview-text-container-wrapper');
-    const textEl = document.querySelector('#st-preview-text');
-    const mediaWrapper = document.querySelector('#st-preview-media-container-wrapper');
-    const imageEl = document.querySelector('#st-preview-image');
-    const videoEl = document.querySelector('#st-preview-video');
-    
-    // --- Helper 함수 ---
-    const applyTransform = (el, layout) => {
-        if (!el || !layout) return;
-        const transform = `translate(${layout.x * scale}px, ${layout.y * scale}px) scale(${layout.scale || 1}) rotate(${layout.angle || 0}deg)`;
-        el.style.transform = transform;
-    };
-
-    // --- 스타일 적용 ---
-    // 헤더
-    headerEl.style.height = `${65 * scale}px`;
-    headerEl.style.padding = `0 ${15 * scale}px`;
-    headerEl.style.backgroundColor = pSettings.header.backgroundColor;
-    headerTitleEl.innerText = pSettings.header.text;
-    headerTitleEl.style.color = pSettings.header.color;
-    headerTitleEl.style.fontFamily = pSettings.header.fontFamily;
-    headerTitleEl.style.fontSize = `${pSettings.header.fontSize * scale}px`;
-    
-    // 헤더 로고
-    if (pSettings.header.logo.url) {
-        if(headerLogoEl.src !== pSettings.header.logo.url) headerLogoEl.src = pSettings.header.logo.url;
-        headerLogoEl.style.width = `${pSettings.header.logo.size * scale}px`;
-        headerLogoEl.style.height = `${pSettings.header.logo.size * scale}px`;
-        headerLogoEl.style.display = 'block';
-    } else {
-        headerLogoEl.style.display = 'none';
-    }
-
-    // 프로젝트 정보
-    projectInfoEl.style.padding = `${10 * scale}px`;
-    projectInfoEl.style.paddingBottom = `${16 * scale}px`;
-    projectInfoEl.style.marginBottom = `${16 * scale}px`;
-    projectInfoTitleEl.innerText = pSettings.project.title;
-    projectInfoTitleEl.style.color = pSettings.project.titleColor;
-    projectInfoTitleEl.style.fontFamily = pSettings.project.titleFontFamily;
-    projectInfoTitleEl.style.fontSize = `${pSettings.project.titleFontSize * scale}px`;
-    projectInfoSpanEl.innerText = `${pSettings.project.author || ''} | 조회수 ${Number(pSettings.project.views || 0).toLocaleString()}`;
-    projectInfoSpanEl.style.color = pSettings.project.metaColor;
-    projectInfoSpanEl.style.fontSize = `${13 * scale}px`;
-
-    // 텍스트 스타일
-    const scaledStyle = { ...currentCard.style };
-    scaledStyle.fontSize = `${parseFloat(currentCard.style.fontSize) * scale}px`;
-    scaledStyle.letterSpacing = `${parseFloat(currentCard.style.letterSpacing) * scale}px`;
-    Object.assign(textEl.style, scaledStyle);
-    
-    // 텍스트/미디어 위치
-    applyTransform(textWrapper, currentCard.layout.text);
-
-    // 텍스트 내용 (세그먼트 로직 포함)
-    textEl.innerHTML = '';
-    const linesToDisplay = currentCard.text.split('\n');
-    linesToDisplay.forEach(line => {
-        const p = document.createElement('p');
-        p.className = 'preview-text-segment';
-        p.textContent = line || ' ';
-        p.style.margin = 0;
-        textEl.appendChild(p);
-    });
-
-    // 미디어 표시
-    mediaWrapper.style.display = 'none';
-    if (mediaInfo.media && mediaInfo.media.url) {
-        mediaWrapper.style.display = 'flex';
-        applyTransform(mediaWrapper, mediaInfo.layout);
-        
-        if (mediaInfo.media.type === 'video') {
-            imageEl.style.display = 'none';
-            videoEl.style.display = 'block';
-            videoEl.style.objectFit = mediaInfo.media.fit;
-            if (videoEl.src !== mediaInfo.media.url) videoEl.src = mediaInfo.media.url;
-            videoEl.currentTime = (mediaInfo.media.startTime || 0) + t;
-        } else {
-            videoEl.style.display = 'none';
-            imageEl.style.display = 'block';
-            imageEl.style.objectFit = mediaInfo.media.fit;
-            if (imageEl.src !== mediaInfo.media.url) imageEl.src = mediaInfo.media.url;
-        }
-    }
-    
-    // 모든 미디어 로딩을 기다리는 Promise 반환
-    const media = Array.from(document.querySelectorAll('img, video'));
-    const promises = media.map(m => {
-        if (m.tagName === 'IMG' && m.src && !m.complete) {
-            return new Promise(r => { m.onload = m.onerror = r; });
-        }
-        if (m.tagName === 'VIDEO' && m.src && m.readyState < 3) {
-            return new Promise(r => { m.onloadeddata = m.onerror = r; });
-        }
-        return Promise.resolve();
-    });
-    await Promise.all(promises);
-
-}, { project: projectData, currentCard: card, mediaInfo: mediaToRender, t: timeInCard });
-// ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
-                // 페이지의 모든 미디어(이미지, 비디오) 로딩을 기다림
                 await page.evaluate(async () => {
                     const media = Array.from(document.querySelectorAll('img, video'));
                     const promises = media.map(m => {
@@ -241,44 +126,47 @@ await page.evaluate(async (args) => {
         await browser.close();
         console.log(`[${jobId}] 프레임 캡처 완료 (${frameCount}개)`);
         
-        // 단계 3: 오디오 믹싱
         await updateJobStatus(jobId, 'processing', '오디오 트랙 처리 중...', 55);
+        
+        const audioTracks = (projectData.scriptCards || []).map((card, index) => {
+            const startTime = (projectData.scriptCards || []).slice(0, index).reduce((acc, c) => acc + c.duration, 0);
+            return {
+                startTime: startTime,
+                tts: card.audioUrl ? { url: card.audioUrl, volume: card.ttsVolume } : null,
+                sfx: card.sfxUrl ? { url: card.sfxUrl, volume: card.sfxVolume } : null,
+            };
+        });
+
         const audioInputs = [];
         let complexFilter = '';
         const audioStreamsToMix = [];
         
-        if (projectData.globalBGM && projectData.globalBGM.url) {
+        if (projectData.globalBGM && projectData.globalBGM.url && projectData.globalBGM.url.includes('base64')) {
             const bgmPath = path.join(audioDir, `bgm.mp3`);
             const base64Data = projectData.globalBGM.url.split(',')[1];
-            if (base64Data) {
-                await fs.writeFile(bgmPath, Buffer.from(base64Data, 'base64'));
-                audioInputs.push(`-i "${bgmPath}"`);
-                const totalDuration = totalFrames / fps;
-                complexFilter += `[${audioStreamsToMix.length}:a]aloop=loop=-1:size=2e+09,atrim=start=${projectData.globalBGM.startTime || 0}:duration=${totalDuration},volume=${projectData.globalBGM.volume || 0.3}[bgm];`;
-                audioStreamsToMix.push('[bgm]');
-            }
+            await fs.writeFile(bgmPath, Buffer.from(base64Data, 'base64'));
+            audioInputs.push(`-i "${bgmPath}"`);
+            const totalDuration = totalFrames / fps;
+            complexFilter += `[${audioStreamsToMix.length}:a]aloop=loop=-1:size=2e+09,atrim=start=${projectData.globalBGM.startTime || 0}:duration=${totalDuration},volume=${projectData.globalBGM.volume || 0.3}[bgm];`;
+            audioStreamsToMix.push('[bgm]');
         }
 
-        for (const [index, track] of projectData.audioTracks.entries()) {
+        for (const [index, track] of audioTracks.entries()) {
             if (track.tts && track.tts.url) {
                 const ttsPath = path.join(audioDir, `tts_${index}.mp3`);
                 const base64Data = track.tts.url.split(',')[1];
-                if(base64Data) {
-                    await fs.writeFile(ttsPath, Buffer.from(base64Data, 'base64'));
-                    audioInputs.push(`-i "${ttsPath}"`);
-                    complexFilter += `[${audioStreamsToMix.length}:a]adelay=${track.startTime * 1000}|${track.startTime * 1000},volume=${track.tts.volume || 0.9}[tts${index}];`;
-                    audioStreamsToMix.push(`[tts${index}]`);
-                }
+                await fs.writeFile(ttsPath, Buffer.from(base64Data, 'base64'));
+                audioInputs.push(`-i "${ttsPath}"`);
+                complexFilter += `[${audioStreamsToMix.length}:a]adelay=${track.startTime * 1000}|${track.startTime * 1000},volume=${track.tts.volume || 0.9}[tts${index}];`;
+                audioStreamsToMix.push(`[tts${index}]`);
             }
-            if (track.sfx && track.sfx.url) {
+            if (track.sfx && track.sfx.url && track.sfx.url.includes('base64')) {
                 const sfxPath = path.join(audioDir, `sfx_${index}.mp3`);
                 const base64Data = track.sfx.url.split(',')[1];
-                 if(base64Data) {
-                    await fs.writeFile(sfxPath, Buffer.from(base64Data, 'base64'));
-                    audioInputs.push(`-i "${sfxPath}"`);
-                    complexFilter += `[${audioStreamsToMix.length}:a]adelay=${track.startTime * 1000}|${track.startTime * 1000},volume=${track.sfx.volume || 0.8}[sfx${index}];`;
-                    audioStreamsToMix.push(`[sfx${index}]`);
-                 }
+                await fs.writeFile(sfxPath, Buffer.from(base64Data, 'base64'));
+                audioInputs.push(`-i "${sfxPath}"`);
+                complexFilter += `[${audioStreamsToMix.length}:a]adelay=${track.startTime * 1000}|${track.startTime * 1000},volume=${track.sfx.volume || 0.8}[sfx${index}];`;
+                audioStreamsToMix.push(`[sfx${index}]`);
             }
         }
 
@@ -290,10 +178,8 @@ await page.evaluate(async (args) => {
                 if (err) return reject(new Error(`오디오 믹싱 오류: ${err.message}`));
                 resolve();
             }));
-            console.log(`[${jobId}] 오디오 믹싱 완료`);
         }
 
-        // 단계 4: 최종 영상 합성
         await updateJobStatus(jobId, 'processing', '최종 영상 합성 중...', 80);
         const hasAudio = await fs.pathExists(finalAudioPath);
         const audioInput = hasAudio ? `-i "${finalAudioPath}"` : '';
@@ -302,9 +188,7 @@ await page.evaluate(async (args) => {
             if (err) return reject(new Error(`FFMPEG 최종 합성 오류: ${err.message}`));
             resolve();
         }));
-        console.log(`[${jobId}] 최종 영상 합성 완료`);
 
-        // 단계 5: 영상 업로드 및 상태 업데이트
         await updateJobStatus(jobId, 'processing', '영상 업로드 중...', 95);
         const videoTitle = projectData.projectSettings?.project?.title || 'sunsak-video';
         const safeTitle = videoTitle.replace(/[^a-zA-Z0-9-_\.]/g, '_');
