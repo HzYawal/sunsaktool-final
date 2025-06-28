@@ -1428,13 +1428,95 @@ handlers.addScriptCard('순삭툴에 오신 것을 환영합니다!\n텍스트�
 }
 
         
-// ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ 이 코드로 exporter 객체 전체를 다시 교체하세요 ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+// ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ 이 코드로 exporter 객체 전체를 교체하세요 ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
 
 const exporter = {
     statusCheckInterval: null,
     
+    // [새로운 헬퍼 함수] 이미지와 비디오 로딩을 모두 기다리는 Promise를 반환합니다.
+    waitForMediaToLoad(element) {
+        const mediaPromises = [];
+
+        // 이미지 로딩 대기
+        const images = Array.from(element.querySelectorAll('img'));
+        images.forEach(img => {
+            // 아직 로딩이 완료되지 않았고, src가 있는 이미지만 대상으로 합니다.
+            if (!img.complete && img.src) {
+                mediaPromises.push(new Promise((resolve) => {
+                    // 로딩이 성공하든 실패하든, '시도'가 끝나면 resolve하여 다음으로 진행합니다.
+                    img.onload = resolve;
+                    img.onerror = resolve; 
+                }));
+            }
+        });
+
+        // 비디오 로딩 대기
+        const videos = Array.from(element.querySelectorAll('video'));
+        videos.forEach(video => {
+            // readyState 4는 'HAVE_ENOUGH_DATA'로, 현재 프레임을 표시하기에 충분한 데이터가 있음을 의미합니다.
+            if (video.readyState < 4 && video.src) { 
+                mediaPromises.push(new Promise((resolve) => {
+                    // 비디오는 canplaythrough 이벤트로 로딩 완료를 판단합니다.
+                    video.oncanplaythrough = resolve;
+                    video.onerror = resolve; // 에러가 나도 일단 넘어가도록 resolve
+                }));
+            }
+        });
+
+        // 모든 미디어 로딩 시도가 끝날 때까지 기다립니다.
+        return Promise.all(mediaPromises);
+    },
+
     async checkStatus(jobId) {
-        // ... (이 부분은 이전과 동일하여 생략) ...
+        try {
+            const response = await fetch(`${SERVICE_URL}/render-status/${jobId}`);
+            if (!response.ok) {
+                if (response.status === 404) return;
+                throw new Error(`상태 확인 오류: ${response.status}`);
+            }
+
+            const data = await response.json();
+            UI.progressSubText.textContent = data.message || '상태를 확인하고 있습니다...';
+            if (data.progress) UI.progressBarInner.style.width = `${data.progress}%`;
+
+            if (data.status === 'completed') {
+                clearInterval(this.statusCheckInterval);
+                UI.progressText.textContent = '영상 제작 완료!';
+                UI.progressBarInner.style.width = '100%';
+                UI.progressSubText.textContent = '다운로드를 시작합니다...';
+
+                try {
+                    const res = await fetch(data.videoUrl);
+                    const blob = await res.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = `${state.projectSettings.project.title || 'sunsak-video'}.mp4`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } catch (downloadError) {
+                    console.error("다운로드 오류:", downloadError);
+                    UI.progressSubText.innerHTML = `자동 다운로드 실패! <a href="${data.videoUrl}" target="_blank" download>여기서 직접 다운로드</a>`;
+                    alert("자동 다운로드에 실패했습니다. 아래 링크를 직접 클릭해주세요.");
+                }
+
+                setTimeout(() => {
+                    UI.progressOverlay.style.display = 'none';
+                    UI.exportBtn.disabled = false;
+                }, 3000);
+
+            } else if (data.status === 'failed') {
+                clearInterval(this.statusCheckInterval);
+                alert(`영상 제작에 실패했습니다. 오류: ${data.message}`);
+                UI.progressOverlay.style.display = 'none';
+                UI.exportBtn.disabled = false;
+            }
+        } catch (error) {
+            console.error(error);
+        }
     },
 
     async startExport() {
@@ -1467,18 +1549,15 @@ const exporter = {
             if (resourceCache.has(url)) {
                 return resourceCache.get(url);
             }
-
             const toDataURL = (blob) => new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.onloadend = () => resolve(reader.result);
                 reader.onerror = reject;
                 reader.readAsDataURL(blob);
             });
-
             try {
                 let dataUrl;
                 if (url.startsWith('data:')) {
-                    // [핵심 보험] data: URL이라도 이미지나 폰트가 아니면 에러 처리
                     if (!url.startsWith('data:image/') && !url.startsWith('data:font/')) {
                         throw new Error(`Invalid data URL MIME type: ${url.substring(0, 30)}...`);
                     }
@@ -1490,7 +1569,6 @@ const exporter = {
                 } else {
                     const proxyUrl = `${SERVICE_URL}/api/proxy?url=${encodeURIComponent(url)}`;
                     const response = await fetch(proxyUrl);
-                    
                     if (!response.ok) {
                         throw new Error(`Proxy Error: Status ${response.status} for ${url}`);
                     }
@@ -1498,14 +1576,11 @@ const exporter = {
                     if (!contentType || (!contentType.startsWith('image/') && !contentType.startsWith('font/'))) {
                          throw new Error(`Invalid content-type: ${contentType} for ${url}`);
                     }
-
                     const blob = await response.blob();
                     dataUrl = await toDataURL(blob);
                 }
-                
                 resourceCache.set(url, dataUrl);
                 return dataUrl;
-
             } catch (error) {
                 console.error(`Failed to fetch resource: ${url}`, error);
                 throw error;
@@ -1520,6 +1595,9 @@ const exporter = {
             playback.updatePreviewForFrame(card, timeInCard);
 
             try {
+                // [최종 핵심] 모든 미디어(이미지, 비디오)가 화면에 로드될 때까지 기다립니다.
+                await this.waitForMediaToLoad(previewPanel);
+                
                 const dataUrl = await htmlToImage.toPng(previewPanel, {
                     width: 1080,
                     height: 1920,
@@ -1547,19 +1625,47 @@ const exporter = {
                 return;
             }
         }
-        
-        // ... (이하 projectData 생성 및 서버 요청 부분은 이전과 동일하여 생략) ...
+            
         const projectData = {
-            // ...
+            frameImages: frameImages,
+            audioTracks: state.scriptCards.map((card, index) => ({
+                startTime: state.scriptCards.slice(0, index).reduce((acc, c) => acc + c.duration, 0),
+                duration: card.duration,
+                tts: card.audioUrl ? { url: card.audioUrl, volume: card.ttsVolume } : null,
+                sfx: card.sfxUrl ? { url: card.sfxUrl, volume: card.sfxVolume } : null,
+            })),
+            globalBGM: state.globalBGM,
+            projectSettings: state.projectSettings 
         };
 
         try {
-            // ...
+            UI.progressText.textContent = '서버에 작업 요청 중...';
+            UI.progressBarInner.style.width = `15%`;
+            const response = await fetch(`${SERVICE_URL}/render-video`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(projectData)
+            });
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: '서버 응답을 JSON으로 파싱할 수 없습니다.' }));
+                throw new Error(`서버 오류 (${response.status}): ${errorData.message || '알 수 없는 오류가 발생했습니다.'}`);
+            }
+            const result = await response.json();
+            if (result.success && result.jobId) {
+                UI.progressText.textContent = '영상 제작이 시작되었습니다!';
+                this.statusCheckInterval = setInterval(() => this.checkStatus(result.jobId), 5000);
+            } else {
+                throw new Error('서버에서 유효한 작업 ID를 받지 못했습니다.');
+            }
         } catch (error) {
-            // ...
+            console.error("영상 생성 요청 오류:", error);
+            alert(`영상 생성 요청 중 오류가 발생했습니다:\n${error.message}`);
+            UI.progressOverlay.style.display = 'none';
+            UI.exportBtn.disabled = false;
         }
     }
 };
+
 // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ 여기까지 교체 ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
         document.addEventListener('DOMContentLoaded', initialize);
     })();
