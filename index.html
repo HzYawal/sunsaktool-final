@@ -1486,11 +1486,9 @@ const exporter = {
         }
     },
 
+    // [새로운 코드로 startExport 함수 전체를 교체]
     async startExport() {
-
-      
-       
-        if (state.scriptCards.some(c => c.text.trim() && !c.ttsReady)) return alert('아직 음성 생성이 완료되지 않은 스크립트가 있습니다.');
+        // ... (함수 시작 부분의 기존 코드는 그대로 둡니다) ...
         if (state.scriptCards.length === 0) return alert('출력할 영상이 없습니다.');
         if (this.statusCheckInterval) clearInterval(this.statusCheckInterval);
 
@@ -1501,6 +1499,7 @@ const exporter = {
         UI.progressSubText.textContent = '미리보기 화면을 캡처하고 있습니다.';
         UI.progressBarInner.style.width = '2%';
 
+        // ... (frameData 생성 로직까지는 동일) ...
         const totalDuration = state.scriptCards.reduce((sum, c) => sum + c.duration, 0);
         const fps = 30;
         const totalFrames = Math.floor(totalDuration * fps);
@@ -1516,21 +1515,22 @@ const exporter = {
         const previewPanel = document.getElementById('st-preview-panel');
         const frameImages = [];
 
+        // [핵심 수정] 폰트 정보를 루프 시작 전에 딱 한 번만 가져옵니다.
+        UI.progressSubText.textContent = `폰트 정보 로딩 중...`;
+        const fontFaces = await htmlToImage.getFontEmbedCSS(document.body);
+
         for (let i = 0; i < frameData.length; i++) {
             const { card, timeInCard } = frameData[i];
             
             playback.updatePreviewForFrame(card, timeInCard);
 
             try {
-                // [핵심 수정] 폰트 로딩 오류를 해결하기 위해 font-face 규칙을 직접 주입합니다.
-                const fontFaces = await htmlToImage.getFontEmbedCSS(document.body);
-
-
+                // [핵심 수정] 미리 가져온 폰트 정보를 재사용합니다.
                 const dataUrl = await htmlToImage.toPng(previewPanel, {
                     width: 1080,
                     height: 1920,
                     style: { margin: 0 },
-                    fontEmbedCss: fontFaces // <-- 폰트 정보를 직접 전달하는 옵션 추가
+                    fontEmbedCss: fontFaces 
                 });
                 frameImages.push(dataUrl);
 
