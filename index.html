@@ -1597,10 +1597,16 @@ const nodeFilter = (node) => {
                 await new Promise(resolve => requestAnimationFrame(resolve));
                 
                 // 3. 이제 모든 것이 완벽하게 준비되었으므로, 안전하게 캡처
-                const dataUrl = await htmlToImage.toPng(previewPanel, {
-                    width: 1080, height: 1920, style: { margin: 0 }, pixelRatio: 1, 
-                    fetchRequest: fetchWithSmartCache, cache: 'no-store', filter: nodeFilter
-                });
+                const canvas = await html2canvas(previewPanel, {
+    useCORS: true, // 외부 이미지를 허용하는 옵션
+    allowTaint: true, // 캔버스 오염을 허용
+    width: 1080,
+    height: 1920,
+    windowWidth: 1080,
+    windowHeight: 1920,
+    scale: 1 // 1배 스케일로 캡처
+});
+const dataUrl = canvas.toDataURL('image/png', 1.0);
                 frameImages.push(dataUrl);
 
                 const progress = 2 + Math.floor((i / totalFrames) * 8); 
