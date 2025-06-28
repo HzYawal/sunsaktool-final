@@ -60,9 +60,20 @@ async function renderVideo(jobId, projectData) {
         await updateJobStatus(jobId, 'processing', '비디오 프레임 캡처를 시작합니다.', 10);
         console.log(`[${jobId}] --- [F] Puppeteer 실행 전 상태 업데이트 완료 ---`);
 
-        browser = await puppeteer.launch({
+       browser = await puppeteer.launch({
             headless: true,
-            args: ['--no-sandbox', '--disable-setuid-sandbox'],
+            // [수정] 컨테이너 환경에서 안정성을 높이기 위한 필수 인수들 추가
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-accelerated-2d-canvas',
+                '--no-first-run',
+                '--no-zygote',
+                '--single-process', 
+                '--disable-gpu'
+            ],
+            // [수정] 타임아웃 시간을 120초(120000ms)로 넉넉하게 설정
             timeout: 120000 
         });
         console.log(`[${jobId}] --- [G] Puppeteer 브라우저 성공적으로 실행됨! ---`);
