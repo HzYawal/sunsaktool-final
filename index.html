@@ -1536,7 +1536,6 @@ const exporter = {
                     const proxyUrl = `${SERVICE_URL}/api/proxy?url=${encodeURIComponent(url)}`;
                     const response = await fetch(proxyUrl);
                     
-                    // [핵심] 서버 응답 유효성 검사
                     if (!response.ok) {
                         throw new Error(`Proxy Error: Status ${response.status} for ${url}`);
                     }
@@ -1554,7 +1553,6 @@ const exporter = {
 
             } catch (error) {
                 console.error(`Failed to fetch resource: ${url}`, error);
-                // 에러를 다시 던져서 htmlToImage가 실패를 인지하도록 함
                 throw error;
             }
         };
@@ -1573,7 +1571,6 @@ const exporter = {
                     style: { margin: 0 },
                     pixelRatio: 1,
                     fetchRequest: fetchWithSmartCache,
-                    // 브라우저 자체 캐시를 비활성화하여 항상 우리 캐시 로직을 타도록 함
                     cache: 'no-store'
                 });
                 frameImages.push(dataUrl);
@@ -1582,9 +1579,21 @@ const exporter = {
                 UI.progressSubText.textContent = `프레임 캡처 중... (${i + 1}/${totalFrames})`;
                 UI.progressBarInner.style.width = `${progress}%`;
             } catch (captureError) {
-                console.error("프레임 캡처 오류:", captureError);
-                // 이제는 captureError에 더 구체적인 정보가 담겨 있을 것입니다.
-                alert(`프레임 캡처 중 오류가 발생했습니다. 일부 이미지나 폰트 리소스에 문제가 있을 수 있습니다. 개발자 콘솔을 확인해주세요. 오류: ${captureError.message}`);
+                // [핵심 수정] 에러 객체를 분석하여 구체적인 원인 메시지를 생성합니다.
+                console.error("프레임 캡처 오류 원본:", captureError);
+
+                let detailedMessage = '알 수 없는 오류가 발생했습니다.';
+                if (captureError.target && captureError.target.src) {
+                    // 오류의 원인이 DOM 이벤트일 경우 (이미지 로드 실패 등)
+                    detailedMessage = `아래 리소스를 불러오는 데 실패했습니다. URL이 유효한지, 혹은 삭제된 리소스가 아닌지 확인해주세요:\n\n${captureError.target.src}`;
+                    console.log('문제가 발생한 HTML 요소:', captureError.target);
+                } else if (captureError.message) {
+                    // 오류의 원인이 표준 Error 객체일 경우
+                    detailedMessage = captureError.message;
+                }
+
+                alert(`프레임 캡처 중 오류가 발생했습니다.\n\n[오류 원인]\n${detailedMessage}`);
+                
                 UI.progressOverlay.style.display = 'none';
                 UI.exportBtn.disabled = false;
                 return;
