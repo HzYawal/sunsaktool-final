@@ -1,5 +1,5 @@
 // ===============================================
-//  worker.js (최종 최적화 버전)
+//  worker.js (진짜 최종 완성 버전)
 // ===============================================
 console.log('--- [0/11] 워커 프로세스 시작 ---');
 
@@ -95,7 +95,6 @@ try {
             const renderTemplateContent = await fs.readFile(path.join(__dirname, 'render_template.html'), 'utf-8');
             await page.setContent(renderTemplateContent, { waitUntil: 'networkidle' });
             
-            // [최적화] 폰트 로딩을 캡처 루프 시작 전에 단 한 번만 실행합니다.
             console.log(`[${jobId}] --- [H] 렌더링에 필요한 모든 폰트를 미리 로드합니다... ---`);
             await page.evaluate(async () => {
                 await document.fonts.ready;
@@ -148,12 +147,21 @@ try {
             const audioInput = hasAudio ? `-i "${finalAudioPath}"` : '';
             const ffmpegCommand = `ffmpeg -y -framerate ${fps} -i "${framesDir}/frame_%06d.png" ${audioInput} -c:v libx264 -crf 18 -preset slow -pix_fmt yuv420p -c:a aac -movflags +faststart ${hasAudio ? '-shortest' : ''} "${outputVideoPath}"`;
             await new Promise((resolve, reject) => exec(ffmpegCommand, (err, stdout, stderr) => { if (err) { console.error('FFMPEG 최종 합성 오류:', stderr); reject(new Error(stderr)); } else resolve(stdout); }));
+            
             await updateJobStatus(jobId, 'processing', '완성된 영상을 스토리지에 업로드합니다.', 95);
             const destination = `videos/${jobId}/${projectData.projectSettings.project.title || 'sunsak-video'}.mp4`;
-            await storage.bucket(OUTPUT_BUCKET_NAME).upload(outputVideoPath, { destination, public: true });
+
+            // [수정 완료] 중복 코드를 제거하고 올바르게 합친 부분
+            await storage.bucket(OUTPUT_BUCKET_NAME).upload(outputVideoPath, {
+                destination: destination,
+            });
+            await storage.bucket(OUTPUT_BUCKET_NAME).file(destination).makePublic();
+
             const videoUrl = `https://storage.googleapis.com/${OUTPUT_BUCKET_NAME}/${destination}`;
+            
             await updateJobStatus(jobId, 'completed', '영상 제작이 완료되었습니다.', 100);
             await firestore.collection('renderJobs').doc(jobId).set({ videoUrl, completedAt: new Date() }, { merge: true });
+            
             console.log(`[${jobId}] 작업 완료! 최종 영상 URL: ${videoUrl}`);
         } catch (error) {
             console.error(`[${jobId}] 렌더링 워커에서 심각한 오류 발생! 상세 정보:`, error.stack);
