@@ -1544,29 +1544,7 @@ const exporter = {
                 return;
             }
         }
-            const { card, timeInCard } = frameData[i];
             
-            playback.updatePreviewForFrame(card, timeInCard);
-
-            try {
-                const dataUrl = await htmlToImage.toPng(previewPanel, {
-                    width: 1080,
-                    height: 1920,
-                    style: { margin: 0 }
-                });
-                frameImages.push(dataUrl);
-
-                const progress = 2 + Math.floor((i / totalFrames) * 8);
-                UI.progressSubText.textContent = `프레임 캡처 중... (${i + 1}/${totalFrames})`;
-                UI.progressBarInner.style.width = `${progress}%`;
-            } catch (captureError) {
-                console.error("프레임 캡처 오류:", captureError);
-                alert("프레임 캡처 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
-                UI.progressOverlay.style.display = 'none';
-                UI.exportBtn.disabled = false;
-                return;
-            }
-        }
         
         const projectData = {
             frameImages: frameImages,
