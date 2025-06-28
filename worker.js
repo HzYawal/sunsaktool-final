@@ -90,9 +90,22 @@ try {
             await updateJobStatus(jobId, 'processing', '비디오 프레임 캡처를 시작합니다.', 10);
             console.log(`[${jobId}] --- [F] Puppeteer 실행 전 상태 업데이트 완료 ---`);
 
+           // =================== [수정 후] ===================
             browser = await puppeteer.launch({
+                // [수정] 이 한 줄은 더 이상 필요 없으므로 주석 처리하거나 삭제합니다.
+                // executablePath: '/usr/bin/google-chrome-stable', 
                 headless: true,
-                args: ['--no-sandbox','--disable-setuid-sandbox','--disable-dev-shm-usage','--disable-accelerated-2d-canvas','--no-first-run','--no-zygote','--single-process','--disable-gpu'],
+                // [중요] args는 그대로 유지합니다.
+                args: [
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage',
+                    '--disable-accelerated-2d-canvas',
+                    '--no-first-run',
+                    '--no-zygote',
+                    '--single-process', 
+                    '--disable-gpu'
+                ],
                 timeout: 120000 
             });
             console.log(`[${jobId}] --- [G] Puppeteer 브라우저 성공적으로 실행됨! ---`);
