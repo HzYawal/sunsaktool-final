@@ -84,9 +84,9 @@ app.post('/render-video', async (req, res) => {
     const jobId = uuidv4();
     try {
         const projectData = req.body;
-        if (!projectData || !projectData.frameImages || projectData.frameImages.length === 0) {
-            return res.status(400).json({ message: '렌더링할 데이터(frameImages)가 없습니다.' });
-        }
+        if (!projectData || !projectData.scriptCards || projectData.scriptCards.length === 0) {
+    return res.status(400).json({ message: '렌더링할 데이터(scriptCards)가 없습니다.' });
+}
         console.log(`[${jobId}] 신규 렌더링 작업 접수`);
 
         // 단계 1: Firestore에 작업 상태 기록
