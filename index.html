@@ -2,15 +2,15 @@
 <html lang="ko">
 <head>
    <meta charset="UTF-8">
-<!-- [수정] 중복된 CSP 메타 태그를 하나로 합치고, 주석을 제거했습니다. -->
+<!-- [새로운 코드로 교체] -->
 <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
     script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com;
     img-src 'self' blob: data:;
-    media-src 'self' blob: data: https://sunsaktool-final.netlify.app;
-    connect-src 'self' https://sunsaktool-final.netlify.app http://localhost:3000 https://sunsaktool-service-741834545202.asia-northeast3.run.app blob: data:;
+    media-src 'self' blob: data:;
+    connect-src 'self' https://sunsaktool-service-741834545202.asia-northeast3.run.app https://fonts.googleapis.com https://fonts.gstatic.com https://cdn.jsdelivr.net blob: data:;
 ">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SunsakTool (순삭툴)</title>
