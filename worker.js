@@ -81,15 +81,16 @@ try {
         
         let browser;
         try {
+            // [수정] 부모 디렉토리를 먼저 명시적으로 생성하여 안정성을 높입니다.
+            await fs.ensureDir(tempDir);
+            console.log(`[${jobId}] --- [C-1] 기본 임시 디렉토리 생성 완료 ---`);
+
             await fs.ensureDir(framesDir);
             console.log(`[${jobId}] --- [D] 프레임 디렉토리 생성 완료 ---`);
 
             await fs.ensureDir(audioDir);
             console.log(`[${jobId}] --- [E] 오디오 디렉토리 생성 완료 ---`);
             
-            await updateJobStatus(jobId, 'processing', '비디오 프레임 캡처를 시작합니다.', 10);
-            console.log(`[${jobId}] --- [F] Playwright 실행 시도 ---`);
-
             // [수정 완료] 중복 코드를 제거하고 올바르게 하나로 합친 부분
             browser = await chromium.launch({
                 args: [
