@@ -1,7 +1,7 @@
 {
   "name": "sunsaktool-final",
   "version": "1.0.0",
-  "description": "SunsakTool with Backend server for rendering",
+  "description": "SunsakTool with a Playwright rendering worker",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -14,9 +14,9 @@
     "@google-cloud/text-to-speech": "^5.3.0",
     "cors": "^2.8.5",
     "express": "^4.21.2",
-    "fs-extra": "^11.3.0",    // 추가 또는 버전 업데이트
+    "fs-extra": "^11.3.0",
     "node-fetch": "^2.7.0",
-    "playwright": "1.44.1",     // 핵심! playwright 추가
+    "playwright": "1.44.1",
     "uuid": "^11.1.0"
   },
   "author": "",
