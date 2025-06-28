@@ -1430,6 +1430,10 @@ handlers.addScriptCard('순삭툴에 오신 것을 환영합니다!\n텍스트�
         
 // ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ 이 코드로 exporter 객체 전체를 교체하세요 ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
 
+// ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ 이 코드로 exporter 객체 전체를 교체하세요 ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+
+// ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ 이 코드로 exporter 객체 전체를 교체하세요 ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+
 const exporter = {
     statusCheckInterval: null,
 
@@ -1443,40 +1447,41 @@ const exporter = {
             const data = await response.json();
             UI.progressSubText.textContent = data.message || '상태를 확인하고 있습니다...';
             if (data.progress) UI.progressBarInner.style.width = `${data.progress}%`;
+
             if (data.status === 'completed') {
                 clearInterval(this.statusCheckInterval);
                 UI.progressText.textContent = '영상 제작 완료!';
                 UI.progressBarInner.style.width = '100%';
-                UI.progressSubText.textContent = '다운로드를 시작합니다...';
-                try {
-                    const res = await fetch(data.videoUrl);
-                    const blob = await res.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.style.display = 'none';
-                    a.href = url;
-                    a.download = `${state.projectSettings.project.title || 'sunsak-video'}.mp4`;
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                    document.body.removeChild(a);
-                } catch (downloadError) {
-                    console.error("다운로드 오류:", downloadError);
-                    UI.progressSubText.innerHTML = `자동 다운로드 실패! <a href="${data.videoUrl}" target="_blank" download>여기서 직접 다운로드</a>`;
-                    alert("자동 다운로드에 실패했습니다. 아래 링크를 직접 클릭해주세요.");
-                }
-                setTimeout(() => {
-                    UI.progressOverlay.style.display = 'none';
-                    UI.exportBtn.disabled = false;
-                }, 3000);
+
+                // [최종 수정] 다운로드 링크를 포함한 메시지를 보여줍니다.
+                UI.progressSubText.innerHTML = `
+                    영상이 성공적으로 제작되었습니다!<br><br>
+                    <a 
+                        href="${data.videoUrl}" 
+                        target="_blank" 
+                        download="${state.projectSettings.project.title || 'sunsak-video'}.mp4"
+                        style="background-color: var(--st-accent-color); color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;"
+                    >
+                        여기를 클릭하여 다운로드
+                    </a>
+                    <br><br>
+                    <small style="cursor: pointer; text-decoration: underline;" onclick="document.getElementById('st-export-progress-overlay').style.display='none'">[닫기]</small>
+                `;
+                // 성공 시에는 '영상 저장' 버튼을 다시 활성화하지 않아,
+                // 사용자가 직접 닫기 전까지는 다른 작업을 못하게 합니다.
+
             } else if (data.status === 'failed') {
                 clearInterval(this.statusCheckInterval);
                 alert(`영상 제작에 실패했습니다. 오류: ${data.message}`);
                 UI.progressOverlay.style.display = 'none';
-                UI.exportBtn.disabled = false;
+                UI.exportBtn.disabled = false; // 실패 시에는 버튼 활성화
             }
         } catch (error) {
             console.error(error);
+            clearInterval(this.statusCheckInterval);
+            alert(`상태 확인 중 오류 발생: ${error.message}`);
+            UI.progressOverlay.style.display = 'none';
+            UI.exportBtn.disabled = false;
         }
     },
 
@@ -1513,20 +1518,19 @@ const exporter = {
             playback.updatePreviewForFrame(card, timeInCard);
 
             try {
-                // [엔진 교체] html-to-image 대신 html2canvas를 사용합니다.
+                // [엔진 교체 완료] html2canvas를 사용합니다.
                 const canvas = await html2canvas(previewPanel, {
-                    useCORS: true,      // 외부 이미지를 로드하기 위해 필수
-                    allowTaint: true,   // 캔버스 오염 허용
-                    logging: false,     // 콘솔에 디버그 로그를 남기지 않음
-                    width: 1080,        // 캡처할 너비
-                    height: 1920,       // 캡처할 높이
-                    windowWidth: 1080,  // 렌더링에 사용할 가상 창 너비
-                    windowHeight: 1920, // 렌더링에 사용할 가상 창 높이
-                    scale: 1,           // 1:1 픽셀 비율로 캡처
-                    backgroundColor: null // 투명 배경을 위해 null 설정
+                    useCORS: true,
+                    allowTaint: true,
+                    logging: false,
+                    width: 1080,
+                    height: 1920,
+                    windowWidth: 1080,
+                    windowHeight: 1920,
+                    scale: 1,
+                    backgroundColor: null
                 });
 
-                // 캔버스에서 데이터 URL 추출
                 const dataUrl = canvas.toDataURL('image/png', 1.0);
                 frameImages.push(dataUrl);
 
@@ -1583,6 +1587,7 @@ const exporter = {
 };
 
 // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ 여기까지 교체 ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+       
         document.addEventListener('DOMContentLoaded', initialize);
     })();
     </script>
