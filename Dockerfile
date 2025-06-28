@@ -1,29 +1,44 @@
 # ========================================================
-#  Playwright를 사용하는 최종 안정화 Dockerfile (수정 버전)
+#  Playwright를 사용하는 최종 안정화 Dockerfile (2세대 호환)
 # ========================================================
 
-# 1. Playwright 공식 이미지를 사용 (모든 의존성 및 브라우저가 설치되어 있음)
+# 1. Playwright 공식 이미지를 사용합니다.
 FROM mcr.microsoft.com/playwright:v1.44.1-jammy
 
-# 2. [수정] FFmpeg 설치를 제거하고, 한글 폰트만 추가로 설치합니다.
-#    Playwright 기본 이미지에 이미 필요한 FFMPEG 라이브러리가 포함되어 있습니다.
+# 2. [최종 수정] 2세대 환경과의 호환성을 위한 필수 라이브러리 및 한글 폰트를 추가로 설치합니다.
+#    이 라이브러리들은 브라우저가 정상적으로 그래픽을 처리하고 실행되는 데 필요합니다.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     fonts-noto-cjk \
+    libnss3 \
+    libxss1 \
+    libasound2 \
+    libatk-bridge2.0-0 \
+    libgtk-3-0 \
+    libx11-xcb1 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxrandr2 \
+    libcups2 \
+    libdbus-1-3 \
+    libdrm2 \
+    libatspi2.0-0 \
+    libgbm-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 # 3. 작업 디렉토리 설정
 WORKDIR /app
 
-# 4. [최적화] package.json 파일을 먼저 복사하여 의존성 설치부터 진행
+# 4. 의존성 설치 최적화를 위해 package.json 파일부터 복사
 COPY package*.json ./
 RUN npm install --only=production
 
-# 5. [최적화] 나머지 프로젝트 파일들을 복사
+# 5. 나머지 프로젝트 파일들을 복사
 COPY . .
 
-# 6. 애플리케이션 포트 노출 (워커에서는 사용되지 않지만, API 서버와 이미지를 공유하므로 유지)
+# 6. 포트 노출
 EXPOSE 3000
 
-# 7. 컨테이너 시작 명령어 (gcloud deploy 명령어에서 덮어쓰므로 기본값 역할)
+# 7. 기본 시작 명령어
 CMD ["node", "worker.js"]
