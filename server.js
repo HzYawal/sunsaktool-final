@@ -76,6 +76,33 @@ app.get('/render-status/:jobId', async (req, res) => {
     }
 });
 
+const fetch = require('node-fetch');
+
+app.get('/api/proxy', async (req, res) => {
+    const { url } = req.query;
+    if (!url) {
+        return res.status(400).send('URL is required');
+    }
+
+    try {
+        const response = await fetch(decodeURIComponent(url));
+        if (!response.ok) {
+            return res.status(response.status).send(response.statusText);
+        }
+        
+        // 원본 헤더(특히 Content-Type)를 클라이언트에 전달
+        res.setHeader('Content-Type', response.headers.get('Content-Type'));
+        res.setHeader('Access-Control-Allow-Origin', '*'); // CORS 헤더 추가
+        
+        // 응답 본문을 클라이언트로 스트리밍
+        response.body.pipe(res);
+
+    } catch (error) {
+        console.error('Proxy error:', error);
+        res.status(500).send('Error fetching the URL');
+    }
+});
+
 // --- 서버 실행 ---
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`=============================================`);
