@@ -1570,6 +1570,10 @@ const exporter = {
         UI.progressSubText.textContent = '프레임 캡처를 준비합니다...';
 
         for (let i = 0; i < totalFrames; i++) {
+
+           console.log(`[프레임 ${i}] 카드 ID: ${frameData[i].card.id} 캡처 시도...`);
+            console.log('카드 데이터:', JSON.parse(JSON.stringify(frameData[i].card)));
+           
             const { card, timeInCard } = frameData[i];
             
             playback.updatePreviewForFrame(card, timeInCard);
