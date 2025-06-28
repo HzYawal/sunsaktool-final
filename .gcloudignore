@@ -1,1 +1,6 @@
+# Docker 빌드에서 제외할 항목들
 node_modules
+npm-debug.log
+.git
+.gitignore
+.gcloudignore
