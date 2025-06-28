@@ -1430,67 +1430,79 @@ handlers.addScriptCard('순삭툴에 오신 것을 환영합니다!\n텍스트�
         
 // ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ 이 코드로 exporter 객체 전체를 교체하세요 ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
 
-// =================== [이 아래의 전체 코드를 복사하세요] =======================
-// ==============================================================================
-
 const exporter = {
     statusCheckInterval: null,
     
-    async preflightResourceCheck() {
-        UI.progressText.textContent = '프로젝트 리소스 검증 중...';
-        UI.progressSubText.textContent = '모든 이미지, 폰트, 오디오 파일의 유효성을 확인합니다.';
-        UI.progressBarInner.style.width = '3%';
-
-        const urlsToValidate = new Set();
-        state.scriptCards.forEach(card => {
-            if (card.media.url && !card.media.url.startsWith('blob:')) urlsToValidate.add(card.media.url);
-            if (card.sfxUrl) urlsToValidate.add(card.sfxUrl);
+    waitForMediaAndVerify(element) {
+        const mediaPromises = [];
+        const images = Array.from(element.querySelectorAll('img'));
+        images.forEach(img => {
+            if (!img.src) return;
+            if (img.complete && img.naturalWidth !== 0) return;
+            mediaPromises.push(new Promise((resolve, reject) => {
+                img.onload = resolve;
+                img.onerror = () => reject(new Error(`이미지 로드 실패: ${img.src}`));
+            }));
         });
-        if (state.globalBGM.url) urlsToValidate.add(state.globalBGM.url);
-        if (state.projectSettings.header.logo.url && !state.projectSettings.header.logo.url.startsWith('blob:')) {
-            urlsToValidate.add(state.projectSettings.header.logo.url);
-        }
-        
-        const cssText = Array.from(document.styleSheets)
-          .map(sheet => {
-            try { return Array.from(sheet.cssRules).map(rule => rule.cssText).join(''); } 
-            catch (e) { return ''; }
-          }).join('');
-        
-        const fontUrlRegex = /url\("?(https?:\/\/[^"]+)"?\)/g;
-        let match;
-        while ((match = fontUrlRegex.exec(cssText)) !== null) {
-            urlsToValidate.add(match[1]);
-        }
-        
-        const validationPromises = Array.from(urlsToValidate).map(url => {
-            return new Promise(async (resolve, reject) => {
-                if (url.startsWith('data:')) return resolve();
-                try {
-                    const proxyUrl = `${SERVICE_URL}/api/proxy?url=${encodeURIComponent(url)}`;
-                    const response = await fetch(proxyUrl);
-                    if (!response.ok) {
-                        reject(new Error(`[${response.status}] ${url}`));
-                    } else {
-                        resolve();
-                    }
-                } catch (e) {
-                    reject(new Error(`네트워크 오류: ${url}`));
-                }
-            });
+        const videos = Array.from(element.querySelectorAll('video'));
+        videos.forEach(video => {
+            if (!video.src) return;
+            if (video.readyState >= 4) return;
+            mediaPromises.push(new Promise((resolve, reject) => {
+                video.oncanplaythrough = resolve;
+                video.onerror = () => reject(new Error(`비디오 로드 실패: ${video.src}`));
+            }));
         });
+        return Promise.all(mediaPromises);
+    },
 
+    async checkStatus(jobId) {
         try {
-            await Promise.all(validationPromises);
-            UI.progressSubText.textContent = '모든 리소스가 유효합니다.';
-            UI.progressBarInner.style.width = '5%';
+            const response = await fetch(`${SERVICE_URL}/render-status/${jobId}`);
+            if (!response.ok) {
+                if (response.status === 404) return;
+                throw new Error(`상태 확인 오류: ${response.status}`);
+            }
+            const data = await response.json();
+            UI.progressSubText.textContent = data.message || '상태를 확인하고 있습니다...';
+            if (data.progress) UI.progressBarInner.style.width = `${data.progress}%`;
+            if (data.status === 'completed') {
+                clearInterval(this.statusCheckInterval);
+                UI.progressText.textContent = '영상 제작 완료!';
+                UI.progressBarInner.style.width = '100%';
+                UI.progressSubText.textContent = '다운로드를 시작합니다...';
+                try {
+                    const res = await fetch(data.videoUrl);
+                    const blob = await res.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = `${state.projectSettings.project.title || 'sunsak-video'}.mp4`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } catch (downloadError) {
+                    console.error("다운로드 오류:", downloadError);
+                    UI.progressSubText.innerHTML = `자동 다운로드 실패! <a href="${data.videoUrl}" target="_blank" download>여기서 직접 다운로드</a>`;
+                    alert("자동 다운로드에 실패했습니다. 아래 링크를 직접 클릭해주세요.");
+                }
+                setTimeout(() => {
+                    UI.progressOverlay.style.display = 'none';
+                    UI.exportBtn.disabled = false;
+                }, 3000);
+            } else if (data.status === 'failed') {
+                clearInterval(this.statusCheckInterval);
+                alert(`영상 제작에 실패했습니다. 오류: ${data.message}`);
+                UI.progressOverlay.style.display = 'none';
+                UI.exportBtn.disabled = false;
+            }
         } catch (error) {
-            throw new Error(`하나 이상의 리소스를 불러올 수 없습니다. 아래 URL이 유효한지 확인해주세요:\n\n${error.message}`);
+            console.error(error);
         }
     },
 
-    async checkStatus(jobId) { /* ... 이전과 동일 ... */ },
-
     async startExport() {
         if (state.scriptCards.length === 0) return alert('출력할 영상이 없습니다.');
         if (this.statusCheckInterval) clearInterval(this.statusCheckInterval);
@@ -1498,17 +1510,9 @@ const exporter = {
         playback.stop();
         UI.exportBtn.disabled = true;
         UI.progressOverlay.style.display = 'flex';
-        
-        try {
-            await this.preflightResourceCheck();
-        } catch (preflightError) {
-            alert(`프로젝트에 문제가 있는 리소스가 발견되었습니다.\n\n${preflightError.message}`);
-            UI.progressOverlay.style.display = 'none';
-            UI.exportBtn.disabled = false;
-            return;
-        }
-        
         UI.progressText.textContent = '렌더링 데이터 생성 중...';
+        UI.progressBarInner.style.width = '2%';
+
         const totalDuration = state.scriptCards.reduce((sum, c) => sum + c.duration, 0);
         const fps = 30;
         const totalFrames = Math.floor(totalDuration * fps);
@@ -1524,79 +1528,6 @@ const exporter = {
         const previewPanel = document.getElementById('st-preview-panel');
         const frameImages = [];
         
-        const resourceCache = new Map();
-        const fetchWithSmartCache = async (url) => { /* ... 이전과 동일 ... */ };
-        const nodeFilter = (node) => {
-            if (node.tagName === 'LINK' && node.rel && (node.rel.includes('icon') || node.rel.includes('shortcut'))) {
-                return false;
-            }
-            return true;
-        };
-
-        UI.progressSubText.textContent = '프레임 캡처를 시작합니다...';
-
-        for (let i = 0; i < totalFrames; i++) {
-            const { card, timeInCard } = frameData[i];
-            playback.updatePreviewForFrame(card, timeInCard);
-            try {
-                await new Promise(resolve => requestAnimationFrame(resolve)); // 렌더링 사이클 대기
-                const dataUrl = await htmlToImage.toPng(previewPanel, {
-                    width: 1080, height: 1920, style: { margin: 0 }, pixelRatio: 1, 
-                    fetchRequest: fetchWithSmartCache, cache: 'no-store', filter: nodeFilter
-                });
-                frameImages.push(dataUrl);
-                const progress = 5 + Math.floor((i / totalFrames) * 10); 
-                UI.progressSubText.textContent = `프레임 캡처 중... (${i + 1}/${totalFrames})`;
-                UI.progressBarInner.style.width = `${progress}%`;
-            } catch (captureError) {
-                console.error("캡처 오류:", captureError);
-                alert(`예상치 못한 프레임 캡처 오류가 발생했습니다. 잠시 후 다시 시도해주세요.`);
-                UI.progressOverlay.style.display = 'none';
-                UI.exportBtn.disabled = false;
-                return;
-            }
-        }
-            
-        const projectData = { /* ... 이전과 동일 ... */ };
-        try {
-            UI.progressText.textContent = '서버에 작업 요청 중...';
-            /* ... 이하 서버 요청 및 결과 처리 로직은 이전과 동일 ... */
-        } catch (error) { /* ... */ }
-    }
-};
-
-// checkStatus, fetchWithSmartCache, projectData, 서버요청 부분을 채운 최종 코드
-const finalExporterCode = {
-    statusCheckInterval: null,
-    async preflightResourceCheck() { /* ... 위와 동일 ... */ },
-    async checkStatus(jobId) { /* ... 위와 동일 ... */ },
-    async startExport() {
-        if (state.scriptCards.length === 0) return alert('출력할 영상이 없습니다.');
-        if (this.statusCheckInterval) clearInterval(this.statusCheckInterval);
-        playback.stop();
-        UI.exportBtn.disabled = true;
-        UI.progressOverlay.style.display = 'flex';
-        try {
-            await this.preflightResourceCheck();
-        } catch (preflightError) {
-            alert(`프로젝트에 문제가 있는 리소스가 발견되었습니다.\n\n${preflightError.message}`);
-            UI.progressOverlay.style.display = 'none';
-            UI.exportBtn.disabled = false;
-            return;
-        }
-        UI.progressText.textContent = '렌더링 데이터 생성 중...';
-        const totalDuration = state.scriptCards.reduce((sum, c) => sum + c.duration, 0);
-        const fps = 30;
-        const totalFrames = Math.floor(totalDuration * fps);
-        const frameData = [];
-        for (const card of state.scriptCards) {
-            const cardFrames = Math.floor(card.duration * fps);
-            for (let i = 0; i < cardFrames; i++) {
-                frameData.push({ card, timeInCard: i / fps });
-            }
-        }
-        const previewPanel = document.getElementById('st-preview-panel');
-        const frameImages = [];
         const resourceCache = new Map();
         const fetchWithSmartCache = async (url) => {
             if (resourceCache.has(url)) return resourceCache.get(url);
@@ -1632,33 +1563,49 @@ const finalExporterCode = {
             }
         };
         const nodeFilter = (node) => {
-            if (node.tagName === 'LINK' && node.rel && (node.rel.includes('icon') || node.rel.includes('shortcut'))) {
-                return false;
-            }
+            if (node.tagName === 'LINK' && node.rel && (node.rel.includes('icon') || node.rel.includes('shortcut'))) return false;
             return true;
         };
-        UI.progressSubText.textContent = '프레임 캡처를 시작합니다...';
+
+        UI.progressSubText.textContent = '프레임 캡처를 준비합니다...';
+
         for (let i = 0; i < totalFrames; i++) {
             const { card, timeInCard } = frameData[i];
+            
             playback.updatePreviewForFrame(card, timeInCard);
+
             try {
+                // 1. 모든 미디어의 '데이터 로딩'을 기다림
+                await this.waitForMediaAndVerify(previewPanel);
+                
+                // 2. 브라우저가 화면을 '그릴 시간'을 줌 (다음 렌더링 프레임까지 대기)
                 await new Promise(resolve => requestAnimationFrame(resolve));
+                
+                // 3. 이제 모든 것이 완벽하게 준비되었으므로, 안전하게 캡처
                 const dataUrl = await htmlToImage.toPng(previewPanel, {
                     width: 1080, height: 1920, style: { margin: 0 }, pixelRatio: 1, 
                     fetchRequest: fetchWithSmartCache, cache: 'no-store', filter: nodeFilter
                 });
                 frameImages.push(dataUrl);
-                const progress = 5 + Math.floor((i / totalFrames) * 10); 
+
+                const progress = 2 + Math.floor((i / totalFrames) * 8); 
                 UI.progressSubText.textContent = `프레임 캡처 중... (${i + 1}/${totalFrames})`;
                 UI.progressBarInner.style.width = `${progress}%`;
             } catch (captureError) {
-                console.error("캡처 오류:", captureError);
-                alert(`예상치 못한 프레임 캡처 오류가 발생했습니다. 잠시 후 다시 시도해주세요.`);
+                console.error("프레임 캡처 오류 원본:", captureError);
+                let detailedMessage = '알 수 없는 오류가 발생했습니다.';
+                if (captureError instanceof Error) {
+                    detailedMessage = captureError.message;
+                } else if (captureError.target && captureError.target.src) {
+                    detailedMessage = `아래 리소스를 불러오는 데 실패했습니다. URL이 유효한지, 혹은 삭제된 리소스가 아닌지 확인해주세요:\n\n${captureError.target.src}`;
+                }
+                alert(`프레임 캡처 중 오류가 발생했습니다.\n\n[오류 원인]\n${detailedMessage}`);
                 UI.progressOverlay.style.display = 'none';
                 UI.exportBtn.disabled = false;
                 return;
             }
         }
+            
         const projectData = {
             frameImages: frameImages,
             audioTracks: state.scriptCards.map((card, index) => ({
@@ -1670,6 +1617,7 @@ const finalExporterCode = {
             globalBGM: state.globalBGM,
             projectSettings: state.projectSettings 
         };
+
         try {
             UI.progressText.textContent = '서버에 작업 요청 중...';
             UI.progressBarInner.style.width = `15%`;
