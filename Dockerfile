@@ -68,7 +68,9 @@ RUN npm install --only=production
 COPY . .
 
 # 8. (디버깅용) 파일이 잘 복사되었는지 확인하는 단계
-RUN ls -la
+RUN echo "===== 파일 목록 확인 =====" && \
+    ls -la /app && \
+    echo "========================"
 
 # 9. 애플리케이션 포트 노출
 EXPOSE 8080
