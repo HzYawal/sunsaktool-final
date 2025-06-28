@@ -1523,7 +1523,8 @@ const exporter = {
 
             try {
                 // [핵심 수정] 폰트 로딩 오류를 해결하기 위해 font-face 규칙을 직접 주입합니다.
-                const fontFaces = await htmlToImage.getFontEmbedCss(document.body);
+                const fontFaces = await htmlToImage.getFontEmbedCSS(document.body);
+
 
                 const dataUrl = await htmlToImage.toPng(previewPanel, {
                     width: 1080,
