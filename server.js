@@ -41,6 +41,10 @@ app.post('/api/create-tts', async (req, res) => {
     } catch (error) { console.error('구글 TTS API 호출 중 오류 발생:', error); res.status(500).json({ error: error.message }); }
 });
 
+const { Storage } = require('@google-cloud/storage');
+const storage = new Storage({ projectId: GCP_PROJECT_ID });
+const JOB_DATA_BUCKET_NAME = 'sunsak-job-data'; // 새 버킷 이름
+
 app.post('/render-video', async (req, res) => {
     try {
         const projectData = req.body;
