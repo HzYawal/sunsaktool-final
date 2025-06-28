@@ -1,0 +1,7 @@
+# Docker 빌드에 포함시키지 않을 파일 및 폴더 목록
+node_modules
+npm-debug.log
+.git
+.gitignore
+.gcloudignore
+.netlify
