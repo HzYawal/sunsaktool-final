@@ -816,6 +816,100 @@ const SERVICE_URL = 'https://sunsaktool-service-741834545202.asia-northeast3.run
                 }
                 
                 state.playbackTimeoutId = setTimeout(() => { if (state.isPlaying) playback.playCardByIndex(index + 1, isMutedForRecord); }, card.duration * 1000);
+            },
+           updatePreviewForFrame(card, timeInCard) {
+                const textWrapper = document.getElementById('st-preview-text-container-wrapper');
+                const mediaWrapper = document.getElementById('st-preview-media-container-wrapper');
+                const previewTextEl = document.getElementById('st-preview-text');
+
+                [textWrapper, mediaWrapper].forEach(el => {
+                    el.style.animation = '';
+                });
+
+                render.updatePreviewDisplay();
+
+                Object.assign(document.getElementById('st-preview-text').style, card.style);
+                render.applyTransform(textWrapper, card.layout.text);
+                render.applyTransform(mediaWrapper, card.layout.media);
+
+                previewTextEl.innerHTML = '';
+                if (card.segments && card.segments.length > 0) {
+                    card.segments.forEach((segment) => {
+                        if (timeInCard >= segment.startTime) {
+                            const p = document.createElement('p');
+                            p.className = 'preview-text-segment highlight';
+                            p.textContent = segment.text || ' ';
+                            p.style.margin = 0;
+                            previewTextEl.appendChild(p);
+                        }
+                    });
+                } else {
+                    card.text.split('\n').forEach(line => {
+                        const p = document.createElement('p');
+                        p.className = 'preview-text-segment highlight';
+                        p.textContent = line || ' ';
+                        p.style.margin = 0;
+                        previewTextEl.appendChild(p);
+                    });
+                }
+                
+                let showMedia = false;
+                if (card.media && card.media.url) {
+                    const showOnSegmentIndex = (card.media.showOnSegment || 1) - 1;
+                    const showTime = (card.segments && card.segments[showOnSegmentIndex]) ? card.segments[showOnSegmentIndex].startTime : 0;
+                    if (timeInCard >= showTime) showMedia = true;
+                }
+
+                if (showMedia) {
+                    mediaWrapper.style.display = 'flex';
+                    const imageEl = document.getElementById('st-preview-image');
+                    const videoEl = document.getElementById('st-preview-video');
+                    if (card.media.type === 'video') {
+                        imageEl.style.display = 'none';
+                        videoEl.style.display = 'block';
+                        videoEl.style.objectFit = card.media.fit;
+                        if (videoEl.src !== card.media.url) videoEl.src = card.media.url;
+                        videoEl.currentTime = (card.media.startTime || 0) + timeInCard;
+                    } else {
+                        videoEl.style.display = 'none';
+                        imageEl.style.display = 'block';
+                        imageEl.style.objectFit = card.media.fit;
+                        if (imageEl.src !== card.media.url) imageEl.src = card.media.url;
+                    }
+                } else {
+                    mediaWrapper.style.display = 'none';
+                }
+
+                const applyAnimation = (el, anims, duration, time) => {
+                    if (!anims) return;
+                    const baseTransform = el.style.transform.split(' ').filter(s => !s.startsWith('translateY') && !s.startsWith('scale')).join(' ');
+                    el.style.opacity = 1;
+                    el.style.transform = baseTransform;
+                    const inDuration = anims.in.duration;
+                    const outStartTime = duration - anims.out.duration;
+                    let progress, newTransform = '';
+                    if (time < inDuration && anims.in.name !== 'none') {
+                        progress = Math.min(1, time / inDuration);
+                        if (anims.in.name === 'fadeIn') el.style.opacity = progress;
+                        if (anims.in.name === 'slideInUp') newTransform = ` translateY(${(1 - progress) * 50}px)`;
+                        if (anims.in.name === 'zoomIn') {
+                            el.style.opacity = progress;
+                            newTransform = ` scale(${0.8 + 0.2 * progress})`;
+                        }
+                    } else if (time >= outStartTime && anims.out.name !== 'none') {
+                        progress = Math.min(1, (time - outStartTime) / anims.out.duration);
+                        if (anims.out.name === 'fadeOut') el.style.opacity = 1 - progress;
+                        if (anims.out.name === 'slideOutDown') newTransform = ` translateY(${progress * 50}px)`;
+                        if (anims.out.name === 'zoomOut') {
+                            el.style.opacity = 1 - progress;
+                            newTransform = ` scale(${1 - 0.2 * progress})`;
+                        }
+                    }
+                    el.style.transform = `${baseTransform} ${newTransform}`;
+                };
+                
+                applyAnimation(textWrapper, card.animations.text, card.duration, timeInCard);
+                if(showMedia) applyAnimation(mediaWrapper, card.animations.media, card.duration, timeInCard);
             }
         };
         const handlers = {
@@ -1338,134 +1432,127 @@ handlers.addScriptCard('순삭툴에 오신 것을 환영합니다!\n텍스트�
 // =================== [붙여넣을 코드 블록 시작] ===================
 
 const exporter = {
-    // [신규] 상태 확인을 위한 변수 추가
-    statusCheckInterval: null, 
+    statusCheckInterval: null,
     
-    // [신규] 상태 확인을 주기적으로 실행하는 함수
     async checkStatus(jobId) {
         try {
-            // server.js에 새로 만든 /render-status/:jobId API를 호출합니다.
             const response = await fetch(`${SERVICE_URL}/render-status/${jobId}`);
             if (!response.ok) {
-                // 404 (작업 없음) 등의 오류는 무시하고 계속 확인합니다.
                 if (response.status === 404) return;
                 throw new Error(`상태 확인 오류: ${response.status}`);
             }
 
             const data = await response.json();
-
-            // 진행률과 메시지를 업데이트합니다.
             UI.progressSubText.textContent = data.message || '상태를 확인하고 있습니다...';
-            if (data.progress) {
-                UI.progressBarInner.style.width = `${data.progress}%`;
-            }
+            if (data.progress) UI.progressBarInner.style.width = `${data.progress}%`;
 
-            // 작업 상태에 따라 분기 처리
             if (data.status === 'completed') {
-                clearInterval(this.statusCheckInterval); // 상태 확인 중지
+                clearInterval(this.statusCheckInterval);
                 UI.progressText.textContent = '영상 제작 완료!';
                 UI.progressBarInner.style.width = '100%';
-
-                // 다운로드 링크를 생성하여 자동으로 클릭합니다.
                 UI.progressSubText.textContent = '다운로드를 시작합니다...';
-try {
-    const response = await fetch(data.videoUrl);
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.style.display = 'none';
-    a.href = url;
-    a.download = `${state.projectSettings.project.title || 'sunsak-video'}.mp4`;
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
-} catch (downloadError) {
-    console.error("다운로드 오류:", downloadError);
-    alert("자동 다운로드에 실패했습니다. 아래 링크를 직접 클릭해주세요.");
-    // 다운로드 실패 시 대체 링크 제공
-    UI.progressSubText.innerHTML = `자동 다운로드 실패! <a href="${data.videoUrl}" target="_blank" download>여기서 직접 다운로드</a>`;
-}
 
-setTimeout(() => {
-    UI.progressOverlay.style.display = 'none';
-    UI.exportBtn.disabled = false;
-}, 3000); // 3초로 늘려 다운로드할 시간을 줍니다.
+                try {
+                    const res = await fetch(data.videoUrl);
+                    const blob = await res.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = `${state.projectSettings.project.title || 'sunsak-video'}.mp4`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } catch (downloadError) {
+                    console.error("다운로드 오류:", downloadError);
+                    UI.progressSubText.innerHTML = `자동 다운로드 실패! <a href="${data.videoUrl}" target="_blank" download>여기서 직접 다운로드</a>`;
+                    alert("자동 다운로드에 실패했습니다. 아래 링크를 직접 클릭해주세요.");
+                }
+
+                setTimeout(() => {
+                    UI.progressOverlay.style.display = 'none';
+                    UI.exportBtn.disabled = false;
+                }, 3000);
 
             } else if (data.status === 'failed') {
-                clearInterval(this.statusCheckInterval); // 상태 확인 중지
+                clearInterval(this.statusCheckInterval);
                 alert(`영상 제작에 실패했습니다. 오류: ${data.message}`);
                 UI.progressOverlay.style.display = 'none';
                 UI.exportBtn.disabled = false;
             }
-            
         } catch (error) {
             console.error(error);
-            // 네트워크 오류 등으로 상태 확인이 실패하면, 잠시 후 다시 시도합니다.
         }
     },
 
-    // [수정] 영상 제작 '요청'을 보내는 함수
     async startExport() {
-        if (state.scriptCards.some(c => c.text.trim() && !c.ttsReady)) {
-            return alert('아직 음성 생성이 완료되지 않은 스크립트가 있습니다.');
-        }
-        if (state.scriptCards.length === 0) {
-            return alert('출력할 영상이 없습니다.');
-        }
-
-        // 기존의 상태 확인이 실행 중이라면 중지시킵니다.
-        if (this.statusCheckInterval) {
-            clearInterval(this.statusCheckInterval);
-        }
+        if (state.scriptCards.some(c => c.text.trim() && !c.ttsReady)) return alert('아직 음성 생성이 완료되지 않은 스크립트가 있습니다.');
+        if (state.scriptCards.length === 0) return alert('출력할 영상이 없습니다.');
+        if (this.statusCheckInterval) clearInterval(this.statusCheckInterval);
 
         playback.stop();
         UI.exportBtn.disabled = true;
         UI.progressOverlay.style.display = 'flex';
-        UI.progressText.textContent = '영상 제작을 요청하는 중...';
-        UI.progressSubText.textContent = '서버에 작업을 등록하고 있습니다.';
-        UI.progressBarInner.style.width = '5%';
+        UI.progressText.textContent = '렌더링 데이터 생성 중...';
+        UI.progressSubText.textContent = '미리보기 화면을 캡처하고 있습니다.';
+        UI.progressBarInner.style.width = '2%';
 
-        const toBase64 = async (url) => {
-            if (!url || !url.startsWith('blob:')) return url;
-            try {
-                const response = await fetch(url);
-                const blob = await response.blob();
-                return new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.readAsDataURL(blob);
-                    reader.onloadend = () => resolve(reader.result);
-                    reader.onerror = error => reject(error);
-                });
-            } catch (e) {
-                console.error(`Blob to Base64 변환 실패: ${url}`, e);
-                return null;
+        const totalDuration = state.scriptCards.reduce((sum, c) => sum + c.duration, 0);
+        const fps = 30;
+        const totalFrames = Math.floor(totalDuration * fps);
+        const frameData = [];
+
+        for (const card of state.scriptCards) {
+            const cardFrames = Math.floor(card.duration * fps);
+            for (let i = 0; i < cardFrames; i++) {
+                frameData.push({ card, timeInCard: i / fps });
             }
+        }
+
+        const previewPanel = document.getElementById('st-preview-panel');
+        const frameImages = [];
+
+        for (let i = 0; i < frameData.length; i++) {
+            const { card, timeInCard } = frameData[i];
+            
+            playback.updatePreviewForFrame(card, timeInCard);
+
+            try {
+                const dataUrl = await htmlToImage.toPng(previewPanel, {
+                    width: 1080,
+                    height: 1920,
+                    style: { margin: 0 }
+                });
+                frameImages.push(dataUrl);
+
+                const progress = 2 + Math.floor((i / totalFrames) * 8);
+                UI.progressSubText.textContent = `프레임 캡처 중... (${i + 1}/${totalFrames})`;
+                UI.progressBarInner.style.width = `${progress}%`;
+            } catch (captureError) {
+                console.error("프레임 캡처 오류:", captureError);
+                alert("프레임 캡처 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+                UI.progressOverlay.style.display = 'none';
+                UI.exportBtn.disabled = false;
+                return;
+            }
+        }
+        
+        const projectData = {
+            frameImages: frameImages,
+            audioTracks: state.scriptCards.map(card => ({
+                duration: card.duration,
+                audioUrl: card.audioUrl,
+                ttsVolume: card.ttsVolume,
+                sfxUrl: card.sfxUrl,
+                sfxVolume: card.sfxVolume
+            })),
+            globalBGM: state.globalBGM,
+            projectSettings: state.projectSettings
         };
 
-        const projectDataForRender = JSON.parse(JSON.stringify(state));
-
         try {
-            const conversionPromises = projectDataForRender.scriptCards.map(async (card) => {
-                if (card.media.url) card.media.url = await toBase64(card.media.url);
-                return card;
-            });
-            if (projectDataForRender.projectSettings.header.logo.url) {
-                projectDataForRender.projectSettings.header.logo.url = await toBase64(projectDataForRender.projectSettings.header.logo.url);
-            }
-            await Promise.all(conversionPromises);
-
-            const previewPanelEl = document.getElementById('st-preview-panel');
-            const projectData = {
-                projectSettings: projectDataForRender.projectSettings,
-                scriptCards: projectDataForRender.scriptCards,
-                globalBGM: projectDataForRender.globalBGM,
-                renderMetadata: {
-                    sourceWidth: previewPanelEl.clientWidth || 420
-                }
-            };
-            
-            // [수정] fetch 경로를 SERVICE_URL 상수를 사용하도록 변경
+            UI.progressText.textContent = '서버에 작업 요청 중...';
             const response = await fetch(`${SERVICE_URL}/render-video`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1473,21 +1560,17 @@ setTimeout(() => {
             });
 
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ message: '서버 응답을 JSON으로 파싱할 수 없습니다.' }));
-                throw new Error(`서버 오류 (${response.status}): ${errorData.message || '알 수 없는 오류가 발생했습니다.'}`);
+                const errorData = await response.json().catch(() => ({ message: '서버 응답 오류' }));
+                throw new Error(`서버 오류 (${response.status}): ${errorData.message || '알 수 없는 오류'}`);
             }
 
             const result = await response.json();
-            
-            // [핵심 변경] 서버로부터 받은 jobId로 상태 확인을 시작합니다.
             if (result.success && result.jobId) {
                 UI.progressText.textContent = '영상 제작이 시작되었습니다!';
-                // 5초마다 checkStatus 함수를 실행하여 진행 상황을 확인합니다.
                 this.statusCheckInterval = setInterval(() => this.checkStatus(result.jobId), 5000);
             } else {
                 throw new Error('서버에서 유효한 작업 ID를 받지 못했습니다.');
             }
-
         } catch (error) {
             console.error("영상 생성 요청 오류:", error);
             alert(`영상 생성 요청 중 오류가 발생했습니다:\n${error.message}`);
