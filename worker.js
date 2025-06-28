@@ -86,15 +86,102 @@ async function renderVideo(jobId) {
             for (let i = 0; i < cardFrames; i++) {
                 const timeInCard = i / fps;
                 
-                await page.evaluate(async (args) => {
-                    const { project, currentCard, mediaInfo, t } = args;
-                    const scale = 1080 / (project.renderMetadata.sourceWidth || 420);
-                    const pSettings = project.projectSettings;
-                    
-                    document.querySelector('.st-preview-header').style.backgroundColor = pSettings.header.backgroundColor;
-                    document.querySelector('.header-title').innerText = pSettings.header.text;
-                    document.querySelector('#st-preview-text').innerText = currentCard.text;
-                }, { project: projectData, currentCard: card, mediaInfo: mediaToRender, t: timeInCard });
+                // ▼▼▼▼▼▼▼▼▼▼▼ 이 코드로 page.evaluate(...) 부분을 교체하세요 ▼▼▼▼▼▼▼▼▼▼▼
+
+// [핵심] Playwright의 브라우저 내부에서 모든 렌더링 로직 실행
+await page.evaluate(async (args) => {
+    const { project, currentCard, mediaInfo, t } = args;
+    const scale = 1080 / (project.renderMetadata.sourceWidth || 420);
+    const pSettings = project.projectSettings;
+
+    // --- Helper 함수 ---
+    const applyTransform = (el, layout) => {
+        if (!el || !layout) return;
+        const transform = `translate(${layout.x * scale}px, ${layout.y * scale}px) scale(${layout.scale || 1}) rotate(${layout.angle || 0}deg)`;
+        el.style.transform = transform;
+    };
+    const applyAnimation = (el, anims, duration, time) => {
+        if (!el || !anims) return;
+        // 애니메이션은 복잡하므로 이 예제에서는 생략하지만,
+        // 필요하다면 클라이언트의 applyAnimation 로직을 그대로 가져와 scale을 적용할 수 있습니다.
+        el.style.animation = 'none'; // 서버 렌더링 시에는 애니메이션을 비활성화하는 것이 안정적일 수 있습니다.
+    };
+
+    // --- DOM 요소 선택 ---
+    const headerEl = document.querySelector('.st-preview-header');
+    const headerTitleEl = headerEl.querySelector('.header-title');
+    const headerLogoEl = document.getElementById('header-logo');
+    const projectInfoEl = document.querySelector('.st-project-info');
+    const projectInfoTitleEl = projectInfoEl.querySelector('.title');
+    const projectInfoSpanEl = projectInfoEl.querySelector('span');
+    const textWrapper = document.querySelector('#st-preview-text-container-wrapper');
+    const textEl = document.querySelector('#st-preview-text');
+    const mediaWrapper = document.querySelector('#st-preview-media-container-wrapper');
+    const imageEl = document.querySelector('#st-preview-image');
+    const videoEl = document.querySelector('#st-preview-video');
+    
+    // --- 스타일 및 내용 적용 ---
+    // 헤더
+    headerEl.style.height = `${pSettings.header.height || 65 * scale}px`; // 클라이언트에서 높이 값을 전달했다고 가정
+    headerEl.style.padding = `0 ${15 * scale}px`;
+    headerEl.style.backgroundColor = pSettings.header.backgroundColor;
+    headerTitleEl.innerText = pSettings.header.text;
+    headerTitleEl.style.color = pSettings.header.color;
+    headerTitleEl.style.fontFamily = pSettings.header.fontFamily;
+    headerTitleEl.style.fontSize = `${pSettings.header.fontSize * scale}px`;
+    
+    if (pSettings.header.logo.url) {
+        if(headerLogoEl.src !== pSettings.header.logo.url) headerLogoEl.src = pSettings.header.logo.url;
+        headerLogoEl.style.width = `${pSettings.header.logo.size * scale}px`;
+        headerLogoEl.style.height = `${pSettings.header.logo.size * scale}px`;
+        headerLogoEl.style.display = 'block';
+    } else {
+        headerLogoEl.style.display = 'none';
+    }
+
+    // 프로젝트 정보
+    projectInfoTitleEl.innerText = pSettings.project.title;
+    projectInfoTitleEl.style.color = pSettings.project.titleColor;
+    projectInfoTitleEl.style.fontFamily = pSettings.project.titleFontFamily;
+    projectInfoTitleEl.style.fontSize = `${pSettings.project.titleFontSize * scale}px`;
+    projectInfoSpanEl.innerText = `${pSettings.project.author || ''} | 조회수 ${Number(pSettings.project.views || 0).toLocaleString()}`;
+    projectInfoSpanEl.style.color = pSettings.project.metaColor;
+    projectInfoSpanEl.style.fontSize = `${13 * scale}px`;
+
+    // 텍스트 스타일
+    const scaledStyle = { ...currentCard.style };
+    scaledStyle.fontSize = `${parseFloat(currentCard.style.fontSize) * scale}px`;
+    scaledStyle.letterSpacing = `${parseFloat(currentCard.style.letterSpacing) * scale}px`;
+    Object.assign(textEl.style, scaledStyle);
+    
+    // 텍스트/미디어 위치
+    applyTransform(textWrapper, currentCard.layout.text);
+
+    // 텍스트 내용
+    textEl.innerText = currentCard.text;
+    
+    // 미디어 표시
+    mediaWrapper.style.display = 'none';
+    if (mediaInfo.media && mediaInfo.media.url) {
+        mediaWrapper.style.display = 'flex';
+        applyTransform(mediaWrapper, mediaInfo.layout);
+        if (mediaInfo.media.type === 'video') {
+            imageEl.style.display = 'none';
+            videoEl.style.display = 'block';
+            videoEl.style.objectFit = mediaInfo.media.fit;
+            if (videoEl.src !== mediaInfo.media.url) videoEl.src = mediaInfo.media.url;
+            videoEl.currentTime = (mediaInfo.media.startTime || 0) + t;
+        } else {
+            imageEl.style.display = 'none';
+            imageEl.style.display = 'block';
+            imageEl.style.objectFit = mediaInfo.media.fit;
+            if (imageEl.src !== mediaInfo.media.url) imageEl.src = mediaInfo.media.url;
+        }
+    }
+
+}, { project: projectData, currentCard: card, mediaInfo: mediaToRender, t: timeInCard });
+
+// ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
                 await page.evaluate(async () => {
                     const media = Array.from(document.querySelectorAll('img, video'));
