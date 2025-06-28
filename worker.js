@@ -125,9 +125,11 @@ async function renderVideo(jobId, projectData) {
         await updateJobStatus(jobId, 'completed', '영상 제작이 완료되었습니다.', 100);
         await firestore.collection('renderJobs').doc(jobId).set({ videoUrl, completedAt: new Date() }, { merge: true });
         console.log(`[${jobId}] 작업 완료! 최종 영상 URL: ${videoUrl}`);
-    } catch (error) {
-        console.error(`[${jobId}] 렌더링 워커 오류 발생:`, error);
-        await updateJobStatus(jobId, 'failed', `오류가 발생했습니다: ${error.message}`);
+     } catch (error) {
+        // [수정] 오류 스택(stack) 전체를 출력하여 더 자세한 정보를 얻습니다.
+        console.error(`[${jobId}] 렌더링 워커 오류 발생! 상세 정보:`, error.stack);
+        // Firestore에 저장하는 메시지도 더 상세하게 변경합니다.
+        await updateJobStatus(jobId, 'failed', `오류 발생: ${error.message}. 자세한 내용은 서버 로그를 확인하세요.`);
     } finally {
         if (browser) await browser.close();
         if (await fs.pathExists(tempDir)) await fs.remove(tempDir);
