@@ -1,5 +1,5 @@
 // ===============================================
-//  worker.js (Playwright를 사용하는 최종 안정화 버전)
+//  worker.js (최종 수정 완료 버전)
 // ===============================================
 console.log('--- [0/11] 워커 프로세스 시작 ---');
 
@@ -24,7 +24,6 @@ try {
     const fetch = require('node-fetch');
     console.log('[5/11] node-fetch 로딩 성공!');
 
-    // [수정] puppeteer 대신 playwright를 불러옵니다.
     console.log('[6/11] playwright 로딩 시도...');
     const { chromium } = require('playwright'); 
     console.log('[6/11] playwright 로딩 성공!');
@@ -91,27 +90,20 @@ try {
             await updateJobStatus(jobId, 'processing', '비디오 프레임 캡처를 시작합니다.', 10);
             console.log(`[${jobId}] --- [F] Playwright 실행 시도 ---`);
 
-            // [핵심 수정] Puppeteer 실행 코드를 Playwright로 완전히 교체합니다.
-            // Playwright는 공식 Docker 이미지 덕분에 복잡한 인수가 거의 필요 없습니다.
-             browser = await chromium.launch({
-            args: [
-                '--no-sandbox',
-                '--disable-dev-shm-usage'
-            ]
-        });
-        
-        console.log(`[${jobId}] --- [G] Playwright 브라우저 성공적으로 실행됨! ---`);
-
-        const page = await browser.newPage();
-            
+            // [수정 완료] 중복 코드를 제거하고 올바르게 하나로 합친 부분
+            browser = await chromium.launch({
+                args: [
+                    '--no-sandbox',
+                    '--disable-dev-shm-usage'
+                ]
+            });
             console.log(`[${jobId}] --- [G] Playwright 브라우저 성공적으로 실행됨! ---`);
 
             const page = await browser.newPage();
-            await page.setViewportSize({ width: 1080, height: 1920 }); // setViewportSize로 변경
+            await page.setViewportSize({ width: 1080, height: 1920 });
             const renderTemplateContent = await fs.readFile(path.join(__dirname, 'render_template.html'), 'utf-8');
-            await page.setContent(renderTemplateContent, { waitUntil: 'networkidle' }); // networkidle0 대신 networkidle
+            await page.setContent(renderTemplateContent, { waitUntil: 'networkidle' });
             
-            // 폰트 로드는 그대로 유지
             await page.evaluate(async () => { await Promise.all(Array.from(document.fonts).map(font => font.load())); });
 
             let frameCount = 0;
@@ -124,14 +116,14 @@ try {
                 for (let i = 0; i < cardFrames; i++) {
                     const timeInCard = i / fps;
                     
-                    // page.evaluate 안의 코드는 Puppeteer와 Playwright가 거의 동일하므로 수정할 필요가 없습니다.
+                    // [수정 완료] page.evaluate 내부의 변수명을 'card'로 모두 통일했습니다.
                     await page.evaluate((args) => {
-                         const { project, card, mediaInfo, t } = args;
-                        const scale = 1080 / project.renderMetadata.sourceWidth; const pSettings = project.projectSettings; const headerEl = document.querySelector('.st-preview-header'); const headerTitleEl = headerEl.querySelector('.header-title'); const headerIconEl = headerEl.querySelector('.header-icon'); const headerLogoEl = headerEl.querySelector('.header-logo'); headerEl.style.height = `${65 * scale}px`; headerEl.style.padding = `0 ${15 * scale}px`; headerEl.style.backgroundColor = pSettings.header.backgroundColor; headerTitleEl.innerText = pSettings.header.text; headerTitleEl.style.color = pSettings.header.color; headerTitleEl.style.fontFamily = pSettings.header.fontFamily; headerTitleEl.style.fontSize = `${pSettings.header.fontSize * scale}px`; const iconSVG = { back: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${pSettings.header.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>`, menu: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${pSettings.header.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>` }; headerIconEl.innerHTML = iconSVG[pSettings.header.icon] || ''; if (pSettings.header.logo.url) { headerLogoEl.src = pSettings.header.logo.url; headerLogoEl.style.width = `${pSettings.header.logo.size * scale}px`; headerLogoEl.style.height = `${pSettings.header.logo.size * scale}px`; headerLogoEl.style.display = 'block'; } else { headerLogoEl.style.display = 'none'; } const projectInfoEl = document.querySelector('.st-project-info'); projectInfoEl.style.paddingBottom = `${16 * scale}px`; projectInfoEl.style.marginBottom = `${16 * scale}px`; const projectInfoTitleEl = projectInfoEl.querySelector('.title'); projectInfoTitleEl.innerText = pSettings.project.title; projectInfoTitleEl.style.color = pSettings.project.titleColor; projectInfoTitleEl.style.fontFamily = pSettings.project.titleFontFamily; projectInfoTitleEl.style.fontSize = `${pSettings.project.titleFontSize * scale}px`; projectInfoTitleEl.style.marginBottom = `${5 * scale}px`; const projectInfoSpanEl = projectInfoEl.querySelector('span'); projectInfoSpanEl.innerText = `${pSettings.project.author || ''} | 조회수 ${Number(pSettings.project.views || 0).toLocaleString()}`; projectInfoSpanEl.style.color = pSettings.project.metaColor; projectInfoSpanEl.style.fontSize = `${13 * scale}px`; const textWrapper = document.querySelector('#st-preview-text-container-wrapper'); const textEl = document.querySelector('#st-preview-text'); const mediaWrapper = document.querySelector('#st-preview-media-container-wrapper'); const imageEl = document.querySelector('#st-preview-image'); const videoEl = document.querySelector('#st-preview-video'); const scaledStyle = { ...card.style }; scaledStyle.fontSize = `${parseFloat(card.style.fontSize) * scale}px`; scaledStyle.lineHeight = card.style.lineHeight; scaledStyle.letterSpacing = `${parseFloat(card.style.letterSpacing) * scale}px`; Object.assign(textEl.style, scaledStyle); textWrapper.style.transform = `translate(${card.layout.text.x * scale}px, ${card.layout.text.y * scale}px) scale(${card.layout.text.scale || 1}) rotate(${card.layout.text.angle || 0}deg)`; let showMedia = false; if(mediaInfo.media && mediaInfo.media.url) { const showOnSegmentIndex = mediaInfo.media.showOnSegment - 1; const showTime = (card.segments[showOnSegmentIndex] || {startTime: 0}).startTime; if (t >= showTime) showMedia = true; } if(showMedia) { mediaWrapper.style.display = 'flex'; mediaWrapper.style.transform = `translate(${mediaInfo.layout.x * scale}px, ${mediaInfo.layout.y * scale}px) scale(${mediaInfo.layout.scale || 1}) rotate(${mediaInfo.layout.angle || 0}deg)`; if (mediaInfo.media.type === 'video') { imageEl.style.display = 'none'; videoEl.style.display = 'block'; videoEl.style.objectFit = mediaInfo.media.fit; if (videoEl.src !== mediaInfo.media.url) videoEl.src = mediaInfo.media.url; videoEl.currentTime = (mediaInfo.media.startTime || 0) + t; } else { videoEl.style.display = 'none'; imageEl.style.display = 'block'; imageEl.style.objectFit = mediaInfo.media.fit; if (imageEl.src !== mediaInfo.media.url) imageEl.src = mediaInfo.media.url; } } else { mediaWrapper.style.display = 'none'; } textEl.innerHTML = ''; const hasCustomSequence = card.animationSequence && card.animationSequence.length > 0; if (hasCustomSequence) { (card.segments || []).forEach(segment => { if (t >= segment.startTime) { const p = document.createElement('p'); p.textContent = segment.text || ' '; p.style.margin = 0; textEl.appendChild(p); } }); } else {card.text.split('\n').forEach(line => { const p = document.createElement('p'); p.textContent = line || ' '; p.style.margin = 0; textEl.appendChild(p); }); } const applyAnimation = (el, anims, duration, time) => { const baseTransform = el.style.transform.split(' ').filter(s => !s.startsWith('translateY') && !s.startsWith('scale')).join(' '); el.style.opacity = 1; el.style.transform = baseTransform; const inDuration = anims.in.duration; const outStartTime = duration - anims.out.duration; let progress, newTransform = ''; if (time < inDuration && anims.in.name !== 'none') { progress = Math.min(1, time / inDuration); if(anims.in.name === 'fadeIn') el.style.opacity = progress; if(anims.in.name === 'slideInUp') newTransform = ` translateY(${(1 - progress) * 50 * scale}px)`; if(anims.in.name === 'zoomIn') { el.style.opacity = progress; newTransform = ` scale(${0.8 + 0.2 * progress})`; } } else if (time >= outStartTime && anims.out.name !== 'none') { progress = Math.min(1, (time - outStartTime) / anims.out.duration); if(anims.out.name === 'fadeOut') el.style.opacity = 1 - progress; if(anims.out.name === 'slideOutDown') newTransform = ` translateY(${progress * 50 * scale}px)`; if(anims.out.name === 'zoomOut') { el.style.opacity = 1 - progress; newTransform = ` scale(${1 - 0.2 * progress})`; } } el.style.transform = `${baseTransform} ${newTransform}`; }; applyAnimation(textWrapper, card.animations.text, card.duration, t); if(showMedia) applyAnimation(mediaWrapper, mediaInfo.animations, card.duration, t);
-                    }, { project: projectData, card: card, mediaInfo: mediaToRender, t: timeInCard }); // 인자를 객체로 전달
+                        const { project, card, mediaInfo, t } = args;
+                        const scale = 1080 / project.renderMetadata.sourceWidth; const pSettings = project.projectSettings; const headerEl = document.querySelector('.st-preview-header'); const headerTitleEl = headerEl.querySelector('.header-title'); const headerIconEl = headerEl.querySelector('.header-icon'); const headerLogoEl = headerEl.querySelector('.header-logo'); headerEl.style.height = `${65 * scale}px`; headerEl.style.padding = `0 ${15 * scale}px`; headerEl.style.backgroundColor = pSettings.header.backgroundColor; headerTitleEl.innerText = pSettings.header.text; headerTitleEl.style.color = pSettings.header.color; headerTitleEl.style.fontFamily = pSettings.header.fontFamily; headerTitleEl.style.fontSize = `${pSettings.header.fontSize * scale}px`; const iconSVG = { back: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${pSettings.header.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>`, menu: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${pSettings.header.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>` }; headerIconEl.innerHTML = iconSVG[pSettings.header.icon] || ''; if (pSettings.header.logo.url) { headerLogoEl.src = pSettings.header.logo.url; headerLogoEl.style.width = `${pSettings.header.logo.size * scale}px`; headerLogoEl.style.height = `${pSettings.header.logo.size * scale}px`; headerLogoEl.style.display = 'block'; } else { headerLogoEl.style.display = 'none'; } const projectInfoEl = document.querySelector('.st-project-info'); projectInfoEl.style.paddingBottom = `${16 * scale}px`; projectInfoEl.style.marginBottom = `${16 * scale}px`; const projectInfoTitleEl = projectInfoEl.querySelector('.title'); projectInfoTitleEl.innerText = pSettings.project.title; projectInfoTitleEl.style.color = pSettings.project.titleColor; projectInfoTitleEl.style.fontFamily = pSettings.project.titleFontFamily; projectInfoTitleEl.style.fontSize = `${pSettings.project.titleFontSize * scale}px`; projectInfoTitleEl.style.marginBottom = `${5 * scale}px`; const projectInfoSpanEl = projectInfoEl.querySelector('span'); projectInfoSpanEl.innerText = `${pSettings.project.author || ''} | 조회수 ${Number(pSettings.project.views || 0).toLocaleString()}`; projectInfoSpanEl.style.color = pSettings.project.metaColor; projectInfoSpanEl.style.fontSize = `${13 * scale}px`; const textWrapper = document.querySelector('#st-preview-text-container-wrapper'); const textEl = document.querySelector('#st-preview-text'); const mediaWrapper = document.querySelector('#st-preview-media-container-wrapper'); const imageEl = document.querySelector('#st-preview-image'); const videoEl = document.querySelector('#st-preview-video'); const scaledStyle = { ...card.style }; scaledStyle.fontSize = `${parseFloat(card.style.fontSize) * scale}px`; scaledStyle.lineHeight = card.style.lineHeight; scaledStyle.letterSpacing = `${parseFloat(card.style.letterSpacing) * scale}px`; Object.assign(textEl.style, scaledStyle); textWrapper.style.transform = `translate(${card.layout.text.x * scale}px, ${card.layout.text.y * scale}px) scale(${card.layout.text.scale || 1}) rotate(${card.layout.text.angle || 0}deg)`; let showMedia = false; if(mediaInfo.media && mediaInfo.media.url) { const showOnSegmentIndex = mediaInfo.media.showOnSegment - 1; const showTime = (card.segments[showOnSegmentIndex] || {startTime: 0}).startTime; if (t >= showTime) showMedia = true; } if(showMedia) { mediaWrapper.style.display = 'flex'; mediaWrapper.style.transform = `translate(${mediaInfo.layout.x * scale}px, ${mediaInfo.layout.y * scale}px) scale(${mediaInfo.layout.scale || 1}) rotate(${mediaInfo.layout.angle || 0}deg)`; if (mediaInfo.media.type === 'video') { imageEl.style.display = 'none'; videoEl.style.display = 'block'; videoEl.style.objectFit = mediaInfo.media.fit; if (videoEl.src !== mediaInfo.media.url) videoEl.src = mediaInfo.media.url; videoEl.currentTime = (mediaInfo.media.startTime || 0) + t; } else { videoEl.style.display = 'none'; imageEl.style.display = 'block'; imageEl.style.objectFit = mediaInfo.media.fit; if (imageEl.src !== mediaInfo.media.url) imageEl.src = mediaInfo.media.url; } } else { mediaWrapper.style.display = 'none'; } textEl.innerHTML = ''; const hasCustomSequence = card.animationSequence && card.animationSequence.length > 0; if (hasCustomSequence) { (card.segments || []).forEach(segment => { if (t >= segment.startTime) { const p = document.createElement('p'); p.textContent = segment.text || ' '; p.style.margin = 0; textEl.appendChild(p); } }); } else { card.text.split('\n').forEach(line => { const p = document.createElement('p'); p.textContent = line || ' '; p.style.margin = 0; textEl.appendChild(p); }); } const applyAnimation = (el, anims, duration, time) => { const baseTransform = el.style.transform.split(' ').filter(s => !s.startsWith('translateY') && !s.startsWith('scale')).join(' '); el.style.opacity = 1; el.style.transform = baseTransform; const inDuration = anims.in.duration; const outStartTime = duration - anims.out.duration; let progress, newTransform = ''; if (time < inDuration && anims.in.name !== 'none') { progress = Math.min(1, time / inDuration); if(anims.in.name === 'fadeIn') el.style.opacity = progress; if(anims.in.name === 'slideInUp') newTransform = ` translateY(${(1 - progress) * 50 * scale}px)`; if(anims.in.name === 'zoomIn') { el.style.opacity = progress; newTransform = ` scale(${0.8 + 0.2 * progress})`; } } else if (time >= outStartTime && anims.out.name !== 'none') { progress = Math.min(1, (time - outStartTime) / anims.out.duration); if(anims.out.name === 'fadeOut') el.style.opacity = 1 - progress; if(anims.out.name === 'slideOutDown') newTransform = ` translateY(${progress * 50 * scale}px)`; if(anims.out.name === 'zoomOut') { el.style.opacity = 1 - progress; newTransform = ` scale(${1 - 0.2 * progress})`; } } el.style.transform = `${baseTransform} ${newTransform}`; }; applyAnimation(textWrapper, card.animations.text, card.duration, t); if(showMedia) applyAnimation(mediaWrapper, mediaInfo.animations, card.duration, t);
+                    }, { project: projectData, card: card, mediaInfo: mediaToRender, t: timeInCard });
 
                     const framePath = path.join(framesDir, `frame_${String(frameCount).padStart(6, '0')}.png`);
-                    await page.screenshot({ path: framePath }); // screenshot은 동일
+                    await page.screenshot({ path: framePath });
                     frameCount++;
                     const currentProgress = 10 + Math.floor((frameCount / totalFramesToRender) * 40);
                     if(frameCount % 30 === 0) { await updateJobStatus(jobId, 'processing', `${cardIndex + 1}번째 클립 렌더링 중...`, currentProgress); }
@@ -141,7 +133,6 @@ try {
             await browser.close();
             await updateJobStatus(jobId, 'processing', '오디오 트랙을 처리하고 있습니다.', 55);
 
-            // ... 이하 오디오 및 FFmpeg 부분은 수정 없이 동일하게 작동합니다 ...
             const audioRenderPromise = (async () => {
                 const audioTracks = []; let currentTime = 0;
                 if (projectData.globalBGM && projectData.globalBGM.url) { try { const response = await fetch(projectData.globalBGM.url); const path = `${audioDir}/bgm.mp3`; await fs.writeFile(path, await response.buffer()); audioTracks.push({ type: 'bgm', path, volume: projectData.globalBGM.volume || 0.3 }); } catch (e) { console.error('BGM 다운로드 실패:', e); } }
@@ -221,7 +212,6 @@ try {
     });
 
 } catch (e) {
-    // 만약 require() 도중 오류가 발생하면, 이 로그가 남습니다.
     console.error('--- [!!!] 최상위 레벨에서 모듈 로딩 중 치명적인 오류 발생 ---');
     console.error(e.stack);
 }
