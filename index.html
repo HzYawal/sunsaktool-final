@@ -1487,6 +1487,9 @@ const exporter = {
     },
 
     async startExport() {
+
+      await Promise.all(state.scriptCards.filter(c => c.text.trim() && !c.isDurationManual).map(c => handlers.updateCardDuration(c.id)));
+       
         if (state.scriptCards.some(c => c.text.trim() && !c.ttsReady)) return alert('아직 음성 생성이 완료되지 않은 스크립트가 있습니다.');
         if (state.scriptCards.length === 0) return alert('출력할 영상이 없습니다.');
         if (this.statusCheckInterval) clearInterval(this.statusCheckInterval);
