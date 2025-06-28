@@ -1367,19 +1367,30 @@ const exporter = {
                 UI.progressBarInner.style.width = '100%';
 
                 // 다운로드 링크를 생성하여 자동으로 클릭합니다.
-                const a = document.createElement('a');
-                a.href = data.videoUrl;
-                a.download = `${state.projectSettings.project.title || 'sunsak-video'}.mp4`;
-                a.target = '_blank'; // 새 탭에서 다운로드 링크를 엽니다.
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
+                UI.progressSubText.textContent = '다운로드를 시작합니다...';
+try {
+    const response = await fetch(data.videoUrl);
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = `${state.projectSettings.project.title || 'sunsak-video'}.mp4`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+} catch (downloadError) {
+    console.error("다운로드 오류:", downloadError);
+    alert("자동 다운로드에 실패했습니다. 아래 링크를 직접 클릭해주세요.");
+    // 다운로드 실패 시 대체 링크 제공
+    UI.progressSubText.innerHTML = `자동 다운로드 실패! <a href="${data.videoUrl}" target="_blank" download>여기서 직접 다운로드</a>`;
+}
 
-                // 2초 후 오버레이를 닫습니다.
-                setTimeout(() => {
-                    UI.progressOverlay.style.display = 'none';
-                    UI.exportBtn.disabled = false;
-                }, 2000);
+setTimeout(() => {
+    UI.progressOverlay.style.display = 'none';
+    UI.exportBtn.disabled = false;
+}, 3000); // 3초로 늘려 다운로드할 시간을 줍니다.
 
             } else if (data.status === 'failed') {
                 clearInterval(this.statusCheckInterval); // 상태 확인 중지
