@@ -1432,29 +1432,6 @@ handlers.addScriptCard('순삭툴에 오신 것을 환영합니다!\n텍스트�
 
 const exporter = {
     statusCheckInterval: null,
-    
-    waitForMediaAndVerify(element) {
-        const mediaPromises = [];
-        const images = Array.from(element.querySelectorAll('img'));
-        images.forEach(img => {
-            if (!img.src) return;
-            if (img.complete && img.naturalWidth !== 0) return;
-            mediaPromises.push(new Promise((resolve, reject) => {
-                img.onload = resolve;
-                img.onerror = () => reject(new Error(`이미지 로드 실패: ${img.src}`));
-            }));
-        });
-        const videos = Array.from(element.querySelectorAll('video'));
-        videos.forEach(video => {
-            if (!video.src) return;
-            if (video.readyState >= 4) return;
-            mediaPromises.push(new Promise((resolve, reject) => {
-                video.oncanplaythrough = resolve;
-                video.onerror = () => reject(new Error(`비디오 로드 실패: ${video.src}`));
-            }));
-        });
-        return Promise.all(mediaPromises);
-    },
 
     async checkStatus(jobId) {
         try {
@@ -1528,85 +1505,29 @@ const exporter = {
         const previewPanel = document.getElementById('st-preview-panel');
         const frameImages = [];
         
-        const resourceCache = new Map();
-        const fetchWithSmartCache = async (url) => {
-            if (resourceCache.has(url)) return resourceCache.get(url);
-            const toDataURL = (blob) => new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result);
-                reader.onerror = reject;
-                reader.readAsDataURL(blob);
-            });
-            try {
-                let dataUrl;
-                if (url.startsWith('data:')) {
-                    if (!url.startsWith('data:image/') && !url.startsWith('data:font/')) throw new Error(`Invalid data URL MIME type: ${url.substring(0, 30)}...`);
-                    dataUrl = url;
-                } else if (url.startsWith('blob:')) {
-                    const response = await fetch(url);
-                    const blob = await response.blob();
-                    dataUrl = await toDataURL(blob);
-                } else {
-                    const proxyUrl = `${SERVICE_URL}/api/proxy?url=${encodeURIComponent(url)}`;
-                    const response = await fetch(proxyUrl);
-                    if (!response.ok) throw new Error(`Proxy Error: Status ${response.status} for ${url}`);
-                    const contentType = response.headers.get('Content-Type');
-                    if (!contentType || (!contentType.startsWith('image/') && !contentType.startsWith('font/'))) throw new Error(`Invalid content-type: ${contentType} for ${url}`);
-                    const blob = await response.blob();
-                    dataUrl = await toDataURL(blob);
-                }
-                resourceCache.set(url, dataUrl);
-                return dataUrl;
-            } catch (error) {
-                console.error(`Failed to fetch resource: ${url}`, error);
-                throw error;
-            }
-        };
-        // ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ 이 코드로 교체하세요 ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
-// [최종 버전] 시각적으로 불필요한 모든 요소를 제외하는 가장 강력한 필터
-const nodeFilter = (node) => {
-    // 1. 제외할 태그 목록 (스크립트, 오디오 플레이어 등)
-    const EXCLUDED_TAGS = ['SCRIPT', 'AUDIO', 'LINK'];
-    if (EXCLUDED_TAGS.includes(node.tagName)) {
-        return false;
-    }
-    // 2. src 속성이 없는 이미지 태그는 무시
-    if (node.tagName === 'IMG' && !node.src) {
-        return false;
-    }
-    // 그 외 모든 요소는 캡처에 포함
-    return true;
-};
-
         UI.progressSubText.textContent = '프레임 캡처를 준비합니다...';
 
         for (let i = 0; i < totalFrames; i++) {
-
-           console.log(`[프레임 ${i}] 카드 ID: ${frameData[i].card.id} 캡처 시도...`);
-            console.log('카드 데이터:', JSON.parse(JSON.stringify(frameData[i].card)));
-           
             const { card, timeInCard } = frameData[i];
             
             playback.updatePreviewForFrame(card, timeInCard);
 
             try {
-                // 1. 모든 미디어의 '데이터 로딩'을 기다림
-                await this.waitForMediaAndVerify(previewPanel);
-                
-                // 2. [최종 핵심] 브라우저가 화면을 '그릴 시간'을 줌 (다음 렌더링 프레임까지 대기)
-                await new Promise(resolve => requestAnimationFrame(resolve));
-                
-                // 3. 이제 모든 것이 완벽하게 준비되었으므로, 안전하게 캡처
+                // [엔진 교체] html-to-image 대신 html2canvas를 사용합니다.
                 const canvas = await html2canvas(previewPanel, {
-    useCORS: true, // 외부 이미지를 허용하는 옵션
-    allowTaint: true, // 캔버스 오염을 허용
-    width: 1080,
-    height: 1920,
-    windowWidth: 1080,
-    windowHeight: 1920,
-    scale: 1 // 1배 스케일로 캡처
-});
-const dataUrl = canvas.toDataURL('image/png', 1.0);
+                    useCORS: true,      // 외부 이미지를 로드하기 위해 필수
+                    allowTaint: true,   // 캔버스 오염 허용
+                    logging: false,     // 콘솔에 디버그 로그를 남기지 않음
+                    width: 1080,        // 캡처할 너비
+                    height: 1920,       // 캡처할 높이
+                    windowWidth: 1080,  // 렌더링에 사용할 가상 창 너비
+                    windowHeight: 1920, // 렌더링에 사용할 가상 창 높이
+                    scale: 1,           // 1:1 픽셀 비율로 캡처
+                    backgroundColor: null // 투명 배경을 위해 null 설정
+                });
+
+                // 캔버스에서 데이터 URL 추출
+                const dataUrl = canvas.toDataURL('image/png', 1.0);
                 frameImages.push(dataUrl);
 
                 const progress = 2 + Math.floor((i / totalFrames) * 8); 
@@ -1614,13 +1535,7 @@ const dataUrl = canvas.toDataURL('image/png', 1.0);
                 UI.progressBarInner.style.width = `${progress}%`;
             } catch (captureError) {
                 console.error("프레임 캡처 오류 원본:", captureError);
-                let detailedMessage = '알 수 없는 오류가 발생했습니다.';
-                if (captureError instanceof Error) {
-                    detailedMessage = captureError.message;
-                } else if (captureError.target && captureError.target.src) {
-                    detailedMessage = `아래 리소스를 불러오는 데 실패했습니다. URL이 유효한지, 혹은 삭제된 리소스가 아닌지 확인해주세요:\n\n${captureError.target.src}`;
-                }
-                alert(`프레임 캡처 중 오류가 발생했습니다.\n\n[오류 원인]\n${detailedMessage}`);
+                alert(`프레임 캡처 중 심각한 오류가 발생했습니다. 개발자 콘솔을 확인해주세요.`);
                 UI.progressOverlay.style.display = 'none';
                 UI.exportBtn.disabled = false;
                 return;
