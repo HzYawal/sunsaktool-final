@@ -1439,7 +1439,7 @@ const exporter = {
         try {
             const response = await fetch(`${SERVICE_URL}/render-status/${jobId}`);
             if (!response.ok) {
-                if (response.status === 404) return; // 작업이 아직 생성 안된 경우일 수 있으므로 계속 시도
+                if (response.status === 404) return;
                 throw new Error(`상태 확인 오류: ${response.status}`);
             }
 
@@ -1511,28 +1511,29 @@ const exporter = {
 
         const previewPanel = document.getElementById('st-preview-panel');
         const frameImages = [];
-
-        // ======================= [핵심] 폰트 캐싱 로직 시작 =======================
-        const fontCache = new Map();
-        const fetchWithCache = async (url) => {
-            if (fontCache.has(url)) {
-                return fontCache.get(url);
+        
+        const resourceCache = new Map();
+        const fetchWithProxyCache = async (url) => {
+            if (resourceCache.has(url)) {
+                return resourceCache.get(url);
             }
-            // CORS 문제를 피하기 위해 서버를 통해 요청
-            const response = await fetch(url); 
+            
+            // [핵심 변경] 우리 서버의 프록시 API를 통해 리소스를 요청합니다.
+            const proxyUrl = `${SERVICE_URL}/api/proxy?url=${encodeURIComponent(url)}`;
+            const response = await fetch(proxyUrl);
             const blob = await response.blob();
 
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.onloadend = () => {
-                    fontCache.set(url, reader.result);
-                    resolve(reader.result);
+                    const dataUrl = reader.result;
+                    resourceCache.set(url, dataUrl);
+                    resolve(dataUrl);
                 };
                 reader.onerror = reject;
                 reader.readAsDataURL(blob);
             });
         };
-        // ======================= [핵심] 폰트 캐싱 로직 끝 =======================
         
         UI.progressSubText.textContent = '프레임 캡처를 준비합니다...';
 
@@ -1542,13 +1543,12 @@ const exporter = {
             playback.updatePreviewForFrame(card, timeInCard);
 
             try {
-                // [핵심] 캡처 옵션에 fetchRequest를 추가하여 캐싱 로직을 사용합니다.
                 const dataUrl = await htmlToImage.toPng(previewPanel, {
                     width: 1080,
                     height: 1920,
                     style: { margin: 0 },
                     pixelRatio: 1,
-                    fetchRequest: fetchWithCache // 이 옵션이 마법을 부립니다!
+                    fetchRequest: fetchWithProxyCache // 프록시 캐시 함수 사용
                 });
                 frameImages.push(dataUrl);
 
@@ -1557,7 +1557,6 @@ const exporter = {
                 UI.progressBarInner.style.width = `${progress}%`;
             } catch (captureError) {
                 console.error("프레임 캡처 오류:", captureError);
-                // 오류 이벤트 객체를 콘솔에 출력하여 상세 원인 파악
                 console.log('프레임 캡처 오류 상세:', captureError); 
                 alert("프레임 캡처 중 심각한 오류가 발생했습니다. 개발자 콘솔을 확인해주세요.");
                 UI.progressOverlay.style.display = 'none';
