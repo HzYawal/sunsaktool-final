@@ -1486,9 +1486,7 @@ const exporter = {
         }
     },
 
-    // [새로운 코드로 startExport 함수 전체를 교체]
     async startExport() {
-        // ... (함수 시작 부분의 기존 코드는 그대로 둡니다) ...
         if (state.scriptCards.length === 0) return alert('출력할 영상이 없습니다.');
         if (this.statusCheckInterval) clearInterval(this.statusCheckInterval);
 
@@ -1499,7 +1497,6 @@ const exporter = {
         UI.progressSubText.textContent = '미리보기 화면을 캡처하고 있습니다.';
         UI.progressBarInner.style.width = '2%';
 
-        // ... (frameData 생성 로직까지는 동일) ...
         const totalDuration = state.scriptCards.reduce((sum, c) => sum + c.duration, 0);
         const fps = 30;
         const totalFrames = Math.floor(totalDuration * fps);
@@ -1515,26 +1512,26 @@ const exporter = {
         const previewPanel = document.getElementById('st-preview-panel');
         const frameImages = [];
 
-        // [핵심 수정] 폰트 정보를 루프 시작 전에 딱 한 번만 가져옵니다.
         UI.progressSubText.textContent = `폰트 정보 로딩 중...`;
         const fontFaces = await htmlToImage.getFontEmbedCSS(document.body);
-
-        for (let i = 0; i < frameData.length; i++) {
+        
+        for (let i = 0; i < totalFrames; i++) {
             const { card, timeInCard } = frameData[i];
             
             playback.updatePreviewForFrame(card, timeInCard);
 
             try {
-                // [핵심 수정] 미리 가져온 폰트 정보를 재사용합니다.
                 const dataUrl = await htmlToImage.toPng(previewPanel, {
                     width: 1080,
                     height: 1920,
                     style: { margin: 0 },
-                    fontEmbedCss: fontFaces 
+                    fontEmbedCss: fontFaces,
+                    quality: 0.95,
+                    pixelRatio: 1
                 });
                 frameImages.push(dataUrl);
 
-                const progress = 2 + Math.floor((i / totalFrames) * 8);
+                const progress = 2 + Math.floor((i / totalFrames) * 8); 
                 UI.progressSubText.textContent = `프레임 캡처 중... (${i + 1}/${totalFrames})`;
                 UI.progressBarInner.style.width = `${progress}%`;
             } catch (captureError) {
@@ -1546,22 +1543,22 @@ const exporter = {
             }
         }
             
-        
         const projectData = {
             frameImages: frameImages,
-            audioTracks: state.scriptCards.map(card => ({
+            audioTracks: state.scriptCards.map((card, index) => ({
+                startTime: state.scriptCards.slice(0, index).reduce((acc, c) => acc + c.duration, 0),
                 duration: card.duration,
-                audioUrl: card.audioUrl,
-                ttsVolume: card.ttsVolume,
-                sfxUrl: card.sfxUrl,
-                sfxVolume: card.sfxVolume
+                tts: card.audioUrl ? { url: card.audioUrl, volume: card.ttsVolume } : null,
+                sfx: card.sfxUrl ? { url: card.sfxUrl, volume: card.sfxVolume } : null,
             })),
             globalBGM: state.globalBGM,
-            projectSettings: state.projectSettings
+            projectSettings: state.projectSettings 
         };
 
         try {
             UI.progressText.textContent = '서버에 작업 요청 중...';
+            UI.progressBarInner.style.width = `15%`;
+
             const response = await fetch(`${SERVICE_URL}/render-video`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1588,12 +1585,6 @@ const exporter = {
         }
     }
 };
-
-// =================== [붙여넣을 코드 블록 끝] ===================
-
-// =======================================================
-// =================== [수정 후 exporter 코드 끝] ===================
-
         document.addEventListener('DOMContentLoaded', initialize);
     })();
     </script>
