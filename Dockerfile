@@ -1,59 +1,40 @@
 # ========================================================
-#  SunsakTool Worker를 위한 최종 안정화 Dockerfile
+#  SunsakTool Worker를 위한 최종 안정화 Dockerfile (Chrome 설치 버전)
 # ========================================================
 
-# 1. 베이스 이미지 (안정성을 위해 Full 버전 사용)
+# 1. 베이스 이미지
 FROM node:18
 
 # 2. 환경 변수 설정
 ENV NODE_ENV=production
+# Puppeteer가 시스템에 설치된 Chrome을 사용하도록 설정
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
 
-# 3. 시스템 패키지 설치 (FFmpeg, Puppeteer, 한글 폰트 및 추가 의존성)
+# 3. 시스템 패키지 설치 (FFmpeg, Puppeteer 의존성 및 정식 Chrome 설치)
+# Chrome 설치를 위해 저장소 추가 로직 포함
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     fonts-noto-cjk \
-    # ------ Puppeteer 의존성 패키지 (모든 가능성 포함) ------
-    ca-certificates \
-    fonts-liberation \
+    # Chrome 설치에 필요한 패키지
+    curl \
+    gnupg \
+    # ------ Puppeteer 의존성 패키지 (Chrome이 대부분 해결해줌) ------
     libappindicator3-1 \
     libasound2 \
-    libatk-bridge2.0-0 \
-    libatk1.0-0 \
-    libc6 \
-    libcairo2 \
     libcups2 \
     libdbus-1-3 \
-    libexpat1 \
-    libfontconfig1 \
-    libgbm1 \
-    libgcc1 \
     libgconf-2-4 \
-    libgdk-pixbuf2.0-0 \
-    libglib2.0-0 \
-    libgtk-3-0 \
     libnspr4 \
-    libpango-1.0-0 \
-    libpangocairo-1.0-0 \
-    libstdc++6 \
-    libx11-6 \
-    libx11-xcb1 \
-    libxcb1 \
-    libxcomposite1 \
-    libxcursor1 \
-    libxdamage1 \
-    libxext6 \
-    libxfixes3 \
-    libxi6 \
-    libxrandr2 \
-    libxrender1 \
     libxss1 \
     libxtst6 \
-    lsb-release \
-    xdg-utils \
-    libnss3 \
     # ----------------------------------------------------
+    && curl -sS -o - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
+    && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list \
+    && apt-get update \
+    && apt-get install -y google-chrome-stable \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && rm /etc/apt/sources.list.d/google-chrome.list
 
 # 4. 작업 디렉토리 설정
 WORKDIR /app
@@ -61,19 +42,15 @@ WORKDIR /app
 # 5. package.json 파일을 먼저 복사하여 종속성 캐싱 활용
 COPY package*.json ./
 
-# 6. 프로덕션용 종속성만 설치
+# 6. 프로덕션용 종속성만 설치 (Puppeteer는 이미 있으므로 devDep에서 제외)
+# 이제 Puppeteer는 시스템의 Chrome을 사용하므로, npm 설치 시 Chromium을 다운로드하지 않음
 RUN npm install --only=production
 
 # 7. 프로젝트 소스 코드 복사
 COPY . .
 
-# 8. (디버깅용) 파일이 잘 복사되었는지 확인하는 단계
-RUN echo "===== 파일 목록 확인 =====" && \
-    ls -la /app && \
-    echo "========================"
+# 8. 애플리케이션 포트 노출
+EXPOSE 3000
 
-# 9. 애플리케이션 포트 노출
-EXPOSE 8080
-
-# 10. 컨테이너 시작 명령어 (Worker용으로 고정)
+# 9. 컨테이너 시작 명령어 (Worker용으로 고정)
 CMD ["node", "worker.js"]
