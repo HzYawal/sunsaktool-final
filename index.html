@@ -1428,6 +1428,8 @@ handlers.addScriptCard('순삭툴에 오신 것을 환영합니다!\n텍스트�
 }
 
         
+// ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ 이 코드로 exporter 객체 전체를 교체하세요 ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+
 const exporter = {
     statusCheckInterval: null,
     
@@ -1444,12 +1446,12 @@ const exporter = {
         });
         const videos = Array.from(element.querySelectorAll('video'));
         videos.forEach(video => {
-            if (video.readyState < 4 && video.src) {
-                mediaPromises.push(new Promise((resolve, reject) => {
-                    video.oncanplaythrough = resolve;
-                    video.onerror = () => reject(new Error(`비디오 로드 실패: ${video.src}`));
-                }));
-            }
+            if (!video.src) return;
+            if (video.readyState >= 4) return;
+            mediaPromises.push(new Promise((resolve, reject) => {
+                video.oncanplaythrough = resolve;
+                video.onerror = () => reject(new Error(`비디오 로드 실패: ${video.src}`));
+            }));
         });
         return Promise.all(mediaPromises);
     },
@@ -1561,6 +1563,16 @@ const exporter = {
             }
         };
         
+        // [핵심] 렌더링에서 특정 노드를 제외하는 필터 함수
+        const nodeFilter = (node) => {
+            // tagName이 없거나 (텍스트 노드 등), link 태그이면서 rel 속성이 icon을 포함하면 false를 반환하여 제외
+            if (node.tagName === 'LINK' && node.rel && (node.rel.includes('icon') || node.rel.includes('shortcut'))) {
+                return false;
+            }
+            // 그 외의 모든 노드는 캡처에 포함
+            return true;
+        };
+
         UI.progressSubText.textContent = '프레임 캡처를 준비합니다...';
 
         for (let i = 0; i < totalFrames; i++) {
@@ -1572,7 +1584,9 @@ const exporter = {
                 await this.waitForMediaAndVerify(previewPanel);
                 
                 const dataUrl = await htmlToImage.toPng(previewPanel, {
-                    width: 1080, height: 1920, style: { margin: 0 }, pixelRatio: 1, fetchRequest: fetchWithSmartCache, cache: 'no-store'
+                    width: 1080, height: 1920, style: { margin: 0 }, pixelRatio: 1, 
+                    fetchRequest: fetchWithSmartCache, cache: 'no-store',
+                    filter: nodeFilter // [핵심] 필터 옵션 적용
                 });
                 frameImages.push(dataUrl);
 
@@ -1630,6 +1644,8 @@ const exporter = {
         }
     }
 };
+
+// ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ 여기까지 교체 ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
         document.addEventListener('DOMContentLoaded', initialize);
     })();
     </script>
