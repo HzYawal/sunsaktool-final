@@ -44,9 +44,9 @@ app.post('/api/create-tts', async (req, res) => {
 app.post('/render-video', async (req, res) => {
     try {
         const projectData = req.body;
-        if (!projectData || !projectData.scriptCards || projectData.scriptCards.length === 0) {
-            return res.status(400).json({ message: '렌더링할 데이터가 없습니다.' });
-        }
+       if (!projectData || !projectData.frameImages || projectData.frameImages.length === 0) {
+    return res.status(400).json({ message: '렌더링할 데이터가 없습니다.' });
+}
         const jobId = uuidv4();
         console.log(`[${jobId}] 신규 렌더링 작업 접수`);
         const jobRef = firestore.collection('renderJobs').doc(jobId);
