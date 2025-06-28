@@ -1,5 +1,5 @@
 // ===============================================
-//  worker.js (진짜 최종 완성 버전 - No Playwright)
+//  worker.js (진짜진짜 최종 완성 버전)
 // ===============================================
 const express = require('express');
 const path = require('path');
@@ -55,21 +55,24 @@ async function renderVideo(jobId, projectData) {
                 return { path: audioPath, duration: track.duration };
             }));
 
-            if (audioFiles.filter(f => f).length === 0) return;
+            const validAudioFiles = audioFiles.filter(f => f);
+            if (validAudioFiles.length === 0) return;
             
+            const inputClauses = validAudioFiles.map(f => `-i "${f.path}"`).join(' ');
             let complexFilter = '';
             let outputs = '';
             let currentTime = 0;
-            audioFiles.forEach((file, i) => {
-                if (!file) return;
+
+            validAudioFiles.forEach((file, i) => {
                 complexFilter += `[${i}:a]adelay=${currentTime * 1000}|${currentTime * 1000}[a${i}];`;
                 outputs += `[a${i}]`;
                 currentTime += file.duration;
             });
-            complexFilter += `${outputs}amix=inputs=${outputs.length}`;
 
-            const inputClauses = audioFiles.map(f => f ? `-i "${f.path}"` : '').join(' ');
+            complexFilter += `${outputs}amix=inputs=${validAudioFiles.length}`;
+
             const mixCommand = `ffmpeg ${inputClauses} -filter_complex "${complexFilter}" -y "${finalAudioPath}"`;
+            
             await new Promise((resolve, reject) => exec(mixCommand, (err, stdout, stderr) => {
                 if (err) return reject(new Error(`오디오 믹싱 오류: ${stderr}`));
                 resolve(stdout);
