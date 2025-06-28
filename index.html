@@ -1435,7 +1435,7 @@ const exporter = {
     statusCheckInterval: null,
     
     async checkStatus(jobId) {
-        // 이 함수는 이전과 동일합니다.
+        // 이 함수는 변경되지 않았습니다.
         try {
             const response = await fetch(`${SERVICE_URL}/render-status/${jobId}`);
             if (!response.ok) {
@@ -1512,17 +1512,43 @@ const exporter = {
         const previewPanel = document.getElementById('st-preview-panel');
         const frameImages = [];
         
+        // [최종 버전] 모든 리소스 종류를 처리하는 지능형 캐시
         const resourceCache = new Map();
-        const fetchWithProxyCache = async (url) => {
+        const fetchWithSmartCache = async (url) => {
             if (resourceCache.has(url)) {
                 return resourceCache.get(url);
             }
             
-            // [핵심 변경] 우리 서버의 프록시 API를 통해 리소스를 요청합니다.
+            // 1. data: URL은 그대로 반환 (네트워크 요청 불필요)
+            if (url.startsWith('data:')) {
+                // data URL은 이미 완전한 데이터이므로 캐싱하고 바로 반환
+                resourceCache.set(url, url);
+                return url;
+            }
+
+            // 2. blob: URL은 브라우저에서 직접 fetch하여 data: URL로 변환
+            if (url.startsWith('blob:')) {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        const dataUrl = reader.result;
+                        resourceCache.set(url, dataUrl);
+                        resolve(dataUrl);
+                    };
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                });
+            }
+            
+            // 3. 그 외의 모든 URL(http, https 등 폰트)은 프록시를 통해 요청
             const proxyUrl = `${SERVICE_URL}/api/proxy?url=${encodeURIComponent(url)}`;
             const response = await fetch(proxyUrl);
+            if (!response.ok) {
+                 throw new Error(`Proxy request failed for ${url} with status ${response.status}`);
+            }
             const blob = await response.blob();
-
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.onloadend = () => {
@@ -1548,7 +1574,7 @@ const exporter = {
                     height: 1920,
                     style: { margin: 0 },
                     pixelRatio: 1,
-                    fetchRequest: fetchWithProxyCache // 프록시 캐시 함수 사용
+                    fetchRequest: fetchWithSmartCache // 지능형 캐시 함수 사용
                 });
                 frameImages.push(dataUrl);
 
