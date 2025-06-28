@@ -1428,192 +1428,11 @@ handlers.addScriptCard('순삭툴에 오신 것을 환영합니다!\n텍스트�
 }
 
         
-// ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ 이 코드로 exporter 객체 전체를 교체하세요 ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
-
-// ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ 이 코드로 exporter 객체 전체를 교체하세요 ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
-
-// ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ 이 코드로 exporter 객체 전체를 교체하세요 ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
-
-// ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ 이 코드로 exporter 객체 전체를 교체하세요 ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
-
+// ▼▼▼▼▼▼▼▼▼▼▼ 이 코드로 exporter 객체 전체를 교체하세요 ▼▼▼▼▼▼▼▼▼▼▼
 const exporter = {
     statusCheckInterval: null,
-
     async checkStatus(jobId) {
-        // ... (이전의 최종 버전과 동일) ...
-    },
-
-    async startExport() {
-        if (state.scriptCards.length === 0) return alert('출력할 영상이 없습니다.');
-        if (this.statusCheckInterval) clearInterval(this.statusCheckInterval);
-
-        playback.stop();
-        UI.exportBtn.disabled = true;
-        UI.progressOverlay.style.display = 'flex';
-        UI.progressText.textContent = '렌더링 데이터 생성 중...';
-        UI.progressBarInner.style.width = '2%';
-
-        const totalDuration = state.scriptCards.reduce((sum, c) => sum + c.duration, 0);
-        const fps = 30;
-        const totalFrames = Math.floor(totalDuration * fps);
-        const frameData = [];
-
-        for (const card of state.scriptCards) {
-            const cardFrames = Math.floor(card.duration * fps);
-            for (let i = 0; i < cardFrames; i++) {
-                frameData.push({ card, timeInCard: i / fps });
-            }
-        }
-
-        const previewPanel = document.getElementById('st-preview-panel');
-        const frameImages = [];
-        
-        // [핵심] 캡처 전 스케일링 준비
-        const originalTransform = previewPanel.style.transform;
-        const scale = 1080 / previewPanel.offsetWidth;
-        previewPanel.style.transformOrigin = 'top left';
-        previewPanel.style.transform = `scale(${scale})`;
-
-        UI.progressSubText.textContent = '프레임 캡처를 준비합니다...';
-
-        try {
-            for (let i = 0; i < totalFrames; i++) {
-                const { card, timeInCard } = frameData[i];
-                playback.updatePreviewForFrame(card, timeInCard);
-
-                // [핵심] 이제 html2canvas는 확대된 요소를 캡처합니다.
-                const canvas = await html2canvas(previewPanel, {
-                    useCORS: true,
-                    allowTaint: true,
-                    logging: false,
-                    width: 1080,
-                    height: 1920,
-                    windowWidth: 1080,
-                    windowHeight: 1920,
-                    scale: 1, // 스케일은 CSS로 제어하므로 여기서는 1로 고정
-                    backgroundColor: '#ffffff' // 배경색을 흰색으로 명시
-                });
-
-                const dataUrl = canvas.toDataURL('image/png');
-                frameImages.push(dataUrl);
-
-                const progress = 2 + Math.floor((i / totalFrames) * 8); 
-                UI.progressSubText.textContent = `프레임 캡처 중... (${i + 1}/${totalFrames})`;
-                UI.progressBarInner.style.width = `${progress}%`;
-            }
-        } catch (captureError) {
-            console.error("프레임 캡처 오류 원본:", captureError);
-            alert(`프레임 캡처 중 심각한 오류가 발생했습니다. 개발자 콘솔을 확인해주세요.`);
-            UI.progressOverlay.style.display = 'none';
-            UI.exportBtn.disabled = false;
-            return; // 오류 발생 시 함수 종료
-        } finally {
-            // [핵심] 캡처가 성공하든 실패하든, 반드시 원래 스타일로 되돌립니다.
-            previewPanel.style.transform = originalTransform;
-            previewPanel.style.transformOrigin = '';
-        }
-            
-        // ... (이하 projectData 생성 및 서버 요청 부분은 이전의 최종 버전과 동일합니다) ...
-    }
-};
-
-// 위 코드의 생략된 부분을 모두 채운 최종 버전입니다.
-// ===================================================================================
-const finalExporterCode = {
-    statusCheckInterval: null,
-    async checkStatus(jobId) { /* ... 이전과 동일 ... */ },
-    async startExport() {
-        if (state.scriptCards.length === 0) return alert('출력할 영상이 없습니다.');
-        if (this.statusCheckInterval) clearInterval(this.statusCheckInterval);
-        playback.stop();
-        UI.exportBtn.disabled = true;
-        UI.progressOverlay.style.display = 'flex';
-        UI.progressText.textContent = '렌더링 데이터 생성 중...';
-        UI.progressBarInner.style.width = '2%';
-        const totalDuration = state.scriptCards.reduce((sum, c) => sum + c.duration, 0);
-        const fps = 30;
-        const totalFrames = Math.floor(totalDuration * fps);
-        const frameData = [];
-        for (const card of state.scriptCards) {
-            const cardFrames = Math.floor(card.duration * fps);
-            for (let i = 0; i < cardFrames; i++) {
-                frameData.push({ card, timeInCard: i / fps });
-            }
-        }
-        const previewPanel = document.getElementById('st-preview-panel');
-        const frameImages = [];
-        const originalTransform = previewPanel.style.transform;
-        const scale = 1080 / previewPanel.offsetWidth;
-        previewPanel.style.transformOrigin = 'top left';
-        previewPanel.style.transform = `scale(${scale})`;
-        UI.progressSubText.textContent = '프레임 캡처를 준비합니다...';
-        try {
-            for (let i = 0; i < totalFrames; i++) {
-                const { card, timeInCard } = frameData[i];
-                playback.updatePreviewForFrame(card, timeInCard);
-                const canvas = await html2canvas(previewPanel, {
-                    useCORS: true, allowTaint: true, logging: false, width: 1080, height: 1920,
-                    windowWidth: 1080, windowHeight: 1920, scale: 1, backgroundColor: '#ffffff'
-                });
-                const dataUrl = canvas.toDataURL('image/png');
-                frameImages.push(dataUrl);
-                const progress = 2 + Math.floor((i / totalFrames) * 8);
-                UI.progressSubText.textContent = `프레임 캡처 중... (${i + 1}/${totalFrames})`;
-                UI.progressBarInner.style.width = `${progress}%`;
-            }
-        } catch (captureError) {
-            console.error("프레임 캡처 오류 원본:", captureError);
-            alert(`프레임 캡처 중 심각한 오류가 발생했습니다. 개발자 콘솔을 확인해주세요.`);
-            UI.progressOverlay.style.display = 'none';
-            UI.exportBtn.disabled = false;
-            return;
-        } finally {
-            previewPanel.style.transform = originalTransform;
-            previewPanel.style.transformOrigin = '';
-        }
-        const projectData = {
-            frameImages: frameImages,
-            audioTracks: state.scriptCards.map((card, index) => ({
-                startTime: state.scriptCards.slice(0, index).reduce((acc, c) => acc + c.duration, 0),
-                duration: card.duration,
-                tts: card.audioUrl ? { url: card.audioUrl, volume: card.ttsVolume } : null,
-                sfx: card.sfxUrl ? { url: card.sfxUrl, volume: card.sfxVolume } : null,
-            })),
-            globalBGM: state.globalBGM,
-            projectSettings: state.projectSettings
-        };
-        try {
-            UI.progressText.textContent = '서버에 작업 요청 중...';
-            UI.progressBarInner.style.width = `15%`;
-            const response = await fetch(`${SERVICE_URL}/render-video`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(projectData)
-            });
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ message: '서버 응답을 JSON으로 파싱할 수 없습니다.' }));
-                throw new Error(`서버 오류 (${response.status}): ${errorData.message || '알 수 없는 오류가 발생했습니다.'}`);
-            }
-            const result = await response.json();
-            if (result.success && result.jobId) {
-                UI.progressText.textContent = '영상 제작이 시작되었습니다!';
-                this.statusCheckInterval = setInterval(() => this.checkStatus(result.jobId), 5000);
-            } else {
-                throw new Error('서버에서 유효한 작업 ID를 받지 못했습니다.');
-            }
-        } catch (error) {
-            console.error("영상 생성 요청 오류:", error);
-            alert(`영상 생성 요청 중 오류가 발생했습니다:\n${error.message}`);
-            UI.progressOverlay.style.display = 'none';
-            UI.exportBtn.disabled = false;
-        }
-    }
-};
-
-// checkStatus를 포함한 최종 exporter 객체
-const finalFinalExporterCode = {
-    statusCheckInterval: null,
-    async checkStatus(jobId) {
+        // 이 함수는 이전과 동일하게 유지됩니다 (서버-워커 구조)
         try {
             const response = await fetch(`${SERVICE_URL}/render-status/${jobId}`);
             if (!response.ok) {
@@ -1648,14 +1467,64 @@ const finalFinalExporterCode = {
             UI.exportBtn.disabled = false;
         }
     },
-    ...finalExporterCode // startExport 함수를 포함한 나머지 부분
-};
 
-// 위 finalExporterCode의 startExport를 여기에 직접 삽입하여 완전한 객체를 만듭니다.
-const TheRealFinalExporter = {
-    ...finalFinalExporterCode,
-    startExport: finalExporterCode.startExport
+    async startExport() {
+        if (state.scriptCards.some(c => c.text.trim() && !c.ttsReady)) {
+            return alert('아직 음성 생성이 완료되지 않은 스크립트가 있습니다.');
+        }
+        if (state.scriptCards.length === 0) {
+            return alert('출력할 영상이 없습니다.');
+        }
+        if (this.statusCheckInterval) clearInterval(this.statusCheckInterval);
+
+        playback.stop();
+        UI.exportBtn.disabled = true;
+        UI.progressOverlay.style.display = 'flex';
+        UI.progressText.textContent = '서버에 영상 제작 요청 중...';
+        UI.progressBarInner.style.width = '10%';
+
+        // [핵심] 렌더링에 필요한 모든 데이터를 projectData 객체에 담습니다.
+        const previewPanelEl = document.getElementById('st-preview-panel');
+        const projectData = {
+            projectSettings: state.projectSettings,
+            scriptCards: state.scriptCards,
+            globalBGM: state.globalBGM,
+            // [핵심] 미리보기 패널의 너비를 서버에 알려줍니다.
+            renderMetadata: {
+                sourceWidth: previewPanelEl.clientWidth || 420
+            }
+        };
+
+        try {
+            const response = await fetch(`${SERVICE_URL}/render-video`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(projectData)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: '서버 응답을 JSON으로 파싱할 수 없습니다.' }));
+                throw new Error(`서버 오류 (${response.status}): ${errorData.message || '알 수 없는 오류가 발생했습니다.'}`);
+            }
+
+            const result = await response.json();
+            if (result.success && result.jobId) {
+                UI.progressText.textContent = '영상 제작이 시작되었습니다!';
+                UI.progressSubText.textContent = '서버에서 작업이 처리 중입니다. 잠시만 기다려주세요...';
+                UI.progressBarInner.style.width = '20%';
+                this.statusCheckInterval = setInterval(() => this.checkStatus(result.jobId), 5000);
+            } else {
+                throw new Error('서버에서 유효한 작업 ID를 받지 못했습니다.');
+            }
+        } catch (error) {
+            console.error("영상 생성 요청 오류:", error);
+            alert(`영상 생성 요청 중 오류가 발생했습니다:\n${error.message}`);
+            UI.progressOverlay.style.display = 'none';
+            UI.exportBtn.disabled = false;
+        }
+    }
 };
+// ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
        
         document.addEventListener('DOMContentLoaded', initialize);
     })();
