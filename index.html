@@ -1563,9 +1563,17 @@ const exporter = {
             }
         };
         const nodeFilter = (node) => {
-            if (node.tagName === 'LINK' && node.rel && (node.rel.includes('icon') || node.rel.includes('shortcut'))) return false;
-            return true;
-        };
+    // 1. 파비콘 링크는 무시합니다.
+    if (node.tagName === 'LINK' && node.rel && (node.rel.includes('icon') || node.rel.includes('shortcut'))) {
+        return false;
+    }
+    // 2. [핵심 추가] IMG 태그인데 src 속성이 비어있거나 없는 경우 무시합니다.
+    if (node.tagName === 'IMG' && !node.src) {
+        return false;
+    }
+    // 그 외 모든 요소는 캡처에 포함합니다.
+    return true;
+};
 
         UI.progressSubText.textContent = '프레임 캡처를 준비합니다...';
 
