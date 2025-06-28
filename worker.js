@@ -37,65 +37,86 @@ async function renderVideo(jobId, projectData) {
     try {
         await fs.ensureDir(framesDir);
         await fs.ensureDir(audioDir);
+        const { frameImages, audioTracks, globalBGM } = projectData;
 
-        await updateJobStatus(jobId, 'processing', '프레임 이미지 저장 중...', 20);
-        await Promise.all(projectData.frameImages.map((dataUrl, i) => {
+        await updateJobStatus(jobId, 'processing', '프레임 이미지 저장 중...', 10);
+        await Promise.all(frameImages.map((dataUrl, i) => {
             const base64Data = dataUrl.replace(/^data:image\/png;base64,/, "");
             const framePath = path.join(framesDir, `frame_${String(i).padStart(6, '0')}.png`);
             return fs.writeFile(framePath, base64Data, 'base64');
         }));
 
-        await updateJobStatus(jobId, 'processing', '오디오 트랙 처리 중...', 55);
-        const audioRenderPromise = (async () => {
-            const audioFiles = await Promise.all(projectData.audioTracks.map(async (track, index) => {
-                if (!track.audioUrl) return null;
-                const audioPath = path.join(audioDir, `audio_${index}.mp3`);
-                const base64Data = track.audioUrl.split(',')[1];
-                await fs.writeFile(audioPath, Buffer.from(base64Data, 'base64'));
-                return { path: audioPath, duration: track.duration };
-            }));
+        await updateJobStatus(jobId, 'processing', '오디오 트랙 처리 중...', 50);
+        const audioInputs = [];
+        let complexFilter = '';
+        const audioStreamsToMix = [];
 
-            const validAudioFiles = audioFiles.filter(f => f);
-            if (validAudioFiles.length === 0) return;
+        if (globalBGM && globalBGM.url) {
+            const bgmPath = path.join(audioDir, `bgm.mp3`);
+            const base64Data = globalBGM.url.split(',')[1];
+            await fs.writeFile(bgmPath, Buffer.from(base64Data, 'base64'));
+            audioInputs.push(`-i "${bgmPath}"`);
             
-            const inputClauses = validAudioFiles.map(f => `-i "${f.path}"`).join(' ');
-            let complexFilter = '';
-            let outputs = '';
-            let currentTime = 0;
+            const totalDuration = frameImages.length / fps;
+            complexFilter += `[${audioStreamsToMix.length}:a]aloop=loop=-1:size=2e+09,atrim=start=${globalBGM.startTime || 0}:duration=${totalDuration},volume=${globalBGM.volume || 0.3}[bgm];`;
+            audioStreamsToMix.push('[bgm]');
+        }
 
-            validAudioFiles.forEach((file, i) => {
-                complexFilter += `[${i}:a]adelay=${currentTime * 1000}|${currentTime * 1000}[a${i}];`;
-                outputs += `[a${i}]`;
-                currentTime += file.duration;
-            });
+        for (const [index, track] of audioTracks.entries()) {
+            if (track.tts && track.tts.url) {
+                const ttsPath = path.join(audioDir, `tts_${index}.mp3`);
+                const base64Data = track.tts.url.split(',')[1];
+                await fs.writeFile(ttsPath, Buffer.from(base64Data, 'base64'));
+                audioInputs.push(`-i "${ttsPath}"`);
+                
+                complexFilter += `[${audioStreamsToMix.length}:a]adelay=${track.startTime * 1000}|${track.startTime * 1000},volume=${track.tts.volume || 0.9}[tts${index}];`;
+                audioStreamsToMix.push(`[tts${index}]`);
+            }
+            if (track.sfx && track.sfx.url) {
+                const sfxPath = path.join(audioDir, `sfx_${index}.mp3`);
+                const base64Data = track.sfx.url.split(',')[1];
+                await fs.writeFile(sfxPath, Buffer.from(base64Data, 'base64'));
+                audioInputs.push(`-i "${sfxPath}"`);
+                
+                complexFilter += `[${audioStreamsToMix.length}:a]adelay=${track.startTime * 1000}|${track.startTime * 1000},volume=${track.sfx.volume || 0.8}[sfx${index}];`;
+                audioStreamsToMix.push(`[sfx${index}]`);
+            }
+        }
 
-            complexFilter += `${outputs}amix=inputs=${validAudioFiles.length}`;
-
-            const mixCommand = `ffmpeg ${inputClauses} -filter_complex "${complexFilter}" -y "${finalAudioPath}"`;
+        if (audioStreamsToMix.length > 0) {
+            const mixInputs = audioStreamsToMix.join('');
+            complexFilter += `${mixInputs}amix=inputs=${audioStreamsToMix.length}:duration=longest[final_audio]`;
             
+            const mixCommand = `ffmpeg ${audioInputs.join(' ')} -filter_complex "${complexFilter}" -map "[final_audio]" -y "${finalAudioPath}"`;
             await new Promise((resolve, reject) => exec(mixCommand, (err, stdout, stderr) => {
                 if (err) return reject(new Error(`오디오 믹싱 오류: ${stderr}`));
+                console.log('오디오 믹싱 완료.');
                 resolve(stdout);
             }));
-        })();
-        await audioRenderPromise;
+        }
 
         await updateJobStatus(jobId, 'processing', '최종 영상 합성 중...', 80);
         const hasAudio = await fs.pathExists(finalAudioPath);
         const audioInput = hasAudio ? `-i "${finalAudioPath}"` : '';
-        const ffmpegCommand = `ffmpeg -y -framerate ${fps} -i "${framesDir}/frame_%06d.png" ${audioInput} -c:v libx264 -crf 18 -preset slow -vf "scale=1080:1920,setsar=1:1,format=yuv420p,colormatrix=srgb:bt709" -c:a aac -movflags +faststart ${hasAudio ? '-shortest' : ''} "${outputVideoPath}"`;
+        const ffmpegCommand = `ffmpeg -y -framerate ${fps} -i "${framesDir}/frame_%06d.png" ${audioInput} -c:v libx264 -crf 18 -preset slow -vf "scale=1080:1920,setsar=1:1,format=yuv420p" -c:a aac -b:a 192k -movflags +faststart ${hasAudio ? '-shortest' : ''} "${outputVideoPath}"`;
+        
         await new Promise((resolve, reject) => exec(ffmpegCommand, (err, stdout, stderr) => {
             if (err) return reject(new Error(`FFMPEG 최종 합성 오류: ${stderr}`));
+            console.log('최종 영상 합성 완료.');
             resolve(stdout);
         }));
 
         await updateJobStatus(jobId, 'processing', '영상 업로드 중...', 95);
-        const destination = `videos/${jobId}/${projectData.projectSettings?.title || 'sunsak-video'}.mp4`;
-        await storage.bucket(OUTPUT_BUCKET_NAME).upload(outputVideoPath, { destination });
+        const videoTitle = projectData.projectSettings?.project?.title || 'sunsak-video';
+        const safeTitle = videoTitle.replace(/[^a-zA-Z0-9-_\.]/g, '_');
+        const destination = `videos/${jobId}/${safeTitle}.mp4`;
+
+        await storage.bucket(OUTPUT_BUCKET_NAME).upload(outputVideoPath, { destination, contentType: 'video/mp4' });
         const videoUrl = `https://storage.googleapis.com/${OUTPUT_BUCKET_NAME}/${destination}`;
         
         await updateJobStatus(jobId, 'completed', '영상 제작이 완료되었습니다.', 100);
         await firestore.collection('renderJobs').doc(jobId).set({ videoUrl, completedAt: new Date() }, { merge: true });
+
     } catch (error) {
         console.error(`[${jobId}] 렌더링 워커 오류:`, error.stack);
         await updateJobStatus(jobId, 'failed', `치명적 오류: ${error.message}`);
@@ -104,7 +125,6 @@ async function renderVideo(jobId, projectData) {
         console.log(`[${jobId}] 임시 파일 정리 완료`);
     }
 }
-
 async function listenForMessages() {
     const subscription = pubSubClient.subscription(SUBSCRIPTION_NAME);
     const messageHandler = async (message) => {
