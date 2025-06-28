@@ -1562,16 +1562,19 @@ const exporter = {
                 throw error;
             }
         };
-        const nodeFilter = (node) => {
-    // 1. 파비콘 링크는 무시합니다.
-    if (node.tagName === 'LINK' && node.rel && (node.rel.includes('icon') || node.rel.includes('shortcut'))) {
+        // ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ 이 코드로 교체하세요 ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+// [최종 버전] 시각적으로 불필요한 모든 요소를 제외하는 가장 강력한 필터
+const nodeFilter = (node) => {
+    // 1. 제외할 태그 목록 (스크립트, 오디오 플레이어 등)
+    const EXCLUDED_TAGS = ['SCRIPT', 'AUDIO', 'LINK'];
+    if (EXCLUDED_TAGS.includes(node.tagName)) {
         return false;
     }
-    // 2. [핵심 추가] IMG 태그인데 src 속성이 비어있거나 없는 경우 무시합니다.
+    // 2. src 속성이 없는 이미지 태그는 무시
     if (node.tagName === 'IMG' && !node.src) {
         return false;
     }
-    // 그 외 모든 요소는 캡처에 포함합니다.
+    // 그 외 모든 요소는 캡처에 포함
     return true;
 };
 
