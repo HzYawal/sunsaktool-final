@@ -1428,8 +1428,7 @@ handlers.addScriptCard('순삭툴에 오신 것을 환영합니다!\n텍스트�
 }
 
         
-// =================== [이 코드로 통째로 교체하세요] ===================
-// =================== [붙여넣을 코드 블록 시작] ===================
+// ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ 이 코드로 exporter 객체 전체를 다시 교체하세요 ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
 
 const exporter = {
     statusCheckInterval: null,
@@ -1512,53 +1511,52 @@ const exporter = {
         const previewPanel = document.getElementById('st-preview-panel');
         const frameImages = [];
         
-        // [최종 버전] 모든 리소스 종류를 처리하는 지능형 캐시
         const resourceCache = new Map();
         const fetchWithSmartCache = async (url) => {
             if (resourceCache.has(url)) {
                 return resourceCache.get(url);
             }
-            
-            // 1. data: URL은 그대로 반환 (네트워크 요청 불필요)
-            if (url.startsWith('data:')) {
-                // data URL은 이미 완전한 데이터이므로 캐싱하고 바로 반환
-                resourceCache.set(url, url);
-                return url;
-            }
 
-            // 2. blob: URL은 브라우저에서 직접 fetch하여 data: URL로 변환
-            if (url.startsWith('blob:')) {
-                const response = await fetch(url);
-                const blob = await response.blob();
-                return new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => {
-                        const dataUrl = reader.result;
-                        resourceCache.set(url, dataUrl);
-                        resolve(dataUrl);
-                    };
-                    reader.onerror = reject;
-                    reader.readAsDataURL(blob);
-                });
-            }
-            
-            // 3. 그 외의 모든 URL(http, https 등 폰트)은 프록시를 통해 요청
-            const proxyUrl = `${SERVICE_URL}/api/proxy?url=${encodeURIComponent(url)}`;
-            const response = await fetch(proxyUrl);
-            if (!response.ok) {
-                 throw new Error(`Proxy request failed for ${url} with status ${response.status}`);
-            }
-            const blob = await response.blob();
-            return new Promise((resolve, reject) => {
+            const toDataURL = (blob) => new Promise((resolve, reject) => {
                 const reader = new FileReader();
-                reader.onloadend = () => {
-                    const dataUrl = reader.result;
-                    resourceCache.set(url, dataUrl);
-                    resolve(dataUrl);
-                };
+                reader.onloadend = () => resolve(reader.result);
                 reader.onerror = reject;
                 reader.readAsDataURL(blob);
             });
+
+            try {
+                let dataUrl;
+                if (url.startsWith('data:')) {
+                    dataUrl = url;
+                } else if (url.startsWith('blob:')) {
+                    const response = await fetch(url);
+                    const blob = await response.blob();
+                    dataUrl = await toDataURL(blob);
+                } else {
+                    const proxyUrl = `${SERVICE_URL}/api/proxy?url=${encodeURIComponent(url)}`;
+                    const response = await fetch(proxyUrl);
+                    
+                    // [핵심] 서버 응답 유효성 검사
+                    if (!response.ok) {
+                        throw new Error(`Proxy Error: Status ${response.status} for ${url}`);
+                    }
+                    const contentType = response.headers.get('Content-Type');
+                    if (!contentType || (!contentType.startsWith('image/') && !contentType.startsWith('font/'))) {
+                         throw new Error(`Invalid content-type: ${contentType} for ${url}`);
+                    }
+
+                    const blob = await response.blob();
+                    dataUrl = await toDataURL(blob);
+                }
+                
+                resourceCache.set(url, dataUrl);
+                return dataUrl;
+
+            } catch (error) {
+                console.error(`Failed to fetch resource: ${url}`, error);
+                // 에러를 다시 던져서 htmlToImage가 실패를 인지하도록 함
+                throw error;
+            }
         };
         
         UI.progressSubText.textContent = '프레임 캡처를 준비합니다...';
@@ -1574,7 +1572,9 @@ const exporter = {
                     height: 1920,
                     style: { margin: 0 },
                     pixelRatio: 1,
-                    fetchRequest: fetchWithSmartCache // 지능형 캐시 함수 사용
+                    fetchRequest: fetchWithSmartCache,
+                    // 브라우저 자체 캐시를 비활성화하여 항상 우리 캐시 로직을 타도록 함
+                    cache: 'no-store'
                 });
                 frameImages.push(dataUrl);
 
@@ -1583,8 +1583,8 @@ const exporter = {
                 UI.progressBarInner.style.width = `${progress}%`;
             } catch (captureError) {
                 console.error("프레임 캡처 오류:", captureError);
-                console.log('프레임 캡처 오류 상세:', captureError); 
-                alert("프레임 캡처 중 심각한 오류가 발생했습니다. 개발자 콘솔을 확인해주세요.");
+                // 이제는 captureError에 더 구체적인 정보가 담겨 있을 것입니다.
+                alert(`프레임 캡처 중 오류가 발생했습니다. 일부 이미지나 폰트 리소스에 문제가 있을 수 있습니다. 개발자 콘솔을 확인해주세요. 오류: ${captureError.message}`);
                 UI.progressOverlay.style.display = 'none';
                 UI.exportBtn.disabled = false;
                 return;
@@ -1633,6 +1633,7 @@ const exporter = {
         }
     }
 };
+// ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ 여기까지 교체 ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
         document.addEventListener('DOMContentLoaded', initialize);
     })();
     </script>
