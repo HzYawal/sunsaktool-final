@@ -73,14 +73,15 @@
     position: relative;
 }
 .st-script-display {
-        flex-grow: 1;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-        min-height: 0;
-        width: 100%;
-    }
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center; /* 이 줄을 추가하세요 */
+    text-align: center;
+    min-height: 0;
+    width: 100%;
+}
         .interactive-target { position: relative; width: 100%; touch-action: none; transform-origin: center center; cursor: move; }
         #st-preview-media-container-wrapper {
             margin-top: 8px;
