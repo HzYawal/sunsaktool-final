@@ -35,7 +35,6 @@ async function updateJobStatus(jobId, status, message, progress = null) {
     console.log(`[${jobId}] 상태: ${status} - ${message} (${progress !== null ? progress + '%' : ''})`);
 }
 
-// --- 핵심 영상 제작 함수 (최종 수정본) ---
 async function renderVideo(jobId) {
     const fps = 30;
     const tempDir = path.join(os.tmpdir(), jobId);
@@ -105,15 +104,25 @@ async function renderVideo(jobId) {
                         }
                         return parseFloat(value) * scaleFactor;
                     };
-                    const scaleNum = (value) => parseFloat(value) * scaleFactor;
+                    const scaleNum = (value) => {
+                        if (typeof value === 'string') {
+                           return parseFloat(value) * scaleFactor;
+                        }
+                        return value * scaleFactor;
+                    }
 
+                    // --- 헤더 및 프로젝트 정보 스케일링 ---
                     const headerEl = document.querySelector('.st-preview-header');
                     headerEl.style.backgroundColor = pSettings.header.backgroundColor;
                     headerEl.style.color = pSettings.header.color;
                     headerEl.style.fontFamily = pSettings.header.fontFamily;
                     headerEl.style.height = scale(65);
-                    document.querySelector('.header-title').innerText = pSettings.header.text;
-                    document.querySelector('.header-title').style.fontSize = scale(pSettings.header.fontSize);
+                    headerEl.style.padding = `0 ${scale(15)}`;
+
+                    const headerTitleEl = document.querySelector('.header-title');
+                    headerTitleEl.innerText = pSettings.header.text;
+                    headerTitleEl.style.fontSize = scale(pSettings.header.fontSize);
+                    headerTitleEl.style.padding = `0 ${scale(45)}`;
                     
                     const logoEl = document.querySelector('.header-logo');
                     if (pSettings.header.logo && pSettings.header.logo.url) {
@@ -125,11 +134,15 @@ async function renderVideo(jobId) {
                         logoEl.style.display = 'none';
                     }
 
+                    const contentEl = document.querySelector('.st-preview-content');
+                    contentEl.style.padding = scale(10);
+
                     const projectInfoEl = document.querySelector('.st-project-info');
                     projectInfoEl.style.fontSize = scale(13);
-                    projectInfoEl.style.marginBottom = scale(16);
+                    projectInfoEl.style.margin = `0 0 ${scale(16)} 0`;
                     projectInfoEl.style.paddingBottom = scale(16);
-
+                    projectInfoEl.style.borderBottomWidth = scale(1);
+                    
                     const projectInfoTitleEl = document.querySelector('.st-project-info .title');
                     projectInfoTitleEl.innerText = pSettings.project.title;
                     projectInfoTitleEl.style.color = pSettings.project.titleColor;
@@ -141,6 +154,7 @@ async function renderVideo(jobId) {
                     projectInfoSpanEl.innerText = `${pSettings.project.author || ''} | 조회수 ${Number(pSettings.project.views || 0).toLocaleString()}`;
                     projectInfoSpanEl.style.color = pSettings.project.metaColor;
                     
+                    // --- 레이아웃 및 텍스트 스케일링 ---
                     const textWrapper = document.getElementById('st-preview-text-container-wrapper');
                     const textEl = document.getElementById('st-preview-text');
                     const mediaWrapper = document.getElementById('st-preview-media-container-wrapper');
@@ -157,6 +171,7 @@ async function renderVideo(jobId) {
                     const scaledStyle = { ...card.style };
                     scaledStyle.fontSize = scale(card.style.fontSize);
                     scaledStyle.letterSpacing = scale(card.style.letterSpacing);
+                    // lineHeight는 단위 없는 비율이므로 스케일링하지 않음
                     Object.assign(textEl.style, scaledStyle);
                     
                     textEl.innerHTML = '';
@@ -173,6 +188,7 @@ async function renderVideo(jobId) {
                         textEl.innerText = card.text;
                     }
 
+                    // --- 미디어 및 애니메이션 스케일링 ---
                     let showMedia = false;
                     if (card.media?.url && card.media.type === 'image') {
                         const showOnSegmentIndex = (card.media.showOnSegment || 1) - 1;
