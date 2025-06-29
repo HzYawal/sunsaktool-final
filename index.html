@@ -1447,91 +1447,78 @@ handlers.addScriptCard('순삭툴에 오신 것을 환영합니다!\n텍스트�
 }
 
         
-// ▼▼▼▼▼▼▼▼▼▼▼ 이 코드로 exporter 객체 전체를 교체하세요 ▼▼▼▼▼▼▼▼▼▼▼
+// ▼▼▼▼▼▼ 이 코드로 exporter 객체 전체를 교체하세요 ▼▼▼▼▼▼
 const exporter = {
     statusCheckInterval: null,
     async checkStatus(jobId) {
-        // ... (이전 최종 버전과 동일)
+        try {
+            const response = await fetch(`${SERVICE_URL}/render-status/${jobId}`);
+            if (!response.ok) { if (response.status === 404) return; throw new Error(`상태 확인 오류: ${response.status}`); }
+            const data = await response.json();
+            UI.progressSubText.textContent = data.message || '상태를 확인하고 있습니다...';
+            if (data.progress) UI.progressBarInner.style.width = `${data.progress}%`;
+            if (data.status === 'completed') {
+                clearInterval(this.statusCheckInterval);
+                UI.progressText.textContent = '영상 제작 완료!';
+                UI.progressBarInner.style.width = '100%';
+                UI.progressSubText.innerHTML = `
+                    영상이 성공적으로 제작되었습니다!<br><br>
+                    <a href="${data.videoUrl}" target="_blank" download="${state.projectSettings.project.title || 'sunsak-video'}.mp4"
+                       style="background-color: var(--st-accent-color); color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+                        여기를 클릭하여 다운로드
+                    </a><br><br>
+                    <small style="cursor: pointer; text-decoration: underline;" onclick="document.getElementById('st-export-progress-overlay').style.display='none'">[닫기]</small>`;
+            } else if (data.status === 'failed') {
+                clearInterval(this.statusCheckInterval);
+                alert(`영상 제작에 실패했습니다. 오류: ${data.message}`);
+                UI.progressOverlay.style.display = 'none';
+                UI.exportBtn.disabled = false;
+            }
+        } catch (error) {
+            console.error(error); clearInterval(this.statusCheckInterval);
+            alert(`상태 확인 중 오류 발생: ${error.message}`);
+            UI.progressOverlay.style.display = 'none'; UI.exportBtn.disabled = false;
+        }
     },
-async startExport() {
-if (state.scriptCards.some(c => c.text.trim() && !c.ttsReady)) return alert('음성 생성이 완료되지 않은 스크립트가 있습니다.');
-if (state.scriptCards.length === 0) return alert('출력할 영상이 없습니다.');
-if (this.statusCheckInterval) clearInterval(this.statusCheckInterval);
-
-            playback.stop();
-    UI.exportBtn.disabled = true;
-    UI.progressOverlay.style.display = 'flex';
-    UI.progressText.textContent = '렌더링 데이터 생성 중...';
-    UI.progressSubText.textContent = '레이아웃 좌표 측정 중...';
-    UI.progressBarInner.style.width = '10%';
-
-    // [핵심] 렌더링용 데이터를 새로 만듭니다.
-    const projectDataForRender = JSON.parse(JSON.stringify(state));
-    
-    // [핵심] 각 카드의 텍스트 줄바꿈과 좌표를 정확히 측정합니다.
-    const previewTextEl = document.getElementById('st-preview-text');
-    const previewContentRect = document.getElementById('st-preview-content').getBoundingClientRect();
-    
-    projectDataForRender.scriptCards.forEach(card => {
-        // 임시로 미리보기에 텍스트를 그려서 좌표를 측정
-        Object.assign(previewTextEl.style, card.style);
-        previewTextEl.innerHTML = ''; // 이전 내용 삭제
-        const lines = card.text.split('\n');
-        const measuredLines = [];
-        lines.forEach(lineText => {
-            const p = document.createElement('p');
-            p.style.margin = 0;
-            p.textContent = lineText || ' '; // 빈 줄 처리
-            previewTextEl.appendChild(p);
-            const rect = p.getBoundingClientRect();
-            measuredLines.push({
-                text: lineText,
-                // 부모 요소 기준 상대 좌표 계산
-                x: rect.left - previewContentRect.left,
-                y: rect.top - previewContentRect.top,
-                width: rect.width
+    async startExport() {
+        if (state.scriptCards.some(c => c.text.trim() && !c.ttsReady)) return alert('음성 생성이 완료되지 않은 스크립트가 있습니다.');
+        if (state.scriptCards.length === 0) return alert('출력할 영상이 없습니다.');
+        if (this.statusCheckInterval) clearInterval(this.statusCheckInterval);
+        playback.stop();
+        UI.exportBtn.disabled = true;
+        UI.progressOverlay.style.display = 'flex';
+        UI.progressText.textContent = '서버에 영상 제작 요청 중...';
+        UI.progressBarInner.style.width = '10%';
+        
+        const previewPanelEl = document.getElementById('st-preview-panel');
+        const projectData = {
+            projectSettings: state.projectSettings,
+            scriptCards: state.scriptCards,
+            globalBGM: state.globalBGM,
+            renderMetadata: { sourceWidth: previewPanelEl.clientWidth || 420 }
+        };
+        try {
+            const response = await fetch(`${SERVICE_URL}/render-video`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(projectData)
             });
-        });
-        // 측정된 좌표 데이터를 카드에 추가합니다.
-        card.measuredLines = measuredLines;
-    });
-    render.updatePreviewDisplay(); // 원래 미리보기로 복원
-
-    const previewPanelEl = document.getElementById('st-preview-panel');
-    const projectData = {
-        projectSettings: projectDataForRender.projectSettings,
-        scriptCards: projectDataForRender.scriptCards,
-        globalBGM: projectDataForRender.globalBGM,
-        renderMetadata: {
-            sourceWidth: previewPanelEl.clientWidth || 420
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: '서버 응답 오류' }));
+                throw new Error(`서버 오류 (${response.status}): ${errorData.message || '알 수 없는 오류'}`);
+            }
+            const result = await response.json();
+            if (result.success && result.jobId) {
+                UI.progressText.textContent = '영상 제작이 시작되었습니다!';
+                this.statusCheckInterval = setInterval(() => this.checkStatus(result.jobId), 5000);
+            } else { throw new Error('서버에서 유효한 작업 ID를 받지 못했습니다.'); }
+        } catch (error) {
+            console.error("영상 생성 요청 오류:", error);
+            alert(`영상 생성 요청 중 오류가 발생했습니다:\n${error.message}`);
+            UI.progressOverlay.style.display = 'none';
+            UI.exportBtn.disabled = false;
         }
-    };
-
-    try {
-        UI.progressText.textContent = '서버에 작업 요청 중...';
-        const response = await fetch(`${SERVICE_URL}/render-video`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(projectData)
-        });
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ message: '서버 응답을 JSON으로 파싱할 수 없습니다.' }));
-            throw new Error(`서버 오류 (${response.status}): ${errorData.message || '알 수 없는 오류가 발생했습니다.'}`);
-        }
-        const result = await response.json();
-        if (result.success && result.jobId) {
-            UI.progressText.textContent = '영상 제작이 시작되었습니다!';
-            this.statusCheckInterval = setInterval(() => this.checkStatus(result.jobId), 5000);
-        } else {
-            throw new Error('서버에서 유효한 작업 ID를 받지 못했습니다.');
-        }
-    } catch (error) {
-        console.error("영상 생성 요청 오류:", error);
-        alert(`영상 생성 요청 중 오류가 발생했습니다:\n${error.message}`);
-        UI.progressOverlay.style.display = 'none';
-        UI.exportBtn.disabled = false;
     }
-}
 };
        
         document.addEventListener('DOMContentLoaded', initialize);
