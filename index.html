@@ -58,7 +58,8 @@
     .header-logo-container { position: absolute; right: 15px; display: flex; align-items: center; }
     .header-icon svg { width: 24px; height: 24px; }
     .header-logo { border-radius: 50%; object-fit: cover; background-color: #eee; }
-    
+
+    /* [최종 해결책] 올바른 레이아웃을 위한 단일 규칙 */
     .st-preview-content {
         padding: 10px;
         color: black;
@@ -88,7 +89,7 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: center;
+        justify-content: center; /* 수직 중앙 정렬 */
         text-align: center;
         min-height: 0;
         width: 100%;
@@ -105,6 +106,8 @@
     #st-preview-image, #st-preview-video { max-width: 100%; max-height: 100%; object-fit: contain; }
     .interactive-target.interactive-active { outline: 2px dashed var(--st-interact-color); z-index: 100; }
     #st-preview-text { width: 100%; font-size: 24px; color: #000; white-space: pre-wrap; flex-shrink: 0; }
+    
+    /* 이하 다른 모든 UI 요소 스타일 (원본과 동일) */
     .st-timeline-controls { width: 100%; max-width: 420px; display: flex; align-items: center; gap: 10px; margin-top: 15px;}
     .st-play-all-btn { background: none; font-size: 24px; padding: 0;}
     #st-timeline-slider { flex-grow: 1; }
