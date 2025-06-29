@@ -64,11 +64,16 @@ async function renderVideo(jobId) {
         // 단계 2: Playwright로 프레임 생성
         await updateJobStatus(jobId, 'processing', '영상 프레임 생성 중...', 10);
         browser = await playwright.chromium.launch();
-        const page = await browser.newPage();
-        await page.setViewportSize({ width: 1080, height: 1920 });
+        const context = await browser.newContext({
+            viewport: { width: 1080, height: 1920 }
+        });
+        const page = await context.newPage();
+        
+        // [중요] 폰트가 모두 로드될 때까지 기다리는 옵션 추가
         const renderTemplatePath = `file://${path.join(__dirname, 'render_template.html')}`;
         await page.goto(renderTemplatePath, { waitUntil: 'networkidle' });
-        
+        await page.evaluate(() => document.fonts.ready); // 모든 폰트 로딩 대기
+
         let frameCount = 0;
         const totalFrames = projectData.scriptCards.reduce((sum, card) => sum + Math.floor(card.duration * fps), 0);
 
@@ -76,36 +81,156 @@ async function renderVideo(jobId) {
             const cardFrames = Math.floor(card.duration * fps);
             for (let i = 0; i < cardFrames; i++) {
                 
-                // Playwright의 브라우저 내부에서 DOM을 단순하게 조작
+                // [수정] 현재 프레임의 카드 내 시간 계산
+                const timeInCard = i / fps;
+
+                // [수정] 클라이언트의 렌더링 로직을 거의 그대로 재현하는 복잡한 evaluate 함수
                 await page.evaluate(async (args) => {
-                    const { project, currentCard } = args;
+                    const { project, card, timeInCard } = args;
                     const pSettings = project.projectSettings;
-                    
-                    // 헤더, 프로젝트 정보, 텍스트 스타일과 내용만 단순 적용
-                    document.querySelector('.st-preview-header').style.backgroundColor = pSettings.header.backgroundColor;
+
+                    // --- 1. 헤더 및 프로젝트 정보 업데이트 (기존 로직과 유사) ---
+                    const headerEl = document.querySelector('.st-preview-header');
+                    headerEl.style.backgroundColor = pSettings.header.backgroundColor;
+                    headerEl.style.color = pSettings.header.color;
+                    headerEl.style.fontFamily = pSettings.header.fontFamily;
                     document.querySelector('.header-title').innerText = pSettings.header.text;
+                    document.querySelector('.header-title').style.fontSize = pSettings.header.fontSize + 'px';
+                    
+                    const logoEl = document.querySelector('.header-logo');
+                    if (pSettings.header.logo && pSettings.header.logo.url) {
+                        logoEl.src = pSettings.header.logo.url;
+                        logoEl.style.width = pSettings.header.logo.size + 'px';
+                        logoEl.style.height = pSettings.header.logo.size + 'px';
+                        logoEl.style.display = 'block';
+                    } else {
+                        logoEl.style.display = 'none';
+                    }
 
                     const projectInfoTitleEl = document.querySelector('.st-project-info .title');
                     projectInfoTitleEl.innerText = pSettings.project.title;
+                    projectInfoTitleEl.style.color = pSettings.project.titleColor;
+                    projectInfoTitleEl.style.fontFamily = pSettings.project.titleFontFamily;
+                    projectInfoTitleEl.style.fontSize = pSettings.project.titleFontSize + 'px';
 
                     const projectInfoSpanEl = document.querySelector('.st-project-info span');
                     projectInfoSpanEl.innerText = `${pSettings.project.author || ''} | 조회수 ${Number(pSettings.project.views || 0).toLocaleString()}`;
+                    projectInfoSpanEl.style.color = pSettings.project.metaColor;
                     
-                    const textEl = document.querySelector('#st-preview-text');
-                    Object.assign(textEl.style, currentCard.style);
-                    // \n 문자를 그대로 렌더링하도록 innerText 사용
-                    textEl.innerText = currentCard.text; 
+                    // --- 2. 텍스트 및 미디어 요소 선택 ---
+                    const textWrapper = document.getElementById('st-preview-text-container-wrapper');
+                    const textEl = document.getElementById('st-preview-text');
+                    const mediaWrapper = document.getElementById('st-preview-media-container-wrapper');
+                    const imageEl = document.getElementById('st-preview-image');
+                    
+                    // --- 3. 레이아웃 적용 (Transform) ---
+                    const applyTransform = (el, layout) => {
+                        if (el && layout) {
+                            el.style.transform = `translate(${layout.x || 0}px, ${layout.y || 0}px) scale(${layout.scale || 1}) rotate(${layout.angle || 0}deg)`;
+                        }
+                    };
+                    applyTransform(textWrapper, card.layout.text);
+                    applyTransform(mediaWrapper, card.layout.media);
 
-                }, { project: projectData, currentCard: card });
+                    // --- 4. 텍스트 스타일 및 내용 적용 ---
+                    Object.assign(textEl.style, card.style);
+                    
+                    // 시간대별 텍스트 세그먼트 표시
+                    textEl.innerHTML = '';
+                    if (card.segments && card.segments.length > 0) {
+                        card.segments.forEach(segment => {
+                            if (timeInCard >= segment.startTime) {
+                                const p = document.createElement('p');
+                                p.className = 'preview-text-segment';
+                                p.textContent = segment.text || ' ';
+                                textEl.appendChild(p);
+                            }
+                        });
+                    } else {
+                        textEl.innerText = card.text;
+                    }
+
+                    // --- 5. 미디어 표시 로직 ---
+                    let showMedia = false;
+                    if (card.media && card.media.url) {
+                        // 클라이언트에서는 비디오를 다루지만, 서버에서는 이미지 프레임만 생성하므로 이미지 타입만 고려합니다.
+                        // (비디오 오버레이는 FFmpeg에서 처리)
+                        if (card.media.type === 'image') {
+                           const showOnSegmentIndex = (card.media.showOnSegment || 1) - 1;
+                           const showTime = (card.segments && card.segments[showOnSegmentIndex]) ? card.segments[showOnSegmentIndex].startTime : 0;
+                           if (timeInCard >= showTime) {
+                               showMedia = true;
+                           }
+                        }
+                    }
+                    
+                    if (showMedia) {
+                        mediaWrapper.style.display = 'flex';
+                        imageEl.style.display = 'block';
+                        imageEl.style.objectFit = card.media.fit;
+                        if (imageEl.src !== card.media.url) {
+                            imageEl.src = card.media.url;
+                        }
+                    } else {
+                        mediaWrapper.style.display = 'none';
+                    }
+
+                    // --- 6. 애니메이션 로직 적용 ---
+                    const applyFrameAnimation = (el, anims, duration, time) => {
+                        if (!el || !anims) return;
+                        
+                        // 기존 transform 값에서 애니메이션 부분을 제외하고 유지
+                        const baseTransform = el.style.transform.replace(/translateY\([^)]+\)/g, '').replace(/scale\([^)]+\)/g, '').trim();
+
+                        el.style.opacity = '1';
+                        let animationTransform = '';
+
+                        const inDuration = anims.in.duration;
+                        const outStartTime = duration - anims.out.duration;
+
+                        if (time < inDuration && anims.in.name !== 'none') {
+                            const progress = Math.max(0, Math.min(1, time / inDuration));
+                            if (anims.in.name === 'fadeIn') el.style.opacity = progress;
+                            if (anims.in.name === 'slideInUp') animationTransform += ` translateY(${(1 - progress) * 50}px)`;
+                            if (anims.in.name === 'zoomIn') {
+                                el.style.opacity = progress;
+                                animationTransform += ` scale(${0.8 + 0.2 * progress})`;
+                            }
+                        } else if (time >= outStartTime && anims.out.name !== 'none') {
+                            const progress = Math.max(0, Math.min(1, (time - outStartTime) / anims.out.duration));
+                            if (anims.out.name === 'fadeOut') el.style.opacity = 1 - progress;
+                            if (anims.out.name === 'slideOutDown') animationTransform += ` translateY(${progress * 50}px)`;
+                            if (anims.out.name === 'zoomOut') {
+                                el.style.opacity = 1 - progress;
+                                animationTransform += ` scale(${1 - 0.2 * progress})`;
+                            }
+                        }
+                        
+                        el.style.transform = `${baseTransform} ${animationTransform}`.trim();
+                    };
+
+                    applyFrameAnimation(textWrapper, card.animations.text, card.duration, timeInCard);
+                    if (showMedia) {
+                        applyFrameAnimation(mediaWrapper, card.animations.media, card.duration, timeInCard);
+                    }
+
+                }, { project: projectData, card: card, timeInCard: timeInCard });
 
                 await page.screenshot({ path: path.join(framesDir, `frame_${String(frameCount++).padStart(6, '0')}.png`) });
+            
+                // 진행률 업데이트
+                if (frameCount % fps === 0) { // 1초마다 업데이트
+                    const progress = 10 + Math.floor((frameCount / totalFrames) * 40);
+                    await updateJobStatus(jobId, 'processing', `영상 프레임 생성 중... (${frameCount}/${totalFrames})`, progress);
+                }
             }
         }
         await browser.close();
         await updateJobStatus(jobId, 'processing', '프레임 캡처 완료', 50);
 
-        // 단계 3: 오디오 믹싱
+        // 단계 3: 오디오 믹싱 (기존 코드와 동일)
         await updateJobStatus(jobId, 'processing', '오디오 트랙 처리 중...', 60);
+        // ... (오디오 믹싱 코드는 변경 없음)
         const audioTracks = (projectData.scriptCards || []).map((card, index) => {
             const startTime = (projectData.scriptCards || []).slice(0, index).reduce((acc, c) => acc + c.duration, 0);
             return { startTime, tts: card.audioUrl ? { url: card.audioUrl, volume: card.ttsVolume } : null, sfx: card.sfxUrl ? { url: card.sfxUrl, volume: card.sfxVolume } : null };
@@ -152,8 +277,9 @@ async function renderVideo(jobId) {
             }));
         }
 
-        // 단계 4: 최종 영상 합성
+        // 단계 4: 최종 영상 합성 (기존 코드와 동일)
         await updateJobStatus(jobId, 'processing', '최종 영상 합성 중...', 80);
+        // ... (FFmpeg 합성은 변경 없음)
         const hasAudio = await fs.pathExists(finalAudioPath);
         const audioInput = hasAudio ? `-i "${finalAudioPath}"` : '';
         const ffmpegCommand = `ffmpeg -y -framerate ${fps} -i "${framesDir}/frame_%06d.png" ${audioInput} -c:v libx264 -crf 18 -preset slow -vf "scale=1080:1920,setsar=1:1,format=yuv420p" -c:a aac -b:a 192k -movflags +faststart ${hasAudio ? '-shortest' : ''} "${outputVideoPath}"`;
@@ -162,8 +288,10 @@ async function renderVideo(jobId) {
             resolve();
         }));
 
-        // 단계 5: 영상 업로드
+
+        // 단계 5: 영상 업로드 (기존 코드와 동일)
         await updateJobStatus(jobId, 'processing', '영상 업로드 중...', 95);
+        // ... (업로드 로직은 변경 없음)
         const videoTitle = projectData.projectSettings?.project?.title || 'sunsak-video';
         const safeTitle = videoTitle.replace(/[^a-zA-Z0-9-_\.]/g, '_');
         const destination = `videos/${jobId}/${safeTitle}.mp4`;
@@ -183,6 +311,7 @@ async function renderVideo(jobId) {
     }
 }
 
+// ... 나머지 worker.js 코드는 기존과 동일합니다 ...
 async function listenForMessages() {
     const subscription = pubSubClient.subscription(SUBSCRIPTION_NAME);
     const messageHandler = async (message) => {
@@ -196,7 +325,7 @@ async function listenForMessages() {
         } catch (error) {
             console.error(`[${jobId || 'Unknown Job'}] 메시지 처리 오류:`, error.stack);
             if(jobId) await updateJobStatus(jobId, 'failed', `메시지 처리 실패: ${error.message}`);
-            message.ack();
+            message.ack(); // 실패해도 ack 처리하여 무한 재시도 방지
         }
     };
     subscription.on('message', messageHandler);
@@ -211,5 +340,4 @@ app.listen(PORT, () => {
   console.log(`워커 Health Check 서버 ${PORT} 포트에서 실행 중.`);
   listenForMessages();
 });
-
 // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
