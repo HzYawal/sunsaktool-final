@@ -36,6 +36,8 @@ async function updateJobStatus(jobId, status, message, progress = null) {
 }
 
 // --- 핵심 영상 제작 함수 ---
+// ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ 이 코드로 renderVideo 함수 전체를 교체하세요 ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+
 async function renderVideo(jobId) {
     const fps = 30;
     const tempDir = path.join(os.tmpdir(), jobId);
@@ -65,6 +67,7 @@ async function renderVideo(jobId) {
         const context = await browser.newContext({ bypassCSP: true });
         const page = await context.newPage();
         await page.setViewportSize({ width: 1080, height: 1920 });
+        
         const renderTemplatePath = `file://${path.join(__dirname, 'render_template.html')}`;
         await page.goto(renderTemplatePath, { waitUntil: 'networkidle' });
         
@@ -87,7 +90,10 @@ async function renderVideo(jobId) {
                     const scale = 1080 / (project.renderMetadata.sourceWidth || 420);
                     const pSettings = project.projectSettings;
 
-                    const applyTransform = (el, layout) => { if (el && layout) el.style.transform = `translate(${layout.x * scale}px, ${layout.y * scale}px) scale(${layout.scale || 1}) rotate(${layout.angle || 0}deg)`; };
+                    // --- 헬퍼 함수 (클라이언트 로직 100% 이식) ---
+                    const applyTransform = (el, layout) => {
+                        if (el && layout) el.style.transform = `translate(${layout.x * scale}px, ${layout.y * scale}px) scale(${layout.scale || 1}) rotate(${layout.angle || 0}deg)`;
+                    };
                     const applyAnimation = (el, anims, duration, time) => {
                         if (!el || !anims) return;
                         el.style.opacity = '1';
@@ -110,20 +116,22 @@ async function renderVideo(jobId) {
                         el.style.transform = `${baseTransform} ${newTransform}`;
                     };
 
+                    // --- DOM 요소 선택 ---
                     const headerEl = document.querySelector('.st-preview-header'), headerTitleEl = headerEl.querySelector('.header-title'), headerLogoEl = document.getElementById('header-logo');
-                    const projectInfoTitleEl = document.querySelector('.st-project-info .title'), projectInfoSpanEl = document.querySelector('.st-project-info span');
+                    const projectInfoEl = document.querySelector('.st-project-info'), projectInfoTitleEl = projectInfoEl.querySelector('.title'), projectInfoSpanEl = projectInfoEl.querySelector('span');
                     const textWrapper = document.querySelector('#st-preview-text-container-wrapper'), textEl = document.querySelector('#st-preview-text');
                     const mediaWrapper = document.querySelector('#st-preview-media-container-wrapper'), imageEl = document.querySelector('#st-preview-image'), videoEl = document.querySelector('#st-preview-video');
 
+                    // --- 스타일 및 내용 적용 (모든 기능 포함) ---
                     headerEl.style.height = `${65 * scale}px`; headerEl.style.padding = `0 ${15 * scale}px`;
                     headerEl.style.backgroundColor = pSettings.header.backgroundColor;
                     headerTitleEl.innerText = pSettings.header.text; headerTitleEl.style.color = pSettings.header.color; headerTitleEl.style.fontFamily = pSettings.header.fontFamily; headerTitleEl.style.fontSize = `${pSettings.header.fontSize * scale}px`;
-                    
                     if (pSettings.header.logo.url) {
                         if(headerLogoEl.src !== pSettings.header.logo.url) headerLogoEl.src = pSettings.header.logo.url;
                         headerLogoEl.style.width = `${pSettings.header.logo.size * scale}px`; headerLogoEl.style.height = `${pSettings.header.logo.size * scale}px`; headerLogoEl.style.display = 'block';
                     } else { headerLogoEl.style.display = 'none'; }
                     
+                    projectInfoEl.style.padding = `${10 * scale}px`; projectInfoEl.style.paddingBottom = `${16 * scale}px`; projectInfoEl.style.marginBottom = `${16 * scale}px`;
                     projectInfoTitleEl.innerText = pSettings.project.title; projectInfoTitleEl.style.color = pSettings.project.titleColor; projectInfoTitleEl.style.fontFamily = pSettings.project.titleFontFamily; projectInfoTitleEl.style.fontSize = `${pSettings.project.titleFontSize * scale}px`;
                     projectInfoSpanEl.innerText = `${pSettings.project.author || ''} | 조회수 ${Number(pSettings.project.views || 0).toLocaleString()}`; projectInfoSpanEl.style.color = pSettings.project.metaColor; projectInfoSpanEl.style.fontSize = `${13 * scale}px`;
                     
@@ -131,9 +139,19 @@ async function renderVideo(jobId) {
                     
                     applyTransform(textWrapper, currentCard.layout.text);
                     textEl.innerHTML = '';
-                    if (currentCard.segments && currentCard.segments.length > 0) {
-                        currentCard.segments.forEach(segment => { if (t >= segment.startTime) { const p = document.createElement('p'); p.textContent = segment.text || ' '; p.style.margin = 0; textEl.appendChild(p); } });
-                    } else { currentCard.text.split('\n').forEach(line => { const p = document.createElement('p'); p.textContent = line || ' '; p.style.margin = 0; textEl.appendChild(p); }); }
+                    
+                    // [핵심] 텍스트 좌표 기반 렌더링
+                    if (currentCard.measuredLines) {
+                        currentCard.measuredLines.forEach(line => {
+                            const p = document.createElement('div');
+                            p.style.position = 'absolute';
+                            p.style.left = `${line.x * scale}px`;
+                            p.style.top = `${line.y * scale}px`;
+                            p.style.whiteSpace = 'nowrap';
+                            p.textContent = line.text;
+                            textEl.appendChild(p);
+                        });
+                    }
                     
                     let showMedia = false;
                     if (mediaInfo.media && mediaInfo.media.url) {
@@ -183,10 +201,7 @@ async function renderVideo(jobId) {
         
         // 단계 3: 오디오 믹싱
         await updateJobStatus(jobId, 'processing', '오디오 트랙 처리 중...', 60);
-        const audioTracks = (projectData.scriptCards || []).map((card, index) => {
-            const startTime = (projectData.scriptCards || []).slice(0, index).reduce((acc, c) => acc + c.duration, 0);
-            return { startTime, tts: card.audioUrl ? { url: card.audioUrl, volume: card.ttsVolume } : null, sfx: card.sfxUrl ? { url: card.sfxUrl, volume: card.sfxVolume } : null };
-        });
+        const audioTracks = (projectData.scriptCards || []).map((card, index) => ({ startTime: (projectData.scriptCards || []).slice(0, index).reduce((acc, c) => acc + c.duration, 0), tts: card.audioUrl ? { url: card.audioUrl, volume: card.ttsVolume } : null, sfx: card.sfxUrl ? { url: card.sfxUrl, volume: card.sfxVolume } : null }));
         const audioInputs = []; let complexFilter = ''; const audioStreamsToMix = [];
         if (projectData.globalBGM && projectData.globalBGM.url) {
             const bgmPath = path.join(audioDir, `bgm.mp3`);
@@ -259,6 +274,8 @@ async function renderVideo(jobId) {
         console.log(`[${jobId}] 임시 파일 정리 완료`);
     }
 }
+
+// ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
 async function listenForMessages() {
     const subscription = pubSubClient.subscription(SUBSCRIPTION_NAME);
