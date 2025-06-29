@@ -53,49 +53,39 @@ async function renderVideo(jobId) {
         await fs.ensureDir(framesDir);
         await fs.ensureDir(audioDir);
 
-        // 단계 1: GCS에서 작업 데이터 다운로드 (재시도 로직 추가)
+        // 단계 1: GCS에서 작업 데이터 다운로드 (재시도 로직 포함)
         await updateJobStatus(jobId, 'processing', '작업 데이터 다운로드 중...', 5);
         const bucket = storage.bucket(JOB_DATA_BUCKET_NAME);
         const file = bucket.file(`${jobId}.json`);
-        
-        const maxRetries = 3;
-        const retryDelay = 2000; // 2초
+        const maxRetries = 3, retryDelay = 2000;
         let data;
-
         for (let i = 0; i < maxRetries; i++) {
             try {
                 [data] = await file.download();
-                console.log(`[${jobId}] 작업 데이터 다운로드 성공 (시도: ${i + 1})`);
-                break; // 성공하면 루프 탈출
+                break;
             } catch (error) {
-                if (i === maxRetries - 1) {
-                    // 마지막 시도에도 실패하면 에러를 던짐
-                    throw error;
-                }
-                console.warn(`[${jobId}] 작업 데이터 다운로드 실패. ${retryDelay / 1000}초 후 재시도... (시도: ${i + 1})`);
+                if (i === maxRetries - 1) throw error;
                 await new Promise(resolve => setTimeout(resolve, retryDelay));
             }
         }
-
-        if (!data) {
-             throw new Error('최대 재시도 후에도 작업 데이터를 다운로드할 수 없습니다.');
-        }
-
+        if (!data) throw new Error('작업 데이터 다운로드 최종 실패');
         projectData = JSON.parse(data.toString());
-        await file.delete(); // 다운로드 후 파일 삭제
+        await file.delete();
+
+        // [핵심 수정] 확대 비율(Scale Factor) 계산
+        const targetWidth = 1080;
+        const sourceWidth = projectData.renderMetadata?.sourceWidth || 420;
+        const scaleFactor = targetWidth / sourceWidth;
 
         // 단계 2: Playwright로 프레임 생성
         await updateJobStatus(jobId, 'processing', '영상 프레임 생성 중...', 10);
         browser = await playwright.chromium.launch();
-        const context = await browser.newContext({
-            viewport: { width: 1080, height: 1920 }
-        });
+        const context = await browser.newContext({ viewport: { width: 1080, height: 1920 } });
         const page = await context.newPage();
         
-        // [중요] 폰트가 모두 로드될 때까지 기다리는 옵션 추가
         const renderTemplatePath = `file://${path.join(__dirname, 'render_template.html')}`;
         await page.goto(renderTemplatePath, { waitUntil: 'networkidle' });
-        await page.evaluate(() => document.fonts.ready); // 모든 폰트 로딩 대기
+        await page.evaluate(() => document.fonts.ready);
 
         let frameCount = 0;
         const totalFrames = projectData.scriptCards.reduce((sum, card) => sum + Math.floor(card.duration * fps), 0);
@@ -103,38 +93,52 @@ async function renderVideo(jobId) {
         for (const card of projectData.scriptCards) {
             const cardFrames = Math.floor(card.duration * fps);
             for (let i = 0; i < cardFrames; i++) {
-                
-                // [수정] 현재 프레임의 카드 내 시간 계산
                 const timeInCard = i / fps;
 
-                // [수정] 클라이언트의 렌더링 로직을 거의 그대로 재현하는 복잡한 evaluate 함수
+                // [핵심 수정] page.evaluate에 scaleFactor 전달 및 모든 크기 값에 적용
                 await page.evaluate(async (args) => {
-                    const { project, card, timeInCard } = args;
+                    const { project, card, timeInCard, scaleFactor } = args;
                     const pSettings = project.projectSettings;
 
-                    // --- 1. 헤더 및 프로젝트 정보 업데이트 (기존 로직과 유사) ---
+                    // --- 스케일링 함수 ---
+                    const scale = (value) => {
+                        if (typeof value === 'string' && value.endsWith('px')) {
+                            return parseFloat(value) * scaleFactor + 'px';
+                        }
+                        return parseFloat(value) * scaleFactor;
+                    };
+
+                    // --- 1. 헤더 및 프로젝트 정보 업데이트 (스케일링 적용) ---
                     const headerEl = document.querySelector('.st-preview-header');
                     headerEl.style.backgroundColor = pSettings.header.backgroundColor;
                     headerEl.style.color = pSettings.header.color;
                     headerEl.style.fontFamily = pSettings.header.fontFamily;
+                    // 헤더 높이도 스케일링
+                    headerEl.style.height = scale(65) + 'px'; 
                     document.querySelector('.header-title').innerText = pSettings.header.text;
-                    document.querySelector('.header-title').style.fontSize = pSettings.header.fontSize + 'px';
+                    document.querySelector('.header-title').style.fontSize = scale(pSettings.header.fontSize);
                     
                     const logoEl = document.querySelector('.header-logo');
                     if (pSettings.header.logo && pSettings.header.logo.url) {
                         logoEl.src = pSettings.header.logo.url;
-                        logoEl.style.width = pSettings.header.logo.size + 'px';
-                        logoEl.style.height = pSettings.header.logo.size + 'px';
+                        logoEl.style.width = scale(pSettings.header.logo.size);
+                        logoEl.style.height = scale(pSettings.header.logo.size);
                         logoEl.style.display = 'block';
                     } else {
                         logoEl.style.display = 'none';
                     }
 
+                    const projectInfoEl = document.querySelector('.st-project-info');
+                    projectInfoEl.style.fontSize = scale(13) + 'px';
+                    projectInfoEl.style.marginBottom = scale(16) + 'px';
+                    projectInfoEl.style.paddingBottom = scale(16) + 'px';
+
                     const projectInfoTitleEl = document.querySelector('.st-project-info .title');
                     projectInfoTitleEl.innerText = pSettings.project.title;
                     projectInfoTitleEl.style.color = pSettings.project.titleColor;
                     projectInfoTitleEl.style.fontFamily = pSettings.project.titleFontFamily;
-                    projectInfoTitleEl.style.fontSize = pSettings.project.titleFontSize + 'px';
+                    projectInfoTitleEl.style.fontSize = scale(pSettings.project.titleFontSize);
+                    projectInfoTitleEl.style.marginBottom = scale(5) + 'px';
 
                     const projectInfoSpanEl = document.querySelector('.st-project-info span');
                     projectInfoSpanEl.innerText = `${pSettings.project.author || ''} | 조회수 ${Number(pSettings.project.views || 0).toLocaleString()}`;
@@ -146,19 +150,21 @@ async function renderVideo(jobId) {
                     const mediaWrapper = document.getElementById('st-preview-media-container-wrapper');
                     const imageEl = document.getElementById('st-preview-image');
                     
-                    // --- 3. 레이아웃 적용 (Transform) ---
+                    // --- 3. 레이아웃 적용 (Transform 스케일링 적용) ---
                     const applyTransform = (el, layout) => {
                         if (el && layout) {
-                            el.style.transform = `translate(${layout.x || 0}px, ${layout.y || 0}px) scale(${layout.scale || 1}) rotate(${layout.angle || 0}deg)`;
+                            el.style.transform = `translate(${scale(layout.x || 0)}px, ${scale(layout.y || 0)}px) scale(${layout.scale || 1}) rotate(${layout.angle || 0}deg)`;
                         }
                     };
                     applyTransform(textWrapper, card.layout.text);
                     applyTransform(mediaWrapper, card.layout.media);
 
-                    // --- 4. 텍스트 스타일 및 내용 적용 ---
-                    Object.assign(textEl.style, card.style);
+                    // --- 4. 텍스트 스타일 및 내용 적용 (스케일링 적용) ---
+                    const scaledStyle = { ...card.style };
+                    scaledStyle.fontSize = scale(card.style.fontSize);
+                    scaledStyle.letterSpacing = scale(card.style.letterSpacing);
+                    Object.assign(textEl.style, scaledStyle);
                     
-                    // 시간대별 텍스트 세그먼트 표시
                     textEl.innerHTML = '';
                     if (card.segments && card.segments.length > 0) {
                         card.segments.forEach(segment => {
@@ -172,7 +178,6 @@ async function renderVideo(jobId) {
                     } else {
                         textEl.innerText = card.text;
                     }
-
                     // --- 5. 미디어 표시 로직 ---
                     let showMedia = false;
                     if (card.media && card.media.url) {
