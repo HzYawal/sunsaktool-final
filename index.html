@@ -89,7 +89,6 @@
             justify-content: center;
             align-items: center;
             width: 100%;
-            flex-grow: 1;
             min-height: 0;
         }
         #st-preview-image, #st-preview-video { max-width: 100%; max-height: 100%; object-fit: contain; }
@@ -1483,13 +1482,19 @@ const exporter = {
         UI.progressText.textContent = '서버에 영상 제작 요청 중...';
         UI.progressBarInner.style.width = '10%';
         
+        // [수정] 미리보기 패널의 실제 너비를 가져옵니다.
         const previewPanelEl = document.getElementById('st-preview-panel');
+        
         const projectData = {
             projectSettings: state.projectSettings,
             scriptCards: state.scriptCards,
             globalBGM: state.globalBGM,
-            renderMetadata: { sourceWidth: previewPanelEl.clientWidth || 420 }
+            // [추가] 렌더링에 필요한 메타데이터(원본 너비)를 포함시킵니다.
+            renderMetadata: {
+                sourceWidth: previewPanelEl.clientWidth || 420 // 만약을 위해 기본값 420 설정
+            }
         };
+
         try {
             const response = await fetch(`${SERVICE_URL}/render-video`, {
                 method: 'POST',
