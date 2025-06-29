@@ -50,7 +50,7 @@ async function renderVideo(jobId) {
         await fs.ensureDir(framesDir);
         await fs.ensureDir(audioDir);
 
-        // 단계 1: GCS에서 작업 데이터 다운로드 (재시도 로직 포함)
+        // 단계 1: GCS에서 작업 데이터 다운로드
         await updateJobStatus(jobId, 'processing', '작업 데이터 다운로드 중...', 5);
         const bucket = storage.bucket(JOB_DATA_BUCKET_NAME);
         const file = bucket.file(`${jobId}.json`);
@@ -59,11 +59,9 @@ async function renderVideo(jobId) {
         for (let i = 0; i < maxRetries; i++) {
             try {
                 [data] = await file.download();
-                console.log(`[${jobId}] 작업 데이터 다운로드 성공 (시도: ${i + 1})`);
                 break;
             } catch (error) {
                 if (i === maxRetries - 1) throw error;
-                console.warn(`[${jobId}] 작업 데이터 다운로드 실패. ${retryDelay / 1000}초 후 재시도... (시도: ${i + 1})`);
                 await new Promise(resolve => setTimeout(resolve, retryDelay));
             }
         }
@@ -111,7 +109,7 @@ async function renderVideo(jobId) {
                         return value * scaleFactor;
                     }
 
-                    // --- 헤더 및 프로젝트 정보 스케일링 ---
+                    // --- 헤더 및 프로젝트 정보 스케일링 (모든 단위 적용) ---
                     const headerEl = document.querySelector('.st-preview-header');
                     headerEl.style.backgroundColor = pSettings.header.backgroundColor;
                     headerEl.style.color = pSettings.header.color;
@@ -154,11 +152,17 @@ async function renderVideo(jobId) {
                     projectInfoSpanEl.innerText = `${pSettings.project.author || ''} | 조회수 ${Number(pSettings.project.views || 0).toLocaleString()}`;
                     projectInfoSpanEl.style.color = pSettings.project.metaColor;
                     
-                    // --- 레이아웃 및 텍스트 스케일링 ---
                     const textWrapper = document.getElementById('st-preview-text-container-wrapper');
                     const textEl = document.getElementById('st-preview-text');
-                    const mediaWrapper = document.getElementById('st-preview-media-container-wrapper');
-                    const imageEl = document.getElementById('st-preview-image');
+                    
+                    // [핵심 수정] 원치 않는 텍스트 애니메이션 제거
+                    // 항상 전체 텍스트를 한 번에 표시하여 줄바꿈 오류 방지
+                    textEl.innerText = card.text;
+
+                    const scaledStyle = { ...card.style };
+                    scaledStyle.fontSize = scale(card.style.fontSize);
+                    scaledStyle.letterSpacing = scale(card.style.letterSpacing);
+                    Object.assign(textEl.style, scaledStyle);
                     
                     const applyTransform = (el, layout) => {
                         if (el && layout) {
@@ -166,82 +170,10 @@ async function renderVideo(jobId) {
                         }
                     };
                     applyTransform(textWrapper, card.layout.text);
-                    applyTransform(mediaWrapper, card.layout.media);
-
-                    const scaledStyle = { ...card.style };
-                    scaledStyle.fontSize = scale(card.style.fontSize);
-                    scaledStyle.letterSpacing = scale(card.style.letterSpacing);
-                    // lineHeight는 단위 없는 비율이므로 스케일링하지 않음
-                    Object.assign(textEl.style, scaledStyle);
-                    
-                    textEl.innerHTML = '';
-                    if (card.segments && card.segments.length > 0) {
-                        card.segments.forEach(segment => {
-                            if (timeInCard >= segment.startTime) {
-                                const p = document.createElement('p');
-                                p.className = 'preview-text-segment';
-                                p.textContent = segment.text || ' ';
-                                textEl.appendChild(p);
-                            }
-                        });
-                    } else {
-                        textEl.innerText = card.text;
-                    }
-
-                    // --- 미디어 및 애니메이션 스케일링 ---
-                    let showMedia = false;
-                    if (card.media?.url && card.media.type === 'image') {
-                        const showOnSegmentIndex = (card.media.showOnSegment || 1) - 1;
-                        const showTime = (card.segments && card.segments[showOnSegmentIndex]) ? card.segments[showOnSegmentIndex].startTime : 0;
-                        if (timeInCard >= showTime) showMedia = true;
-                    }
-                    if (showMedia) {
-                        mediaWrapper.style.display = 'flex';
-                        imageEl.style.display = 'block';
-                        imageEl.style.objectFit = card.media.fit;
-                        if (imageEl.src !== card.media.url) imageEl.src = card.media.url;
-                    } else {
-                        mediaWrapper.style.display = 'none';
-                    }
-
-                    const applyFrameAnimation = (el, anims, duration, time) => {
-                        if (!el || !anims) return;
-                        const baseTransform = el.style.transform.replace(/translateY\([^)]+\)/g, '').replace(/scale\([^)]+\)/g, '').trim();
-                        el.style.opacity = '1';
-                        let animationTransform = '';
-                        const inDuration = anims.in.duration;
-                        const outStartTime = duration - anims.out.duration;
-                        let progress;
-                        if (time < inDuration && anims.in.name !== 'none') {
-                            progress = Math.max(0, Math.min(1, time / inDuration));
-                            if (anims.in.name === 'fadeIn') el.style.opacity = progress;
-                            if (anims.in.name === 'slideInUp') animationTransform += ` translateY(${scaleNum(50) * (1 - progress)}px)`;
-                            if (anims.in.name === 'zoomIn') {
-                                el.style.opacity = progress;
-                                animationTransform += ` scale(${0.8 + 0.2 * progress})`;
-                            }
-                        } else if (time >= outStartTime && anims.out.name !== 'none') {
-                            progress = Math.max(0, Math.min(1, (time - outStartTime) / anims.out.duration));
-                            if (anims.out.name === 'fadeOut') el.style.opacity = 1 - progress;
-                            if (anims.out.name === 'slideOutDown') animationTransform += ` translateY(${scaleNum(50) * progress}px)`;
-                            if (anims.out.name === 'zoomOut') {
-                                el.style.opacity = 1 - progress;
-                                animationTransform += ` scale(${1 - 0.2 * progress})`;
-                            }
-                        }
-                        el.style.transform = `${baseTransform} ${animationTransform}`.trim();
-                    };
-                    applyFrameAnimation(textWrapper, card.animations.text, card.duration, timeInCard);
-                    if (showMedia) applyFrameAnimation(mediaWrapper, card.animations.media, card.duration, timeInCard);
 
                 }, { project: projectData, card: card, timeInCard: timeInCard, scaleFactor: scaleFactor });
 
                 await page.screenshot({ path: path.join(framesDir, `frame_${String(frameCount++).padStart(6, '0')}.png`) });
-            
-                if (frameCount % fps === 0) {
-                    const progress = 10 + Math.floor((frameCount / totalFrames) * 40);
-                    await updateJobStatus(jobId, 'processing', `영상 프레임 생성 중... (${frameCount}/${totalFrames})`, progress);
-                }
             }
         }
         await browser.close();
