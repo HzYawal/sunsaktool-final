@@ -1432,7 +1432,75 @@ handlers.addScriptCard('순삭툴에 오신 것을 환영합니다!\n텍스트�
 const exporter = {
     statusCheckInterval: null,
     async checkStatus(jobId) {
-        // 이 함수는 이전과 동일하게 유지됩니다 (서버-워커 구조)
+        // ... (이전 최종 버전과 동일)
+    },
+    async startExport() {
+        if (state.scriptCards.some(c => c.text.trim() && !c.ttsReady)) return alert('음성 생성이 완료되지 않은 스크립트가 있습니다.');
+        if (state.scriptCards.length === 0) return alert('출력할 영상이 없습니다.');
+        if (this.statusCheckInterval) clearInterval(this.statusCheckInterval);
+
+        playback.stop();
+        UI.exportBtn.disabled = true;
+        UI.progressOverlay.style.display = 'flex';
+        UI.progressText.textContent = '렌더링 데이터 생성 중...';
+        UI.progressSubText.textContent = '레이아웃 좌표 측정 중...';
+        UI.progressBarInner.style.width = '10%';
+
+        // [핵심] 렌더링용 데이터를 새로 만듭니다.
+        const projectDataForRender = JSON.parse(JSON.stringify(state));
+        
+        // [핵심] 각 카드의 텍스트 줄바꿈과 좌표를 정확히 측정합니다.
+        const previewTextEl = document.getElementById('st-preview-text');
+        const previewContentRect = document.getElementById('st-preview-content').getBoundingClientRect();
+        
+        projectDataForRender.scriptCards.forEach(card => {
+            // 임시로 미리보기에 텍스트를 그려서 좌표를 측정
+            Object.assign(previewTextEl.style, card.style);
+            previewTextEl.innerHTML = '';
+            const lines = card.text.split('\n');
+            const measuredLines = [];
+            lines.forEach(lineText => {
+                const p = document.createElement('p');
+                p.style.margin = 0;
+                p.textContent = lineText || ' ';
+                previewTextEl.appendChild(p);
+                const rect = p.getBoundingClientRect();
+                measuredLines.push({
+                    text: lineText,
+                    // 부모 요소(st-preview-content) 기준 상대 좌표 계산
+                    x: rect.left - previewContentRect.left,
+                    y: rect.top - previewContentRect.top,
+                    width: rect.width,
+                    height: rect.height
+                });
+            });
+            // 측정된 좌표 데이터를 카드에 추가
+            card.measuredLines = measuredLines;
+        });
+        previewTextEl.innerHTML = ''; // 측정 후 정리
+
+        const previewPanelEl = document.getElementById('st-preview-panel');
+        const projectData = {
+            projectSettings: projectDataForRender.projectSettings,
+            scriptCards: projectDataForRender.scriptCards,
+            globalBGM: projectDataForRender.globalBGM,
+            renderMetadata: {
+                sourceWidth: previewPanelEl.clientWidth || 420
+            }
+        };
+
+        try {
+            // ... (서버 요청 로직은 이전 최종 버전과 동일)
+        } catch (error) {
+            // ... (에러 처리 로직은 이전 최종 버전과 동일)
+        }
+    }
+};
+
+// 위 코드의 생략된 부분을 모두 채운 최종 버전입니다.
+const finalExporter = {
+    statusCheckInterval: null,
+    async checkStatus(jobId) {
         try {
             const response = await fetch(`${SERVICE_URL}/render-status/${jobId}`);
             if (!response.ok) {
@@ -1460,58 +1528,62 @@ const exporter = {
                 UI.exportBtn.disabled = false;
             }
         } catch (error) {
-            console.error(error);
-            clearInterval(this.statusCheckInterval);
+            console.error(error); clearInterval(this.statusCheckInterval);
             alert(`상태 확인 중 오류 발생: ${error.message}`);
-            UI.progressOverlay.style.display = 'none';
-            UI.exportBtn.disabled = false;
+            UI.progressOverlay.style.display = 'none'; UI.exportBtn.disabled = false;
         }
     },
-
     async startExport() {
-        if (state.scriptCards.some(c => c.text.trim() && !c.ttsReady)) {
-            return alert('아직 음성 생성이 완료되지 않은 스크립트가 있습니다.');
-        }
-        if (state.scriptCards.length === 0) {
-            return alert('출력할 영상이 없습니다.');
-        }
+        if (state.scriptCards.some(c => c.text.trim() && !c.ttsReady)) return alert('음성 생성이 완료되지 않은 스크립트가 있습니다.');
+        if (state.scriptCards.length === 0) return alert('출력할 영상이 없습니다.');
         if (this.statusCheckInterval) clearInterval(this.statusCheckInterval);
-
         playback.stop();
         UI.exportBtn.disabled = true;
         UI.progressOverlay.style.display = 'flex';
-        UI.progressText.textContent = '서버에 영상 제작 요청 중...';
+        UI.progressText.textContent = '렌더링 데이터 생성 중...';
+        UI.progressSubText.textContent = '레이아웃 좌표 측정 중...';
         UI.progressBarInner.style.width = '10%';
-
-        // [핵심] 렌더링에 필요한 모든 데이터를 projectData 객체에 담습니다.
+        const projectDataForRender = JSON.parse(JSON.stringify(state));
+        const previewTextEl = document.getElementById('st-preview-text');
+        const previewContentRect = document.getElementById('st-preview-content').getBoundingClientRect();
+        projectDataForRender.scriptCards.forEach(card => {
+            Object.assign(previewTextEl.style, card.style);
+            previewTextEl.innerHTML = '';
+            const lines = card.text.split('\n');
+            const measuredLines = [];
+            lines.forEach(lineText => {
+                const p = document.createElement('p');
+                p.style.margin = 0;
+                p.textContent = lineText || ' ';
+                previewTextEl.appendChild(p);
+                const rect = p.getBoundingClientRect();
+                measuredLines.push({ text: lineText, x: rect.left - previewContentRect.left, y: rect.top - previewContentRect.top, width: rect.width, height: rect.height });
+            });
+            card.measuredLines = measuredLines;
+        });
+        previewTextEl.innerHTML = '';
         const previewPanelEl = document.getElementById('st-preview-panel');
         const projectData = {
-            projectSettings: state.projectSettings,
-            scriptCards: state.scriptCards,
-            globalBGM: state.globalBGM,
-            // [핵심] 미리보기 패널의 너비를 서버에 알려줍니다.
-            renderMetadata: {
-                sourceWidth: previewPanelEl.clientWidth || 420
-            }
+            projectSettings: projectDataForRender.projectSettings,
+            scriptCards: projectDataForRender.scriptCards,
+            globalBGM: projectDataForRender.globalBGM,
+            renderMetadata: { sourceWidth: previewPanelEl.clientWidth || 420 }
         };
-
         try {
+            UI.progressText.textContent = '서버에 작업 요청 중...';
+            UI.progressBarInner.style.width = `15%`;
             const response = await fetch(`${SERVICE_URL}/render-video`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(projectData)
             });
-
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({ message: '서버 응답을 JSON으로 파싱할 수 없습니다.' }));
                 throw new Error(`서버 오류 (${response.status}): ${errorData.message || '알 수 없는 오류가 발생했습니다.'}`);
             }
-
             const result = await response.json();
             if (result.success && result.jobId) {
                 UI.progressText.textContent = '영상 제작이 시작되었습니다!';
-                UI.progressSubText.textContent = '서버에서 작업이 처리 중입니다. 잠시만 기다려주세요...';
-                UI.progressBarInner.style.width = '20%';
                 this.statusCheckInterval = setInterval(() => this.checkStatus(result.jobId), 5000);
             } else {
                 throw new Error('서버에서 유효한 작업 ID를 받지 못했습니다.');
