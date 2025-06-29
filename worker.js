@@ -1,5 +1,3 @@
-// ▼▼▼▼▼▼▼▼▼▼▼ 이 코드로 worker.js 전체를 교체하세요 ▼▼▼▼▼▼▼▼▼▼▼
-
 // ===============================================
 //  worker.js (Playwright Server-Side Rendering)
 // ===============================================
@@ -37,7 +35,7 @@ async function updateJobStatus(jobId, status, message, progress = null) {
     console.log(`[${jobId}] 상태: ${status} - ${message} (${progress !== null ? progress + '%' : ''})`);
 }
 
-// --- 핵심 영상 제작 함수 ---
+// --- 핵심 영상 제작 함수 (최종 수정본) ---
 async function renderVideo(jobId) {
     const fps = 30;
     const tempDir = path.join(os.tmpdir(), jobId);
@@ -62,9 +60,11 @@ async function renderVideo(jobId) {
         for (let i = 0; i < maxRetries; i++) {
             try {
                 [data] = await file.download();
+                console.log(`[${jobId}] 작업 데이터 다운로드 성공 (시도: ${i + 1})`);
                 break;
             } catch (error) {
                 if (i === maxRetries - 1) throw error;
+                console.warn(`[${jobId}] 작업 데이터 다운로드 실패. ${retryDelay / 1000}초 후 재시도... (시도: ${i + 1})`);
                 await new Promise(resolve => setTimeout(resolve, retryDelay));
             }
         }
@@ -72,7 +72,7 @@ async function renderVideo(jobId) {
         projectData = JSON.parse(data.toString());
         await file.delete();
 
-        // [핵심 수정] 확대 비율(Scale Factor) 계산
+        // 확대 비율(Scale Factor) 계산
         const targetWidth = 1080;
         const sourceWidth = projectData.renderMetadata?.sourceWidth || 420;
         const scaleFactor = targetWidth / sourceWidth;
@@ -95,26 +95,23 @@ async function renderVideo(jobId) {
             for (let i = 0; i < cardFrames; i++) {
                 const timeInCard = i / fps;
 
-                // [핵심 수정] page.evaluate에 scaleFactor 전달 및 모든 크기 값에 적용
                 await page.evaluate(async (args) => {
                     const { project, card, timeInCard, scaleFactor } = args;
                     const pSettings = project.projectSettings;
 
-                    // --- 스케일링 함수 ---
                     const scale = (value) => {
                         if (typeof value === 'string' && value.endsWith('px')) {
                             return parseFloat(value) * scaleFactor + 'px';
                         }
                         return parseFloat(value) * scaleFactor;
                     };
+                    const scaleNum = (value) => parseFloat(value) * scaleFactor;
 
-                    // --- 1. 헤더 및 프로젝트 정보 업데이트 (스케일링 적용) ---
                     const headerEl = document.querySelector('.st-preview-header');
                     headerEl.style.backgroundColor = pSettings.header.backgroundColor;
                     headerEl.style.color = pSettings.header.color;
                     headerEl.style.fontFamily = pSettings.header.fontFamily;
-                    // 헤더 높이도 스케일링
-                    headerEl.style.height = scale(65) + 'px'; 
+                    headerEl.style.height = scale(65);
                     document.querySelector('.header-title').innerText = pSettings.header.text;
                     document.querySelector('.header-title').style.fontSize = scale(pSettings.header.fontSize);
                     
@@ -129,37 +126,34 @@ async function renderVideo(jobId) {
                     }
 
                     const projectInfoEl = document.querySelector('.st-project-info');
-                    projectInfoEl.style.fontSize = scale(13) + 'px';
-                    projectInfoEl.style.marginBottom = scale(16) + 'px';
-                    projectInfoEl.style.paddingBottom = scale(16) + 'px';
+                    projectInfoEl.style.fontSize = scale(13);
+                    projectInfoEl.style.marginBottom = scale(16);
+                    projectInfoEl.style.paddingBottom = scale(16);
 
                     const projectInfoTitleEl = document.querySelector('.st-project-info .title');
                     projectInfoTitleEl.innerText = pSettings.project.title;
                     projectInfoTitleEl.style.color = pSettings.project.titleColor;
                     projectInfoTitleEl.style.fontFamily = pSettings.project.titleFontFamily;
                     projectInfoTitleEl.style.fontSize = scale(pSettings.project.titleFontSize);
-                    projectInfoTitleEl.style.marginBottom = scale(5) + 'px';
+                    projectInfoTitleEl.style.marginBottom = scale(5);
 
                     const projectInfoSpanEl = document.querySelector('.st-project-info span');
                     projectInfoSpanEl.innerText = `${pSettings.project.author || ''} | 조회수 ${Number(pSettings.project.views || 0).toLocaleString()}`;
                     projectInfoSpanEl.style.color = pSettings.project.metaColor;
                     
-                    // --- 2. 텍스트 및 미디어 요소 선택 ---
                     const textWrapper = document.getElementById('st-preview-text-container-wrapper');
                     const textEl = document.getElementById('st-preview-text');
                     const mediaWrapper = document.getElementById('st-preview-media-container-wrapper');
                     const imageEl = document.getElementById('st-preview-image');
                     
-                    // --- 3. 레이아웃 적용 (Transform 스케일링 적용) ---
                     const applyTransform = (el, layout) => {
                         if (el && layout) {
-                            el.style.transform = `translate(${scale(layout.x || 0)}px, ${scale(layout.y || 0)}px) scale(${layout.scale || 1}) rotate(${layout.angle || 0}deg)`;
+                            el.style.transform = `translate(${scaleNum(layout.x || 0)}px, ${scaleNum(layout.y || 0)}px) scale(${layout.scale || 1}) rotate(${layout.angle || 0}deg)`;
                         }
                     };
                     applyTransform(textWrapper, card.layout.text);
                     applyTransform(mediaWrapper, card.layout.media);
 
-                    // --- 4. 텍스트 스타일 및 내용 적용 (스케일링 적용) ---
                     const scaledStyle = { ...card.style };
                     scaledStyle.fontSize = scale(card.style.fontSize);
                     scaledStyle.letterSpacing = scale(card.style.letterSpacing);
@@ -178,76 +172,57 @@ async function renderVideo(jobId) {
                     } else {
                         textEl.innerText = card.text;
                     }
-                    // --- 5. 미디어 표시 로직 ---
+
                     let showMedia = false;
-                    if (card.media && card.media.url) {
-                        // 클라이언트에서는 비디오를 다루지만, 서버에서는 이미지 프레임만 생성하므로 이미지 타입만 고려합니다.
-                        // (비디오 오버레이는 FFmpeg에서 처리)
-                        if (card.media.type === 'image') {
-                           const showOnSegmentIndex = (card.media.showOnSegment || 1) - 1;
-                           const showTime = (card.segments && card.segments[showOnSegmentIndex]) ? card.segments[showOnSegmentIndex].startTime : 0;
-                           if (timeInCard >= showTime) {
-                               showMedia = true;
-                           }
-                        }
+                    if (card.media?.url && card.media.type === 'image') {
+                        const showOnSegmentIndex = (card.media.showOnSegment || 1) - 1;
+                        const showTime = (card.segments && card.segments[showOnSegmentIndex]) ? card.segments[showOnSegmentIndex].startTime : 0;
+                        if (timeInCard >= showTime) showMedia = true;
                     }
-                    
                     if (showMedia) {
                         mediaWrapper.style.display = 'flex';
                         imageEl.style.display = 'block';
                         imageEl.style.objectFit = card.media.fit;
-                        if (imageEl.src !== card.media.url) {
-                            imageEl.src = card.media.url;
-                        }
+                        if (imageEl.src !== card.media.url) imageEl.src = card.media.url;
                     } else {
                         mediaWrapper.style.display = 'none';
                     }
 
-                    // --- 6. 애니메이션 로직 적용 ---
                     const applyFrameAnimation = (el, anims, duration, time) => {
                         if (!el || !anims) return;
-                        
-                        // 기존 transform 값에서 애니메이션 부분을 제외하고 유지
                         const baseTransform = el.style.transform.replace(/translateY\([^)]+\)/g, '').replace(/scale\([^)]+\)/g, '').trim();
-
                         el.style.opacity = '1';
                         let animationTransform = '';
-
                         const inDuration = anims.in.duration;
                         const outStartTime = duration - anims.out.duration;
-
+                        let progress;
                         if (time < inDuration && anims.in.name !== 'none') {
-                            const progress = Math.max(0, Math.min(1, time / inDuration));
+                            progress = Math.max(0, Math.min(1, time / inDuration));
                             if (anims.in.name === 'fadeIn') el.style.opacity = progress;
-                            if (anims.in.name === 'slideInUp') animationTransform += ` translateY(${(1 - progress) * 50}px)`;
+                            if (anims.in.name === 'slideInUp') animationTransform += ` translateY(${scaleNum(50) * (1 - progress)}px)`;
                             if (anims.in.name === 'zoomIn') {
                                 el.style.opacity = progress;
                                 animationTransform += ` scale(${0.8 + 0.2 * progress})`;
                             }
                         } else if (time >= outStartTime && anims.out.name !== 'none') {
-                            const progress = Math.max(0, Math.min(1, (time - outStartTime) / anims.out.duration));
+                            progress = Math.max(0, Math.min(1, (time - outStartTime) / anims.out.duration));
                             if (anims.out.name === 'fadeOut') el.style.opacity = 1 - progress;
-                            if (anims.out.name === 'slideOutDown') animationTransform += ` translateY(${progress * 50}px)`;
+                            if (anims.out.name === 'slideOutDown') animationTransform += ` translateY(${scaleNum(50) * progress}px)`;
                             if (anims.out.name === 'zoomOut') {
                                 el.style.opacity = 1 - progress;
                                 animationTransform += ` scale(${1 - 0.2 * progress})`;
                             }
                         }
-                        
                         el.style.transform = `${baseTransform} ${animationTransform}`.trim();
                     };
-
                     applyFrameAnimation(textWrapper, card.animations.text, card.duration, timeInCard);
-                    if (showMedia) {
-                        applyFrameAnimation(mediaWrapper, card.animations.media, card.duration, timeInCard);
-                    }
+                    if (showMedia) applyFrameAnimation(mediaWrapper, card.animations.media, card.duration, timeInCard);
 
-                }, { project: projectData, card: card, timeInCard: timeInCard });
+                }, { project: projectData, card: card, timeInCard: timeInCard, scaleFactor: scaleFactor });
 
                 await page.screenshot({ path: path.join(framesDir, `frame_${String(frameCount++).padStart(6, '0')}.png`) });
             
-                // 진행률 업데이트
-                if (frameCount % fps === 0) { // 1초마다 업데이트
+                if (frameCount % fps === 0) {
                     const progress = 10 + Math.floor((frameCount / totalFrames) * 40);
                     await updateJobStatus(jobId, 'processing', `영상 프레임 생성 중... (${frameCount}/${totalFrames})`, progress);
                 }
@@ -256,9 +231,7 @@ async function renderVideo(jobId) {
         await browser.close();
         await updateJobStatus(jobId, 'processing', '프레임 캡처 완료', 50);
 
-        // 단계 3: 오디오 믹싱 (기존 코드와 동일)
         await updateJobStatus(jobId, 'processing', '오디오 트랙 처리 중...', 60);
-        // ... (오디오 믹싱 코드는 변경 없음)
         const audioTracks = (projectData.scriptCards || []).map((card, index) => {
             const startTime = (projectData.scriptCards || []).slice(0, index).reduce((acc, c) => acc + c.duration, 0);
             return { startTime, tts: card.audioUrl ? { url: card.audioUrl, volume: card.ttsVolume } : null, sfx: card.sfxUrl ? { url: card.sfxUrl, volume: card.sfxVolume } : null };
@@ -305,9 +278,7 @@ async function renderVideo(jobId) {
             }));
         }
 
-        // 단계 4: 최종 영상 합성 (기존 코드와 동일)
         await updateJobStatus(jobId, 'processing', '최종 영상 합성 중...', 80);
-        // ... (FFmpeg 합성은 변경 없음)
         const hasAudio = await fs.pathExists(finalAudioPath);
         const audioInput = hasAudio ? `-i "${finalAudioPath}"` : '';
         const ffmpegCommand = `ffmpeg -y -framerate ${fps} -i "${framesDir}/frame_%06d.png" ${audioInput} -c:v libx264 -crf 18 -preset slow -vf "scale=1080:1920,setsar=1:1,format=yuv420p" -c:a aac -b:a 192k -movflags +faststart ${hasAudio ? '-shortest' : ''} "${outputVideoPath}"`;
@@ -316,10 +287,7 @@ async function renderVideo(jobId) {
             resolve();
         }));
 
-
-        // 단계 5: 영상 업로드 (기존 코드와 동일)
         await updateJobStatus(jobId, 'processing', '영상 업로드 중...', 95);
-        // ... (업로드 로직은 변경 없음)
         const videoTitle = projectData.projectSettings?.project?.title || 'sunsak-video';
         const safeTitle = videoTitle.replace(/[^a-zA-Z0-9-_\.]/g, '_');
         const destination = `videos/${jobId}/${safeTitle}.mp4`;
@@ -339,7 +307,6 @@ async function renderVideo(jobId) {
     }
 }
 
-// ... 나머지 worker.js 코드는 기존과 동일합니다 ...
 async function listenForMessages() {
     const subscription = pubSubClient.subscription(SUBSCRIPTION_NAME);
     const messageHandler = async (message) => {
@@ -353,7 +320,7 @@ async function listenForMessages() {
         } catch (error) {
             console.error(`[${jobId || 'Unknown Job'}] 메시지 처리 오류:`, error.stack);
             if(jobId) await updateJobStatus(jobId, 'failed', `메시지 처리 실패: ${error.message}`);
-            message.ack(); // 실패해도 ack 처리하여 무한 재시도 방지
+            message.ack();
         }
     };
     subscription.on('message', messageHandler);
@@ -368,4 +335,3 @@ app.listen(PORT, () => {
   console.log(`워커 Health Check 서버 ${PORT} 포트에서 실행 중.`);
   listenForMessages();
 });
-// ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
