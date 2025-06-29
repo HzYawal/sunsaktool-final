@@ -53,13 +53,36 @@ async function renderVideo(jobId) {
         await fs.ensureDir(framesDir);
         await fs.ensureDir(audioDir);
 
-        // 단계 1: GCS에서 작업 데이터 다운로드
+        // 단계 1: GCS에서 작업 데이터 다운로드 (재시도 로직 추가)
         await updateJobStatus(jobId, 'processing', '작업 데이터 다운로드 중...', 5);
         const bucket = storage.bucket(JOB_DATA_BUCKET_NAME);
         const file = bucket.file(`${jobId}.json`);
-        const [data] = await file.download();
+        
+        const maxRetries = 3;
+        const retryDelay = 2000; // 2초
+        let data;
+
+        for (let i = 0; i < maxRetries; i++) {
+            try {
+                [data] = await file.download();
+                console.log(`[${jobId}] 작업 데이터 다운로드 성공 (시도: ${i + 1})`);
+                break; // 성공하면 루프 탈출
+            } catch (error) {
+                if (i === maxRetries - 1) {
+                    // 마지막 시도에도 실패하면 에러를 던짐
+                    throw error;
+                }
+                console.warn(`[${jobId}] 작업 데이터 다운로드 실패. ${retryDelay / 1000}초 후 재시도... (시도: ${i + 1})`);
+                await new Promise(resolve => setTimeout(resolve, retryDelay));
+            }
+        }
+
+        if (!data) {
+             throw new Error('최대 재시도 후에도 작업 데이터를 다운로드할 수 없습니다.');
+        }
+
         projectData = JSON.parse(data.toString());
-        await file.delete();
+        await file.delete(); // 다운로드 후 파일 삭제
 
         // 단계 2: Playwright로 프레임 생성
         await updateJobStatus(jobId, 'processing', '영상 프레임 생성 중...', 10);
