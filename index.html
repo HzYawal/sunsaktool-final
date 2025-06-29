@@ -637,9 +637,28 @@ const SERVICE_URL = 'https://sunsaktool-service-741834545202.asia-northeast3.run
                 render.applyTransform(textWrapper, card.layout.text);
                 render.applyTransform(mediaWrapper, card.layout.media);
                 Object.assign(previewText.style, card.style);
-                previewText.innerHTML = '';
-                const linesToDisplay = card.text.split('\n');
-                linesToDisplay.forEach(line => { const p = document.createElement('p'); p.className = 'preview-text-segment highlight'; p.textContent = line || ' '; p.style.margin = 0; previewText.appendChild(p); });
+                previewTextEl.innerHTML = '';
+if (card.segments && card.segments.length > 0) {
+    card.segments.forEach((segment) => {
+        if (timeInCard >= segment.startTime) {
+            segment.text.split('\n').forEach(line => {
+                const p = document.createElement('p');
+                p.className = 'preview-text-segment highlight';
+                p.textContent = line || ' ';
+                p.style.margin = 0;
+                previewTextEl.appendChild(p);
+            });
+        }
+    });
+} else {
+    card.text.split('\n').forEach(line => {
+        const p = document.createElement('p');
+        p.className = 'preview-text-segment highlight';
+        p.textContent = line || ' ';
+        p.style.margin = 0;
+        previewTextEl.appendChild(p);
+    });
+}
                 
                 if (card.media.url) {
                     if (card.media.type === 'image') {
