@@ -595,7 +595,7 @@ const SERVICE_URL = 'https://sunsaktool-service-741834545202.asia-northeast3.run
                 else { if (overlay) overlay.style.display = 'none'; }
             },
             applyTransform: (el, layout) => { if (el) { el.style.transform = `translate(${layout.x || 0}px, ${layout.y || 0}px) scale(${layout.scale || 1}) rotate(${layout.angle || 0}deg)`; } },
-            updatePreviewDisplay: () => {
+                        updatePreviewDisplay: () => {
                 const headerEl = document.querySelector('.st-preview-header');
                 const headerIconEl = headerEl.querySelector('.header-icon');
                 const headerTitleEl = headerEl.querySelector('.header-title');
@@ -619,7 +619,10 @@ const SERVICE_URL = 'https://sunsaktool-service-741834545202.asia-northeast3.run
                 metaEl.style.color = state.projectSettings.project.metaColor;
                 const card = state.scriptCards.find(c => c.id === state.selectedCardId);
                 const textWrapper = document.getElementById('st-preview-text-container-wrapper');
-                const previewText = document.getElementById('st-preview-text');
+                
+                // [오타 수정] previewTextEl -> previewText
+                const previewText = document.getElementById('st-preview-text'); 
+                
                 const mediaWrapper = document.getElementById('st-preview-media-container-wrapper');
                 const previewImage = document.getElementById('st-preview-image');
                 const previewVideo = document.getElementById('st-preview-video');
@@ -633,32 +636,21 @@ const SERVICE_URL = 'https://sunsaktool-service-741834545202.asia-northeast3.run
                 }
                 
                 textWrapper.style.display = 'block';
-                mediaWrapper.style.display = card.media.url ? 'block' : 'none';
+                mediaWrapper.style.display = card.media.url ? 'flex' : 'none'; // 'flex'로 변경
                 render.applyTransform(textWrapper, card.layout.text);
                 render.applyTransform(mediaWrapper, card.layout.media);
                 Object.assign(previewText.style, card.style);
-                previewTextEl.innerHTML = '';
-if (card.segments && card.segments.length > 0) {
-    card.segments.forEach((segment) => {
-        if (timeInCard >= segment.startTime) {
-            segment.text.split('\n').forEach(line => {
-                const p = document.createElement('p');
-                p.className = 'preview-text-segment highlight';
-                p.textContent = line || ' ';
-                p.style.margin = 0;
-                previewTextEl.appendChild(p);
-            });
-        }
-    });
-} else {
-    card.text.split('\n').forEach(line => {
-        const p = document.createElement('p');
-        p.className = 'preview-text-segment highlight';
-        p.textContent = line || ' ';
-        p.style.margin = 0;
-        previewTextEl.appendChild(p);
-    });
-}
+                
+                // [오타 수정] previewTextEl -> previewText
+                previewText.innerHTML = '';
+                // 클라이언트 미리보기에서는 전체 텍스트를 보여주어야 하므로, 세그먼트 로직을 단순화합니다.
+                card.text.split('\n').forEach(line => {
+                    const p = document.createElement('p');
+                    p.className = 'preview-text-segment highlight';
+                    p.textContent = line || ' ';
+                    p.style.margin = 0;
+                    previewText.appendChild(p);
+                });
                 
                 if (card.media.url) {
                     if (card.media.type === 'image') {
