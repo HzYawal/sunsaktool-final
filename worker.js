@@ -35,8 +35,7 @@ async function updateJobStatus(jobId, status, message, progress = null) {
     console.log(`[${jobId}] 상태: ${status} - ${message} (${progress !== null ? progress + '%' : ''})`);
 }
 
-// --- 핵심 영상 제작 함수 ---
-// ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ 이 코드로 renderVideo 함수 전체를 교체하세요 ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+// ▼▼▼▼▼▼▼▼▼▼▼ 이 코드로 worker.js의 renderVideo 함수 전체를 교체하세요 ▼▼▼▼▼▼▼▼▼▼▼
 
 async function renderVideo(jobId) {
     const fps = 30;
@@ -53,7 +52,6 @@ async function renderVideo(jobId) {
         await fs.ensureDir(framesDir);
         await fs.ensureDir(audioDir);
 
-        // 단계 1: GCS에서 작업 데이터 다운로드
         await updateJobStatus(jobId, 'processing', '작업 데이터 다운로드 중...', 5);
         const bucket = storage.bucket(JOB_DATA_BUCKET_NAME);
         const file = bucket.file(`${jobId}.json`);
@@ -61,7 +59,6 @@ async function renderVideo(jobId) {
         projectData = JSON.parse(data.toString());
         await file.delete();
 
-        // 단계 2: Playwright로 프레임 생성
         await updateJobStatus(jobId, 'processing', '영상 프레임 생성 중...', 10);
         browser = await playwright.chromium.launch();
         const context = await browser.newContext({ bypassCSP: true });
@@ -139,17 +136,12 @@ async function renderVideo(jobId) {
                     
                     applyTransform(textWrapper, currentCard.layout.text);
                     textEl.innerHTML = '';
-                    
-                    // [핵심] 텍스트 좌표 기반 렌더링
                     if (currentCard.measuredLines) {
                         currentCard.measuredLines.forEach(line => {
                             const p = document.createElement('div');
-                            p.style.position = 'absolute';
-                            p.style.left = `${line.x * scale}px`;
-                            p.style.top = `${line.y * scale}px`;
-                            p.style.whiteSpace = 'nowrap';
-                            p.textContent = line.text;
-                            textEl.appendChild(p);
+                            Object.assign(p.style, scaledStyle); p.style.position = 'absolute';
+                            p.style.left = `${line.x * scale}px`; p.style.top = `${line.y * scale}px`; p.style.whiteSpace = 'nowrap';
+                            p.textContent = line.text; textEl.appendChild(p);
                         });
                     }
                     
@@ -199,7 +191,6 @@ async function renderVideo(jobId) {
         }
         await browser.close();
         
-        // 단계 3: 오디오 믹싱
         await updateJobStatus(jobId, 'processing', '오디오 트랙 처리 중...', 60);
         const audioTracks = (projectData.scriptCards || []).map((card, index) => ({ startTime: (projectData.scriptCards || []).slice(0, index).reduce((acc, c) => acc + c.duration, 0), tts: card.audioUrl ? { url: card.audioUrl, volume: card.ttsVolume } : null, sfx: card.sfxUrl ? { url: card.sfxUrl, volume: card.sfxVolume } : null }));
         const audioInputs = []; let complexFilter = ''; const audioStreamsToMix = [];
@@ -244,7 +235,6 @@ async function renderVideo(jobId) {
             }));
         }
 
-        // 단계 4: 최종 영상 합성
         await updateJobStatus(jobId, 'processing', '최종 영상 합성 중...', 80);
         const hasAudio = await fs.pathExists(finalAudioPath);
         const audioInput = hasAudio ? `-i "${finalAudioPath}"` : '';
@@ -254,7 +244,6 @@ async function renderVideo(jobId) {
             resolve();
         }));
 
-        // 단계 5: 영상 업로드
         await updateJobStatus(jobId, 'processing', '영상 업로드 중...', 95);
         const videoTitle = projectData.projectSettings?.project?.title || 'sunsak-video';
         const safeTitle = videoTitle.replace(/[^a-zA-Z0-9-_\.]/g, '_');
@@ -275,8 +264,8 @@ async function renderVideo(jobId) {
     }
 }
 
-// ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
+// ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 async function listenForMessages() {
     const subscription = pubSubClient.subscription(SUBSCRIPTION_NAME);
     const messageHandler = async (message) => {
