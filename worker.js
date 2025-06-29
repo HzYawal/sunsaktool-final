@@ -1,30 +1,21 @@
-// ===============================================
-//  worker.js (Playwright Server-Side Rendering)
-// ===============================================
 const express = require('express');
 const path = require('path');
 const fs = require('fs-extra');
 const { exec } = require('child_process');
 const os = require('os');
 const playwright = require('playwright');
-
-// Google Cloud 클라이언트
 const { PubSub } = require('@google-cloud/pubsub');
 const { Storage } = require('@google-cloud/storage');
 const { Firestore } = require('@google-cloud/firestore');
 
-// --- 환경 설정 ---
 const GCP_PROJECT_ID = process.env.GCP_PROJECT || 'sunsak-tool-gcp';
-
 const pubSubClient = new PubSub({ projectId: GCP_PROJECT_ID });
 const storage = new Storage({ projectId: GCP_PROJECT_ID });
 const firestore = new Firestore({ projectId: GCP_PROJECT_ID });
-
 const OUTPUT_BUCKET_NAME = 'sunsak-output-videos';
 const JOB_DATA_BUCKET_NAME = 'sunsak-job-data';
 const SUBSCRIPTION_NAME = 'sunsak-render-jobs-sub';
 
-// --- 헬퍼 함수 ---
 async function updateJobStatus(jobId, status, message, progress = null) {
     const jobRef = firestore.collection('renderJobs').doc(jobId);
     const updateData = { status, message, updatedAt: new Date() };
@@ -50,7 +41,6 @@ async function renderVideo(jobId) {
         await fs.ensureDir(framesDir);
         await fs.ensureDir(audioDir);
 
-        // 단계 1: GCS에서 작업 데이터 다운로드
         await updateJobStatus(jobId, 'processing', '작업 데이터 다운로드 중...', 5);
         const bucket = storage.bucket(JOB_DATA_BUCKET_NAME);
         const file = bucket.file(`${jobId}.json`);
@@ -69,16 +59,19 @@ async function renderVideo(jobId) {
         projectData = JSON.parse(data.toString());
         await file.delete();
 
-        // 확대 비율(Scale Factor) 계산
-        const targetWidth = 1080;
+        // [핵심] 캡처할 원본 크기 설정 (미리보기 패널 크기)
         const sourceWidth = projectData.renderMetadata?.sourceWidth || 420;
-        const scaleFactor = targetWidth / sourceWidth;
+        const sourceHeight = Math.round(sourceWidth * (16 / 9));
 
-        // 단계 2: Playwright로 프레임 생성
         await updateJobStatus(jobId, 'processing', '영상 프레임 생성 중...', 10);
         browser = await playwright.chromium.launch();
-        const context = await browser.newContext({ viewport: { width: 1080, height: 1920 } });
+        
+        // [핵심] 캡처할 뷰포트를 미리보기와 동일한 작은 크기로 설정
+        const context = await browser.newContext({ viewport: { width: sourceWidth, height: sourceHeight } });
         const page = await context.newPage();
+        
+        // [핵심] 렌더링할 패널 크기도 뷰포트와 동일하게 설정
+        await page.addStyleTag({ content: `.st-preview-panel { width: ${sourceWidth}px; height: ${sourceHeight}px; }` });
         
         const renderTemplatePath = `file://${path.join(__dirname, 'render_template.html')}`;
         await page.goto(renderTemplatePath, { waitUntil: 'networkidle' });
@@ -90,88 +83,25 @@ async function renderVideo(jobId) {
         for (const card of projectData.scriptCards) {
             const cardFrames = Math.floor(card.duration * fps);
             for (let i = 0; i < cardFrames; i++) {
-                const timeInCard = i / fps;
-
+                
+                // [핵심] 복잡한 계산을 모두 제거하고, 가장 단순한 초기 로직으로 복귀
                 await page.evaluate(async (args) => {
-                    const { project, card, timeInCard, scaleFactor } = args;
+                    const { project, currentCard } = args;
                     const pSettings = project.projectSettings;
-
-                    const scale = (value) => {
-                        if (typeof value === 'string' && value.endsWith('px')) {
-                            return parseFloat(value) * scaleFactor + 'px';
-                        }
-                        return parseFloat(value) * scaleFactor;
-                    };
-                    const scaleNum = (value) => {
-                        if (typeof value === 'string') {
-                           return parseFloat(value) * scaleFactor;
-                        }
-                        return value * scaleFactor;
-                    }
-
-                    // --- 헤더 및 프로젝트 정보 스케일링 (모든 단위 적용) ---
-                    const headerEl = document.querySelector('.st-preview-header');
-                    headerEl.style.backgroundColor = pSettings.header.backgroundColor;
-                    headerEl.style.color = pSettings.header.color;
-                    headerEl.style.fontFamily = pSettings.header.fontFamily;
-                    headerEl.style.height = scale(65);
-                    headerEl.style.padding = `0 ${scale(15)}`;
-
-                    const headerTitleEl = document.querySelector('.header-title');
-                    headerTitleEl.innerText = pSettings.header.text;
-                    headerTitleEl.style.fontSize = scale(pSettings.header.fontSize);
-                    headerTitleEl.style.padding = `0 ${scale(45)}`;
                     
-                    const logoEl = document.querySelector('.header-logo');
-                    if (pSettings.header.logo && pSettings.header.logo.url) {
-                        logoEl.src = pSettings.header.logo.url;
-                        logoEl.style.width = scale(pSettings.header.logo.size);
-                        logoEl.style.height = scale(pSettings.header.logo.size);
-                        logoEl.style.display = 'block';
-                    } else {
-                        logoEl.style.display = 'none';
-                    }
-
-                    const contentEl = document.querySelector('.st-preview-content');
-                    contentEl.style.padding = scale(10);
-
-                    const projectInfoEl = document.querySelector('.st-project-info');
-                    projectInfoEl.style.fontSize = scale(13);
-                    projectInfoEl.style.margin = `0 0 ${scale(16)} 0`;
-                    projectInfoEl.style.paddingBottom = scale(16);
-                    projectInfoEl.style.borderBottomWidth = scale(1);
+                    // 헤더, 프로젝트 정보, 텍스트 스타일과 내용만 단순 적용 (스케일링 없음)
+                    document.querySelector('.st-preview-header').style.backgroundColor = pSettings.header.backgroundColor;
+                    document.querySelector('.header-title').innerText = pSettings.header.text;
+                    document.querySelector('.st-project-info .title').innerText = pSettings.project.title;
+                    document.querySelector('.st-project-info span').innerText = `${pSettings.project.author || ''} | 조회수 ${Number(pSettings.project.views || 0).toLocaleString()}`;
                     
-                    const projectInfoTitleEl = document.querySelector('.st-project-info .title');
-                    projectInfoTitleEl.innerText = pSettings.project.title;
-                    projectInfoTitleEl.style.color = pSettings.project.titleColor;
-                    projectInfoTitleEl.style.fontFamily = pSettings.project.titleFontFamily;
-                    projectInfoTitleEl.style.fontSize = scale(pSettings.project.titleFontSize);
-                    projectInfoTitleEl.style.marginBottom = scale(5);
-
-                    const projectInfoSpanEl = document.querySelector('.st-project-info span');
-                    projectInfoSpanEl.innerText = `${pSettings.project.author || ''} | 조회수 ${Number(pSettings.project.views || 0).toLocaleString()}`;
-                    projectInfoSpanEl.style.color = pSettings.project.metaColor;
-                    
-                    const textWrapper = document.getElementById('st-preview-text-container-wrapper');
                     const textEl = document.getElementById('st-preview-text');
+                    Object.assign(textEl.style, currentCard.style);
                     
-                    // [핵심 수정] 원치 않는 텍스트 애니메이션 제거
-                    // 항상 전체 텍스트를 한 번에 표시하여 줄바꿈 오류 방지
-                    textEl.innerText = card.text;
+                    // 원치 않는 애니메이션 제거 -> 항상 전체 텍스트 표시
+                    textEl.innerText = currentCard.text; 
 
-                    const scaledStyle = { ...card.style };
-                    scaledStyle.fontSize = scale(card.style.fontSize);
-                    scaledStyle.letterSpacing = scale(card.style.letterSpacing);
-                    Object.assign(textEl.style, scaledStyle);
-                    
-                    const applyTransform = (el, layout) => {
-                        if (el && layout) {
-                            el.style.transform = `translate(${scaleNum(layout.x || 0)}px, ${scaleNum(layout.y || 0)}px) scale(${layout.scale || 1}) rotate(${layout.angle || 0}deg)`;
-                        }
-                    };
-                    applyTransform(textWrapper, card.layout.text);
-
-                }, { project: projectData, card: card, timeInCard: timeInCard, scaleFactor: scaleFactor });
+                }, { project: projectData, currentCard: card });
 
                 await page.screenshot({ path: path.join(framesDir, `frame_${String(frameCount++).padStart(6, '0')}.png`) });
             }
@@ -179,6 +109,7 @@ async function renderVideo(jobId) {
         await browser.close();
         await updateJobStatus(jobId, 'processing', '프레임 캡처 완료', 50);
 
+        // 오디오 믹싱 로직 (변경 없음)
         await updateJobStatus(jobId, 'processing', '오디오 트랙 처리 중...', 60);
         const audioTracks = (projectData.scriptCards || []).map((card, index) => {
             const startTime = (projectData.scriptCards || []).slice(0, index).reduce((acc, c) => acc + c.duration, 0);
@@ -220,21 +151,17 @@ async function renderVideo(jobId) {
             const mixInputs = audioStreamsToMix.join('');
             complexFilter += `${mixInputs}amix=inputs=${audioStreamsToMix.length}:duration=longest[final_audio]`;
             const mixCommand = `ffmpeg ${audioInputs.join(' ')} -filter_complex "${complexFilter}" -map "[final_audio]" -y "${finalAudioPath}"`;
-            await new Promise((resolve, reject) => exec(mixCommand, (err) => {
-                if (err) return reject(new Error(`오디오 믹싱 오류: ${err.message}`));
-                resolve();
-            }));
+            await new Promise((resolve, reject) => exec(mixCommand, (err) => { if (err) return reject(new Error(`오디오 믹싱 오류: ${err.message}`)); resolve(); }));
         }
 
+        // [핵심] FFmpeg에서 작은 이미지를 1080x1920으로 확대
         await updateJobStatus(jobId, 'processing', '최종 영상 합성 중...', 80);
         const hasAudio = await fs.pathExists(finalAudioPath);
         const audioInput = hasAudio ? `-i "${finalAudioPath}"` : '';
         const ffmpegCommand = `ffmpeg -y -framerate ${fps} -i "${framesDir}/frame_%06d.png" ${audioInput} -c:v libx264 -crf 18 -preset slow -vf "scale=1080:1920,setsar=1:1,format=yuv420p" -c:a aac -b:a 192k -movflags +faststart ${hasAudio ? '-shortest' : ''} "${outputVideoPath}"`;
-        await new Promise((resolve, reject) => exec(ffmpegCommand, (err) => {
-            if (err) return reject(new Error(`FFMPEG 최종 합성 오류: ${err.message}`));
-            resolve();
-        }));
+        await new Promise((resolve, reject) => exec(ffmpegCommand, (err) => { if (err) return reject(new Error(`FFMPEG 최종 합성 오류: ${err.message}`)); resolve(); }));
 
+        // 업로드 로직 (변경 없음)
         await updateJobStatus(jobId, 'processing', '영상 업로드 중...', 95);
         const videoTitle = projectData.projectSettings?.project?.title || 'sunsak-video';
         const safeTitle = videoTitle.replace(/[^a-zA-Z0-9-_\.]/g, '_');
@@ -254,6 +181,7 @@ async function renderVideo(jobId) {
         console.log(`[${jobId}] 임시 파일 정리 완료`);
     }
 }
+
 
 async function listenForMessages() {
     const subscription = pubSubClient.subscription(SUBSCRIPTION_NAME);
