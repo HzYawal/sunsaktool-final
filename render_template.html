@@ -4,52 +4,35 @@
     <meta charset="UTF-8">
     <title>SunsakTool Renderer</title>
     <style>
-        /* 폰트 로딩을 위한 @import 및 @font-face (index.html과 동일) */
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=IBM+Plex+Sans+KR:wght@400;700&family=Gowun+Dodum&family=Gowun+Batang&family=Nanum+Myeongjo:wght@400;700;800&family=Do+Hyeon&family=Black+Han+Sans&family=Gaegu:wght@400;700&family=Hi+Melody&family=Noto+Serif+KR:wght@400;700;900&family=Dokdo&display=swap');
         @font-face { font-family: 'Pretendard'; src: url('https://cdn.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Regular.woff') format('woff'); }
         @font-face { font-family: 'Spoqa Han Sans Neo'; src: url('https://cdn.jsdelivr.net/gh/spoqa/spoqa-han-sans@latest/Subset/SpoqaHanSansNeo/SpoqaHanSansNeo-Regular.woff2') format('woff2'); }
         @font-face { font-family: 'GmarketSans'; src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansBold.woff') format('woff'); }
         
-        /* 기본 스타일 (모든 문제 해결된 최종 버전) */
         * { box-sizing: border-box; }
         body { margin: 0; -webkit-font-smoothing: antialiased; }
-        .st-preview-panel { width: 1080px; height: 1920px; background-color: #fff; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+        .st-preview-panel { display: flex; flex-direction: column; background-color: #fff; overflow: hidden; }
         .st-preview-header { position:relative; display: flex; align-items: center; justify-content: center; font-family: 'GmarketSans', sans-serif; color: white; font-weight: bold; flex-shrink: 0; height: 65px; padding: 0 15px; overflow: hidden; }
-        .header-icon { position: absolute; left: 15px; display: flex; align-items: center; }
         .header-title { flex-grow: 1; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 45px; }
-        .header-logo-container { position: absolute; right: 15px; display: flex; align-items: center; }
-        .header-logo { border-radius: 50%; object-fit: cover; background-color: #eee; }
         .st-preview-content { padding: 10px; color: black; flex-grow: 1; display: flex; flex-direction: column; background-color: white; overflow: hidden; position: relative; }
         .st-project-info { font-size: 13px; color: #555; margin: 0 0 16px 0; border-bottom: 1px solid #eee; padding-bottom: 16px; flex-shrink: 0; }
         .st-project-info .title { font-size: 22px; color: black; font-weight: bold; margin-bottom: 5px; }
-        .st-script-display { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; min-height: 0; width: 100%; }
-        .interactive-target { position: relative; width: 100%; transform-origin: center center; }
-        #st-preview-media-container-wrapper { margin-top: 8px; display: flex; justify-content: center; align-items: center; width: 100%; min-height: 0; }
-        #st-preview-image, #st-preview-video { max-width: 100%; max-height: 100%; object-fit: contain; }
-        #st-preview-text { width: 100%; font-size: 24px; color: #000; white-space: pre-wrap; flex-shrink: 0; }
-        .preview-text-segment { margin: 0; opacity: 1; }
+        .st-script-display { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; min-height: 0; width: 100%;}
+        #st-preview-text { width: 100%; white-space: pre-wrap; flex-shrink: 0; }
     </style>
 </head>
 <body>
     <div class="st-preview-panel" id="st-preview-panel">
          <div class="st-preview-header">
-             <div class="header-icon"></div>
              <div class="header-title"></div>
-             <div class="header-logo-container"><img class="header-logo"></div>
          </div>
-         <div class="st-preview-content" id="st-preview-content">
+         <div class="st-preview-content">
              <div class="st-project-info">
                  <div class="title"></div>
                  <span></span>
              </div>
              <div class="st-script-display">
-                <div id="st-preview-text-container-wrapper" class="interactive-target">
-                    <div id="st-preview-text"></div>
-                </div>
-                <div id="st-preview-media-container-wrapper" class="interactive-target" style="display: none;">
-                    <img id="st-preview-image" style="display: none;">
-                    <video id="st-preview-video" style="display: none;"></video>
-                </div>
+                <div id="st-preview-text"></div>
              </div>
          </div>
     </div>
